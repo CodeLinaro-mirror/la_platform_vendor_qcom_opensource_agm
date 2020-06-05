@@ -48,12 +48,17 @@ LOCAL_HEADER_LIBRARIES := libspf-headers \
                           libutils_headers
 
 LOCAL_SHARED_LIBRARIES := \
-         libar-gsl \
          liblog \
          liblx-osal \
          libaudioroute \
          libats \
          libqti-tinyalsa
+
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+else
+LOCAL_SHARED_LIBRARIES += libar-gsl
+endif
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
       LOCAL_CFLAGS += -DDYNAMIC_LOG_ENABLED
