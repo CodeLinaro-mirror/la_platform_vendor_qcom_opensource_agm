@@ -22,6 +22,8 @@ LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
@@ -46,11 +48,16 @@ LOCAL_HEADER_LIBRARIES := \
     libacdb_headers
 
 LOCAL_SHARED_LIBRARIES := \
-    libar-gsl \
     liblog \
     liblx-osal \
     libaudioroute \
     libats
+
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+else
+LOCAL_SHARED_LIBRARIES += libar-gsl
+endif
 
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
