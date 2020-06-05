@@ -44,6 +44,15 @@ LOCAL_MODULE_TAGS          := optional
 LOCAL_HEADER_LIBRARIES := libspf-headers \
                           libar-acdbdata \
                           libutils_headers
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES := \
+         libar-gsl_fe \
+         liblog \
+         liblx-osal \
+         libaudioroute \
+         libats \
+         libtinyalsa
+else
 LOCAL_SHARED_LIBRARIES := \
          libar-gsl \
          liblog \
@@ -51,6 +60,7 @@ LOCAL_SHARED_LIBRARIES := \
          libaudioroute \
          libats \
          libtinyalsa
+endif
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
       LOCAL_CFLAGS += -DDYNAMIC_LOG_ENABLED
