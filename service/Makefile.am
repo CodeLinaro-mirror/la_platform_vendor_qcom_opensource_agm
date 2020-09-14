@@ -27,6 +27,7 @@ h_sources = ${top_srcdir}/inc/agm_api.h \
             ${top_srcdir}/inc/utils.h
 
 AM_CFLAGS = -I ${top_srcdir}/inc  -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/spf
+AM_CFLAGS += -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/acdbdata
 AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
 
 library_include_HEADERS = $(h_sources)
