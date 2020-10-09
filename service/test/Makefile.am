@@ -2,7 +2,7 @@ AM_CPPFLAGS := -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/agm/ -I ${top_srcdir}/sr
 bin_PROGRAMS :=  agm_ipc_test
 agm_ipc_test_SOURCES   = ${top_srcdir}/src/agm_test.c
 agm_ipc_test_CPPFLAGS := $(AM_CPPFLAGS)
-agm_ipc_test_LDADD    = -lagmclient
+agm_ipc_test_LDADD    = -lagmclient -lagm
 
 bin_PROGRAMS +=  agmtest
 agmtest_SOURCES   = ${top_srcdir}/src/agm_test.c

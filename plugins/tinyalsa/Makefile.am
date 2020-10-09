@@ -6,8 +6,11 @@ library_includedir = $(includedir)
 
 AM_CFLAGS := -Wno-unused-parameter
 if !BUILDSYSTEM_OPENWRT
-AM_CFLAGS += -I $(top_srcdir)/include -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/agm/ -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include
+AM_CFLAGS += -I $(top_srcdir)/include -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/agm/
 AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+AM_CFLAGS += -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/acdbdata/
+AM_CFLAGS += -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/sndparser/
+AM_CFLAGS += -Wno-unused-parameter
 AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
 endif
 
