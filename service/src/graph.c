@@ -251,6 +251,8 @@ int graph_init()
                 snd_card_name[len - 1] = '\0';
                 if (strstr(snd_card_name, "qrd")) {
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "QRD");
+                } else if (strstr(snd_card_name, "adp")){
+                    snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "ADP_AR");
                 } else {
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "IDP");
                 }
