@@ -39,13 +39,14 @@ agm_sources = ${top_srcdir}/src/graph.c \
               ${top_srcdir}/src/device_hw_ep.c \
               ${top_srcdir}/src/metadata.c \
               ${top_srcdir}/src/session_obj.c \
-              ${top_srcdir}/src/agm.c
+              ${top_srcdir}/src/agm.c \
+              ${top_srcdir}/src/utils.c
 
 endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-libagm_la_LIBADD = -ltinyalsa -lar_osal -lgsl -lats
+libagm_la_LIBADD = -ltinyalsa -lar_osal -lar_gsl -lats
 
 if !BUILDSYSTEM_OPENWRT
 libagm_la_LIBADD += -laudio_log_utils
