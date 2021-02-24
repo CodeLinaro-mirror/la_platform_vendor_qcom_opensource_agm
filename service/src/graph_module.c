@@ -421,6 +421,10 @@ static int configure_tdm_ep(struct module_info *mod,
              tdm_config->ctrl_invert_sync_pulse, tdm_config->ctrl_sync_data_delay);
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
+    if (ret == AR_EALREADY) {
+        AGM_LOGE("Ignore EALREADY for HYP");
+        ret = AR_EOK;
+    }
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config for module %d failed with error %d",
@@ -647,6 +651,10 @@ int configure_hw_ep_media_config(struct module_info *mod,
                     media_config.data_format);
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
+    if (ret == AR_EALREADY) {
+        AGM_LOGE("Ignore EALREADY for HYP");
+        ret = AR_EOK;
+    }
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config command for module %d failed with error %d",
