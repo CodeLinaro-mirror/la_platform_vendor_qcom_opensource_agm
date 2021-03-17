@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -148,6 +148,10 @@ static struct agm_meta_data_gsl* session_get_merged_metadata(struct session_obj 
     if (sess_mode != AGM_SESSION_NON_TUNNEL) {
         list_for_each(node, &sess_obj->aif_pool) {
             aif_node = node_to_item(node, struct aif, node);
+            if (aif_node->state == AIF_CLOSED) {
+                AGM_LOGD("ignore closed AIF node");
+                continue;
+            }
             merged = metadata_merge(4, temp, &sess_obj->sess_meta,
                            &aif_node->sess_aif_meta, &aif_node->dev_obj->metadata);
             if (temp) {
