@@ -1,5 +1,6 @@
 /*
 ** Copyright (c) 2020, The Linux Foundation. All rights reserved.
+** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -96,8 +97,10 @@ enum AgmModuleMethods {
     AgmSessionAifGetTagModuleInfo,
     AgmSessionAifGetTagModuleInfoSize,
     AgmSessionAifSetParams,
+    AgmAifSetParams,
     AgmSessionAifSetCal,
     AgmSessionGetParams,
+    AgmSessionGetBufInfo,
     AgmGetBufferTimestamp,
     AgmSessionOpen,
     AgmDbusModuleMethodMax
@@ -169,10 +172,16 @@ static void ipc_agm_session_aif_get_tag_module_info_size(DBusConnection *conn,
 static void ipc_agm_session_aif_set_params(DBusConnection *conn,
                                            DBusMessage *msg,
                                            void *userdata);
+static void ipc_agm_aif_set_params(DBusConnection *conn,
+                                   DBusMessage *msg,
+                                   void *userdata);
 static void ipc_agm_session_aif_set_cal(DBusConnection *conn,
                                         DBusMessage *msg,
                                         void *userdata);
 static void ipc_agm_session_get_params(DBusConnection *conn,
+                                       DBusMessage *msg,
+                                       void *userdata);
+static void ipc_agm_session_get_buf_info(DBusConnection *conn,
                                        DBusMessage *msg,
                                        void *userdata);
 static void ipc_agm_session_open(DBusConnection *conn,
@@ -225,7 +234,7 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
                                           void *userdata);
 
 static agm_dbus_method agm_dbus_module_methods[AgmDbusModuleMethodMax] = {
-    {"AgmAifSetMediaConfig", "u(uui)", ipc_agm_audio_intf_set_media_config},
+    {"AgmAifSetMediaConfig", "u(uuiu)", ipc_agm_audio_intf_set_media_config},
     {"AgmAifSetMetadata", "uuay", ipc_agm_audio_intf_set_metadata},
     {"AgmSessionAifSetMetadata", "uuuay",
                                       ipc_agm_session_audio_inf_set_metadata},
@@ -246,10 +255,12 @@ static agm_dbus_method agm_dbus_module_methods[AgmDbusModuleMethodMax] = {
     {"AgmSessionAifGetTagModuleInfoSize", "uuu",
                                   ipc_agm_session_aif_get_tag_module_info_size},
     {"AgmSessionAifSetParams", "uuuay", ipc_agm_session_aif_set_params},
+    {"AgmAifSetParams", "uuay", ipc_agm_aif_set_params},
     {"AgmSessionAifSetCal", "uuuay", ipc_agm_session_aif_set_cal},
     {"AgmSessionGetParams", "uuay", ipc_agm_session_get_params},
+    {"AgmSessionGetBufInfo", "uu", ipc_agm_session_get_buf_info},
     {"AgmGetBufferTimestamp", "u", ipc_agm_get_buffer_timestamp},
-    {"AgmSessionOpen", "u", ipc_agm_session_open}
+    {"AgmSessionOpen", "uu", ipc_agm_session_open}
 };
 
 static agm_dbus_method agm_dbus_session_methods[AgmDbusSessionMethodMax] = {
@@ -745,6 +756,70 @@ static void ipc_agm_session_get_params(DBusConnection *conn,
     dbus_message_unref(reply);
 }
 
+static void ipc_agm_session_get_buf_info(DBusConnection *conn,
+                                       DBusMessage *msg,
+                                       void *userdata) {
+    DBusMessage *reply = NULL;
+    DBusMessageIter arg_i, array_i;
+    DBusMessageIter r_arg, struct_i;
+    uint32_t session_id, flag;
+    struct agm_buf_info *buf_info;
+    char *value = NULL;
+    char **addr_value = &value;
+    int n_elements = 0;
+
+    if (userdata == NULL) {
+        AGM_LOGE("Invalid userdata");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "userdata is NULL");
+        return;
+    }
+
+    if (!dbus_message_iter_init(msg, &arg_i)) {
+        AGM_LOGE("ipc_agm_session_get_buf_info has no arguments");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "ipc_agm_session_get_buf_info has no arguments");
+        return;
+    }
+
+    if (strcmp(dbus_message_get_signature(msg), "uu")) {
+        AGM_LOGE("Invalid signature for ipc_agm_session_get_buf_info.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                           "Invalid signature for ipc_agm_session_get_buf_info.");
+        return;
+    }
+
+    AGM_LOGV("%s : ", __func__);
+
+    dbus_message_iter_get_basic(&arg_i, &session_id);
+    dbus_message_iter_next(&arg_i);
+    dbus_message_iter_get_basic(&arg_i, &flag);
+    //dbus_message_iter_next(&arg_i);
+    buf_info = (agm_buf_info *) calloc(1,(sizeof(struct agm_buf_info)));
+
+    if (agm_session_get_buf_info(session_id, buf_info, flag) != 0) {
+        AGM_LOGE("agm_session_get_buf_info failed.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "agm_session_get_buf_info failed.");
+        free(buf_info);
+        buf_info = NULL;
+        return;
+    }
+
+    reply = dbus_message_new_method_return(msg);
+    dbus_message_iter_init_append(reply, &r_arg);
+    dbus_message_iter_open_container(&r_arg, DBUS_TYPE_STRUCT, NULL, &struct_i);
+    dbus_message_iter_append_basic(&struct_i, DBUS_TYPE_INT32, &buf_info->data_buf_fd);
+    dbus_message_iter_append_basic(&struct_i, DBUS_TYPE_INT32, &buf_info->data_buf_size);
+    dbus_message_iter_append_basic(&struct_i, DBUS_TYPE_INT32, &buf_info->pos_buf_fd);
+    dbus_message_iter_append_basic(&struct_i, DBUS_TYPE_INT32, &buf_info->pos_buf_size);
+    dbus_message_iter_close_container(&r_arg, &struct_i);
+    dbus_connection_send(conn, reply, NULL);
+    free(buf_info);
+    buf_info = NULL;
+    dbus_message_unref(reply);
+}
+
 static void ipc_agm_session_aif_set_cal(DBusConnection *conn,
                                         DBusMessage *msg,
                                         void *userdata) {
@@ -871,6 +946,66 @@ static void ipc_agm_session_aif_set_params(DBusConnection *conn,
     buf = NULL;
     dbus_message_unref(reply);
 }
+
+static void ipc_agm_aif_set_params(DBusConnection *conn,
+                                   DBusMessage *msg,
+                                   void *userdata) {
+    DBusMessage *reply = NULL;
+    DBusMessageIter arg_i, array_i, r_arg;
+    uint32_t aif_id, size;
+    void *buf = NULL;
+    char *value = NULL;
+    char **addr_value = &value;
+    int n_elements = 0;
+
+    if (userdata == NULL) {
+        AGM_LOGE("Invalid userdata");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "userdata is NULL");
+        return;
+    }
+
+    if (!dbus_message_iter_init(msg, &arg_i)) {
+        AGM_LOGE("ipc_agm_aif_set_params has no arguments");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "ipc_agm_aif_set_params has no arguments");
+        return;
+    }
+
+    if (strcmp(dbus_message_get_signature(msg), "uuay")) {
+        AGM_LOGE("Invalid signature for ipc_agm_aif_set_params.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                       "Invalid signature for ipc_agm_aif_set_params.");
+        return;
+    }
+
+    AGM_LOGV("%s : ", __func__);
+
+    dbus_message_iter_get_basic(&arg_i, &aif_id);
+    dbus_message_iter_next(&arg_i);
+    dbus_message_iter_get_basic(&arg_i, &size);
+    dbus_message_iter_next(&arg_i);
+    dbus_message_iter_recurse(&arg_i, &array_i);
+    dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
+    buf = (void *)malloc(n_elements*sizeof(char));
+    memcpy(buf, value, n_elements);
+
+    if (agm_aif_set_params(aif_id, buf, size) != 0) {
+        AGM_LOGE("agmaif_set_params failed.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "agm_aif_set_params failed.");
+        free(buf);
+        buf = NULL;
+        return;
+    }
+
+    reply = dbus_message_new_method_return(msg);
+    dbus_connection_send(conn, reply, NULL);
+    free(buf);
+    buf = NULL;
+    dbus_message_unref(reply);
+}
+
 
 static void ipc_agm_session_aif_get_tag_module_info_size(DBusConnection *conn,
                                                          DBusMessage *msg,
@@ -1569,7 +1704,7 @@ static void ipc_agm_audio_intf_set_media_config(DBusConnection *conn,
         return;
     }
 
-    if (strcmp(dbus_message_get_signature(msg), "u(uui)")) {
+    if (strcmp(dbus_message_get_signature(msg), "u(uuiu)")) {
         AGM_LOGE("Invalid signature for ipc_agm_audio_intf_set_media_config.");
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                   "Invalid signature for ipc_agm_audio_intf_set_media_config.");
@@ -1586,6 +1721,8 @@ static void ipc_agm_audio_intf_set_media_config(DBusConnection *conn,
     dbus_message_iter_get_basic(&struct_i, &media_config.channels);
     dbus_message_iter_next(&struct_i);
     dbus_message_iter_get_basic(&struct_i, &media_config.format);
+    dbus_message_iter_next(&struct_i);
+    dbus_message_iter_get_basic(&struct_i, &media_config.data_format);
 
     if (agm_aif_set_media_config(aif_id, &media_config)) {
         AGM_LOGE("agm_aif_set_media_config failed.");
@@ -2126,7 +2263,7 @@ static void ipc_agm_session_open(DBusConnection *conn,
     agm_module_dbus_data *mdata = (agm_module_dbus_data *)userdata;
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i;
-    uint32_t session_id;
+    uint32_t session_id, sess_mode;
     char *dbus_obj_path = NULL;
     agm_session_data *ses_data = NULL;
 
@@ -2144,7 +2281,7 @@ static void ipc_agm_session_open(DBusConnection *conn,
         return;
     }
 
-    if (strcmp(dbus_message_get_signature(msg), "u")) {
+    if (strcmp(dbus_message_get_signature(msg), "uu")) {
         AGM_LOGE("Invalid signature for ipc_agm_session_open.");
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "Invalid signature for ipc_agm_session_open.");
@@ -2154,10 +2291,12 @@ static void ipc_agm_session_open(DBusConnection *conn,
     AGM_LOGV("%s : ", __func__);
 
     dbus_message_iter_get_basic(&arg_i, &session_id);
+    dbus_message_iter_next(&arg_i);
+    dbus_message_iter_get_basic(&arg_i, &sess_mode);
 
     ses_data = get_session_data(mdata, session_id);
 
-    if (agm_session_open(session_id, &ses_data->handle)) {
+    if (agm_session_open(session_id, (enum agm_session_mode) sess_mode, &ses_data->handle)) {
         agm_free_session(ses_data);
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "agm_session_open failed.");

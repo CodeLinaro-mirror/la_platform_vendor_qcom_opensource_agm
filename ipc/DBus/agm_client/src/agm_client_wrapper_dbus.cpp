@@ -1,5 +1,6 @@
 /*
 ** Copyright (c) 2020, The Linux Foundation. All rights reserved.
+** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -961,7 +962,7 @@ static int agm_get_aif_info_list_size(size_t *num_aif_info) {
 }
 
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
-    GVariant *argument = NULL;
+    GVariant *value_1, *argument;
     GVariant *result = NULL, *array_v, *struct_v;
     GError *error = NULL;
     GVariantIter arg_i, struct_i, array_i;
@@ -971,11 +972,13 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     g_assert(num_aif_info != NULL);
     AGM_LOGD("%s\n", __func__);
 
-    if (*num_aif_info == 0)
+    if (*num_aif_info == 0) {
         return agm_get_aif_info_list_size(num_aif_info);
-    else {
+    } else {
         g_assert(aif_list != NULL);
-        argument = g_variant_new("(@u)", g_variant_new_uint32(*num_aif_info));
+        value_1 = g_variant_new_uint32(*num_aif_info);
+
+        argument = g_variant_new("(@u)", value_1);
 
         if (mdata == NULL) {
             if ((rc = initialize_module_data()) != 0)
@@ -1013,6 +1016,105 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     g_variant_unref(array_v);
     g_variant_unref(result);
 
+    return rc;
+}
+int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
+                             uint32_t flag)
+{
+    GVariant *value_1, *value_2, *struct_v, *argument;
+    GVariant *val_arr = NULL, *result = NULL;
+    GVariantIter arg_i, struct_i;
+    GError *error = NULL;
+    gconstpointer value;
+    gsize n_elements;
+    gsize element_size = sizeof(guchar);
+    int rc = 0;
+
+    AGM_LOGD("%s\n", __func__);
+
+    if(!buf_info) {
+        AGM_LOGE("%s: buf_info is NULL\n", __func__);
+	return -EINVAL;
+    }
+
+    value_1 = g_variant_new_uint32(session_id);
+    value_2 = g_variant_new_uint32(flag);
+
+    argument = g_variant_new("(@u@u)", value_1, value_2);
+
+    if (mdata == NULL) {
+        if ((rc = initialize_module_data()) != 0)
+            return rc;
+    }
+
+    result = g_dbus_proxy_call_sync(mdata->proxy,
+                                    "AgmSessionGetBufInfo",
+                                    argument,
+                                    G_DBUS_CALL_FLAGS_NONE,
+                                    -1,
+                                    NULL,
+                                    &error);
+
+    if (result == NULL) {
+        AGM_LOGE("%s: Error invoking AgmSessionGetBufInfo: %s\n", __func__,
+                  error->message);
+        g_error_free(error);
+        rc = -EINVAL;
+        return rc;
+    }
+
+    g_variant_iter_init(&arg_i, result);
+    struct_v = g_variant_iter_next_value(&arg_i);
+    g_variant_iter_init(&struct_i, struct_v);
+    g_variant_iter_next(&struct_i, "i", &buf_info->data_buf_fd);
+    g_variant_iter_next(&struct_i, "i", &buf_info->data_buf_size);
+    g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_fd);
+    g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_size);
+    g_variant_unref(result);
+    return rc;
+}
+
+int agm_aif_set_params(uint32_t aif_id, void* payload,
+                       size_t size) {
+    GVariant *value_1, *value_2, *value_3, *argument;
+    GVariant *result = NULL;
+    GError *error = NULL;
+    int rc = 0;
+
+    g_assert(payload != NULL);
+    AGM_LOGD("%s\n", __func__);
+
+    value_1 = g_variant_new_uint32(aif_id);
+    value_2 = g_variant_new_uint32(size);
+    value_3 = g_variant_new_fixed_array(G_VARIANT_TYPE_BYTE,
+                                        (gconstpointer)payload,
+                                        size,
+                                        sizeof(gchar));
+
+    argument = g_variant_new("(@u@u@ay)", value_1, value_2, value_3);
+
+    if (mdata == NULL) {
+        if ((rc = initialize_module_data()) != 0)
+            return rc;
+    }
+
+    result = g_dbus_proxy_call_sync(mdata->proxy,
+                                    "AgmAifSetParams",
+                                    argument,
+                                    G_DBUS_CALL_FLAGS_NONE,
+                                    -1,
+                                    NULL,
+                                    &error);
+
+    if (result == NULL) {
+        AGM_LOGE("%s: Error invoking AgmAifSetParams: %s\n", __func__,
+                  error->message);
+        g_error_free(error);
+        rc = -EINVAL;
+        return rc;
+    }
+
+    g_variant_unref(result);
     return rc;
 }
 
@@ -1263,13 +1365,14 @@ int agm_aif_set_media_config(uint32_t aif_id,
 
     value_1 = g_variant_new_uint32(aif_id);
 
-    g_variant_builder_init(&builder_1, G_VARIANT_TYPE("(uui)"));
+    g_variant_builder_init(&builder_1, G_VARIANT_TYPE("(uuiu)"));
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->rate);
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->channels);
     g_variant_builder_add(&builder_1, "i", (gint32)media_config->format);
+    g_variant_builder_add(&builder_1, "u", (guint32)media_config->data_format);
     value_2 = g_variant_builder_end(&builder_1);
 
-    argument = g_variant_new("(@u@(uui))", value_1, value_2);
+    argument = g_variant_new("(@u@(uuiu))", value_1, value_2);
 
     if (mdata == NULL) {
         if ((rc = initialize_module_data()) != 0)
@@ -1752,8 +1855,10 @@ int agm_session_close(uint64_t handle) {
     return 0;
 }
 
-int agm_session_open(uint32_t session_id, uint64_t *handle) {
-    GVariant *argument = NULL;
+int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint64_t *handle) {
+
+    GVariant *value_1, *value_2, *argument = NULL;
+
     GVariant *result = NULL;
     GError *error = NULL;
     int rc = 0;
@@ -1767,7 +1872,11 @@ int agm_session_open(uint32_t session_id, uint64_t *handle) {
             return rc;
     }
 
-    argument = g_variant_new("(@u)", g_variant_new_uint32(session_id));
+    value_1 = g_variant_new_uint32(session_id);
+    value_2 = g_variant_new_uint32(sess_mode);
+
+    argument = g_variant_new("(@u@u)", value_1, value_2);
+
 
     result = g_dbus_proxy_call_sync(mdata->proxy,
                                     "AgmSessionOpen",
