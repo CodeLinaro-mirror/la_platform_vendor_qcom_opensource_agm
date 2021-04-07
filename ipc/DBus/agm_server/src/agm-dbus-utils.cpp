@@ -1,5 +1,6 @@
 /*
 ** Copyright (c) 2020, The Linux Foundation. All rights reserved.
+** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -84,6 +85,7 @@ static DBusHandlerResult server_message_handler(DBusConnection *connection,
                 return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
             } else {
                 method->cb_func(connection, message, interface->userdata);
+                return DBUS_HANDLER_RESULT_HANDLED;
             }
         }
     }
@@ -131,8 +133,11 @@ static void agm_free_dbus_watch_data(void *userdata) {
         watch_data->watch_id = 0;
     }
 
-    dbus_connection_unref(watch_data->conn);
-    free(watch_data);
+    if (watch_data->conn)
+        dbus_connection_unref(watch_data->conn);
+
+    if (watch_data)
+        free(watch_data);
 }
 
 static void agm_remove_dbus_watch_cb(DBusWatch *watch, void *userdata) {
