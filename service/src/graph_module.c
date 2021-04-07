@@ -1023,7 +1023,7 @@ int configure_placeholder_dec(struct module_info *mod,
 {
     int ret = 0;
     struct gsl_key_vector tkv;
-    struct session_obj *sess_obj = graph_obj->sess_obj;
+    struct session_obj *sess_obj = NULL;
 
     size_t payload_size = 0, real_fmt_id = 0;
 
@@ -1032,6 +1032,8 @@ int configure_placeholder_dec(struct module_info *mod,
         AGM_LOGE("invalid graph object");
         return -EINVAL;
     }
+
+    sess_obj = graph_obj->sess_obj;
 
     /* 1. Configure placeholder decoder with Real ID */
     ret = get_media_fmt_id_and_size(sess_obj->media_config.format,
@@ -1047,6 +1049,12 @@ int configure_placeholder_dec(struct module_info *mod,
 
     tkv.num_kvps = 1;
     tkv.kvp = calloc(tkv.num_kvps, sizeof(struct gsl_key_value_pair));
+    if (!tkv.kvp) {
+        AGM_LOGE("Not enough memory ");
+        ret = -ENOMEM;
+        return ret;
+    }
+
     tkv.kvp->key = MEDIA_FMT_ID;
     tkv.kvp->value = real_fmt_id;
 
@@ -1105,6 +1113,12 @@ int configure_compress_shared_mem_ep(struct module_info *mod,
     ALIGN_PAYLOAD(payload_size, 8);
 
     payload = calloc(1, (size_t)payload_size);
+    if (!payload) {
+        AGM_LOGE("Not enough memory for payload");
+        ret = -ENOMEM;
+        return ret;
+    }
+
 
     header = (struct apm_module_param_data_t*)payload;
 

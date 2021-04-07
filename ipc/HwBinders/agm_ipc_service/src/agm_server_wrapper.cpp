@@ -695,7 +695,7 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
                                                      uint64_t ipc_client_data,
                                                      uint64_t clnt_data) {
     agm_event_cb ipc_cb;
-    SrvrClbk  *sr_clbk_data, *tmp_sr_clbk_data = NULL;
+    SrvrClbk  *sr_clbk_data = NULL, *tmp_sr_clbk_data = NULL;
     clbk_data *clbk_data_obj = NULL;
 
     if ( this->Client_death_notifier == NULL ) {
@@ -800,6 +800,10 @@ Return<void> AGM::ipc_agm_session_get_buf_info(uint32_t session_id, uint32_t fla
     if (!ret) {
         if (flag & DATA_BUF) {
             dataHidlHandle = native_handle_create(1, 0);
+            if (!dataHidlHandle) {
+                ALOGE("%s native_handle_create fails", __func__);
+                goto exit;
+            }
             dataHidlHandle->data[0] = buf_info.data_buf_fd;
             info.dataSharedMemory = hidl_memory("ar_data_buf", hidl_handle(dataHidlHandle),
                     buf_info.data_buf_size);
@@ -807,6 +811,10 @@ Return<void> AGM::ipc_agm_session_get_buf_info(uint32_t session_id, uint32_t fla
         }
         if (flag & POS_BUF) {
             posHidlHandle = native_handle_create(1, 0);
+            if (!posHidlHandle) {
+                ALOGE("%s native_handle_create fails", __func__);
+                goto exit;
+            }
             posHidlHandle->data[0] = buf_info.pos_buf_fd;
             info.posSharedMemory = hidl_memory("ar_pos_buf", posHidlHandle,
                     buf_info.pos_buf_size);
@@ -815,6 +823,8 @@ Return<void> AGM::ipc_agm_session_get_buf_info(uint32_t session_id, uint32_t fla
     }
 
     _hidl_cb(ret, info);
+
+exit:
     if (dataHidlHandle != nullptr)
         native_handle_delete(dataHidlHandle);
 
