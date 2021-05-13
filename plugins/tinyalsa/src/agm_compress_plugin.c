@@ -409,6 +409,7 @@ int agm_session_update_codec_config(struct agm_compress_priv *priv,
         sess_cfg->codec.ape_dec.sample_rate = media_cfg->rate;
         break;
 #endif
+#ifdef SND_COMPRESS_DEC_HDR
     case SND_AUDIOCODEC_WMA:
 #ifdef SND_AUDIOPROFILE_WMA9_LOSSLESS
         if ((params->codec.profile == SND_AUDIOPROFILE_WMA9_PRO) ||
@@ -430,6 +431,7 @@ int agm_session_update_codec_config(struct agm_compress_priv *priv,
             sess_cfg->codec.wma_dec.sample_rate = media_cfg->rate;
         }
         break;
+#endif
     case SND_AUDIOCODEC_VORBIS:
         media_cfg->format = AGM_FORMAT_VORBIS;
         break;
