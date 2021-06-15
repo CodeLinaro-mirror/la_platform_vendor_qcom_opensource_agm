@@ -324,9 +324,6 @@ static int configure_i2s_ep(struct module_info *mod,
              header->module_instance_id, header->param_id, header->error_code,
              header->param_size);
 
-    i2s_config->lpaif_type = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.lpaif_type;
-    i2s_config->intf_idx = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.intf_idx;
-
     AGM_LOGV("i2s intf cfg lpaif %d indx %d sd_ln_idx %x ws_src %d",
               i2s_config->lpaif_type, i2s_config->intf_idx,
               i2s_config->sd_line_idx, i2s_config->ws_src);
@@ -407,9 +404,6 @@ static int configure_tdm_ep(struct module_info *mod,
                       mod->tag, ret);
         goto free_kvp;
     }
-
-    tdm_config->lpaif_type = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.lpaif_type;
-    tdm_config->intf_idx = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.intf_idx;
 
     AGM_LOGV("tdm intf cfg lpaif %d idx %d sync_src %d ctrl_dt_ot_enb %d",
              tdm_config->lpaif_type, tdm_config->intf_idx, tdm_config->sync_src,
@@ -501,9 +495,6 @@ static int configure_aux_pcm_ep(struct module_info *mod,
                       mod->tag, ret);
         goto free_kvp;
     }
-
-    aux_pcm_cfg->lpaif_type = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.lpaif_type;
-    aux_pcm_cfg->intf_idx = hw_ep_info.ep_config.cdc_dma_i2s_tdm_config.intf_idx;
 
     AGM_LOGV("aux intf cfg lpaif %d idx %d sync_src %d ctrl_dt_ot_enb %d",
              aux_pcm_cfg->lpaif_type, aux_pcm_cfg->intf_idx, aux_pcm_cfg->sync_src,
