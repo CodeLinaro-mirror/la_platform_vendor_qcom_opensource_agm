@@ -329,7 +329,7 @@ int graph_get_buffer_timestamp(struct graph_obj *gph_obj, uint64_t *timestamp);
  *\param [out] buf_info: agm_buf_info containing dma_buf info
  *\param [in] flag: either DATA_BUF or POS_BUF or both
  *
- * return CASA_EOK on success or error code otherwise.
+ * return AR_EOK on success or error code otherwise.
  */
 int graph_get_buf_info(struct graph_obj *gph_obj,
     struct agm_buf_info *buf_info, uint32_t flag);
@@ -340,7 +340,7 @@ int graph_get_buf_info(struct graph_obj *gph_obj,
  *\param [in] type: Silence Type (Initial/Trailing)
  *\param [in] trailing_silence: Initial/Trailing silence samples to remove
  *
- * return CASA_EOK on success or error code otherwise.
+ * return AR_EOK on success or error code otherwise.
  */
 int graph_set_gapless_metadata(struct graph_obj *graph_obj,
                           enum agm_gapless_silence_type type,
