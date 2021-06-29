@@ -31,6 +31,7 @@
 #define __AGM_DEVICE_H__
 
 #include <pthread.h>
+#include <agm_list.h>
 #include "agm_priv.h"
 #ifdef DEVICE_USES_ALSALIB
 #include <alsa/asoundlib.h>
@@ -119,6 +120,7 @@ struct device_obj {
      */
     char name[MAX_DEV_NAME_LEN];
 
+    struct listnode list_node;
     pthread_mutex_t lock;
     /* pcm device info associated with the device object */
     uint32_t card_id;
