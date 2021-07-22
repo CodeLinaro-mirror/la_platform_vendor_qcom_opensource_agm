@@ -43,6 +43,7 @@
 #define  PCM_INTF_IDX_TERTIARY      0x2
 #define  PCM_INTF_IDX_QUATERNARY    0x3
 #define  PCM_INTF_IDX_QUINARY       0x4
+#define  PCM_INTF_IDX_SENARY        0x5
 
 #define  CODEC_DMA                  0x0
 #define  MI2S                       0x1
@@ -52,6 +53,7 @@
 #define  DISPLAY_PORT               0x5
 #define  USB_AUDIO                  0x6
 #define  PCM_RT_PROXY               0x7
+#define  AUDIOSS_DMA                0x8
 
 #define  AUDIO_OUTPUT               0x1 /**< playback usecases*/
 #define  AUDIO_INPUT                0x2 /**< capture/voice activation usecases*/
@@ -92,10 +94,18 @@ struct hw_ep_pcm_rt_proxy_config {
     uint32_t dev_id;
 };
 
+struct hw_ep_audioss_dma_config {
+    /* lpaid type e.g LPAIF_VA */
+    uint32_t lpaif_type;
+    /* AudioSS DMA device id */
+    uint32_t dev_id;
+};
+
 union hw_ep_config {
     struct hw_ep_cdc_dma_i2s_tdm_config cdc_dma_i2s_tdm_config;
     struct hw_ep_slimbus_config slim_config;
     struct hw_ep_pcm_rt_proxy_config pcm_rt_proxy_config;
+    struct hw_ep_audioss_dma_config audioss_dma_config;
 };
 
 typedef struct hw_ep_info
@@ -164,8 +174,6 @@ int device_set_metadata(struct device_obj *obj, uint32_t size,
 int device_set_params(struct device_obj *obj, void *payload, size_t size);
 
 int populate_device_hw_ep_info(struct device_obj *dev_obj);
-
-int get_pcm_bit_width(enum agm_media_format fmt_id);
 
 int device_get_snd_card_id();
 int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap);

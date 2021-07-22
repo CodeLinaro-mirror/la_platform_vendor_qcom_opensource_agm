@@ -84,7 +84,7 @@ void metadata_print(struct agm_meta_data_gsl* metadata)
     count = metadata->ckv.num_kvs;
     AGM_LOGD("\nCKV count:%d\n", count);
     for (i = 0; i < count; i++) {
-        AGM_LOGD("key:0x%x, value:0x%d ", metadata->ckv.kv[i].key,
+        AGM_LOGD("key:0x%x, value:0x%x ", metadata->ckv.kv[i].key,
                                        metadata->ckv.kv[i].value);
     }
     AGM_LOGD("\n");
@@ -295,8 +295,6 @@ int metadata_copy(struct agm_meta_data_gsl *dest, uint32_t size __unused,
     memcpy(dest->sg_props.values, PTR_TO_PROPS(metadata),
            dest->sg_props.num_values * sizeof(uint32_t));
 
-    metadata_print(dest);
-
     return ret;
 
 }
@@ -314,6 +312,7 @@ void metadata_free(struct agm_meta_data_gsl *metadata)
 
         if (metadata->sg_props.values)
             free(metadata->sg_props.values);
+        metadata->sg_props.values = NULL;
 
         memset(metadata, 0, sizeof(struct agm_meta_data_gsl));
     }

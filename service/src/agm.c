@@ -53,10 +53,12 @@ static void *ats_init_thread(void *obj __unused)
         if (agm_initialized) {
             sleep(2);
             ret = ats_init();
-            if (0 != ret)
+            if (0 != ret) {
                 AGM_LOGE("ats init failed with err = %d", ret);
-            AGM_LOGD("ATS initialized\n");
-            break;
+            } else {
+                AGM_LOGD("ATS initialized\n");
+                break;
+            }
         }
         sleep(5);
     }
@@ -384,6 +386,31 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
     }
 
     ret = session_obj_set_sess_aif_params_with_tag(obj, aif_id, tag_config);
+    if (ret) {
+        AGM_LOGE("Error:%d setting parameters for session obj with \
+                           session id=%d\n", ret, session_id);
+        goto done;
+    }
+
+done:
+    return ret;
+}
+
+int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
+                                       void *payload, size_t size)
+{
+    struct session_obj *obj = NULL;
+    int ret = 0;
+
+    ret = session_obj_get(session_id, &obj);
+    if (ret) {
+        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+                                                 ret, session_id);
+        goto done;
+    }
+
+    ret = session_obj_rw_acdb_params_with_tag(obj, aif_id,
+                (struct agm_acdb_param *)payload, true);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
                            session id=%d\n", ret, session_id);

@@ -45,7 +45,7 @@
 static int session_close(struct session_obj *sess_obj);
 static int session_set_loopback(struct session_obj *sess_obj,
                            uint32_t session_id, bool enable);
-
+static pthread_mutex_t hwep_lock;
 static struct aif *aif_obj_get_from_pool(struct session_obj *sess_obj,
                                       uint32_t aif)
 {
@@ -148,6 +148,10 @@ static struct agm_meta_data_gsl* session_get_merged_metadata(struct session_obj 
     if (sess_mode != AGM_SESSION_NON_TUNNEL) {
         list_for_each(node, &sess_obj->aif_pool) {
             aif_node = node_to_item(node, struct aif, node);
+            if (aif_node->state == AIF_CLOSED) {
+                AGM_LOGD("ignore closed AIF node");
+                continue;
+            }
             merged = metadata_merge(4, temp, &sess_obj->sess_meta,
                            &aif_node->sess_aif_meta, &aif_node->dev_obj->metadata);
             if (temp) {
@@ -503,6 +507,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
         return ret;
     }
 
+    pthread_mutex_lock(&hwep_lock);
     if (opened_count == 1) {
         //this is SSSD condition, hence stop just the stream/stream-device,
         //merged only sess-aif, aif
@@ -513,6 +518,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                           audio interface id:%d \n",
                           sess_obj->sess_id, aif_obj->aif_id);
             ret = -ENOMEM;
+            pthread_mutex_unlock(&hwep_lock);
             return ret;
         }
 
@@ -540,6 +546,9 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
         AGM_LOGE("Error:%d closing device object with id:%d \n",
             ret, aif_obj->aif_id);
     }
+    pthread_mutex_unlock(&hwep_lock);
+    if (merged_meta_sess_aif)
+        metadata_free(merged_meta_sess_aif);
 
     metadata_free(merged_metadata);
     return ret;
@@ -864,12 +873,11 @@ static int session_prepare(struct session_obj *sess_obj)
 {
     int ret = 0;
     struct aif *aif_obj = NULL;
-    enum direction dir = sess_obj->stream_config.dir;
     enum agm_session_mode sess_mode = sess_obj->stream_config.sess_mode;
     struct listnode *node = NULL;
     uint32_t count = 0;
 
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         count = aif_obj_get_count_with_state(sess_obj, AIF_OPENED, false);
         if (count == 0) {
             AGM_LOGE("Error:%d No aif in right state to proceed with \
@@ -890,34 +898,10 @@ static int session_prepare(struct session_obj *sess_obj)
                 goto done;
         }
 
-        if ((dir == TX) && (sess_obj->state != SESSION_STARTED)) {
+        if ((sess_obj->state != SESSION_STARTED)) {
+            pthread_mutex_lock(&hwep_lock);
             ret = graph_prepare(sess_obj->graph);
-            if (ret) {
-                AGM_LOGE("Error:%d preparing graph\n", ret);
-                goto done;
-            }
-        }
-
-        list_for_each(node, &sess_obj->aif_pool) {
-            aif_obj = node_to_item(node, struct aif, node);
-            if (!aif_obj) {
-                AGM_LOGE("Error:%d could not find aif node\n", ret);
-                goto done;
-            }
-            //TODO 1: in device switch cases, only the aif not prepared
-            //should be prepared.
-            if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
-                ret = device_prepare(aif_obj->dev_obj);
-                if (ret) {
-                    AGM_LOGE("Error:%d preparing device\n", ret);
-                    goto done;
-                }
-                aif_obj->state = AIF_PREPARED;
-            }
-        }
-
-        if ((dir == RX) && (sess_obj->state != SESSION_STARTED)) {
-            ret = graph_prepare(sess_obj->graph);
+            pthread_mutex_unlock(&hwep_lock);
             if (ret) {
                 AGM_LOGE("Error:%d preparing graph\n", ret);
                 goto done;
@@ -948,7 +932,7 @@ static int session_start(struct session_obj *sess_obj)
     struct session_obj *pb_obj = NULL;
     struct device_obj *ec_ref_dev_obj = NULL;
 
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL && sess_mode != AGM_SESSION_NO_CONFIG) {
         count = aif_obj_get_count_with_state(sess_obj, AIF_OPENED, false);
         if (count == 0) {
             AGM_LOGE("Error:%d No aif in right state to proceed with \
@@ -1004,12 +988,14 @@ static int session_start(struct session_obj *sess_obj)
                     goto done;
                 }
             }
+        }
 
-            ret = graph_start(sess_obj->graph);
-            if (ret) {
-                AGM_LOGE("Error:%d starting graph\n", ret);
-                goto done;
-            }
+        pthread_mutex_lock(&hwep_lock);
+        ret = graph_start(sess_obj->graph);
+        if (ret) {
+            AGM_LOGE("Error:%d starting graph\n", ret);
+            pthread_mutex_unlock(&hwep_lock);
+            goto done;
         }
 
         list_for_each(node, &sess_obj->aif_pool) {
@@ -1017,6 +1003,15 @@ static int session_start(struct session_obj *sess_obj)
             if (!aif_obj) {
                 AGM_LOGE("Error:%d could not find aif node\n", ret);
                 goto unwind;
+            }
+
+            if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
+                ret = device_prepare(aif_obj->dev_obj);
+                if (ret) {
+                    AGM_LOGE("Error:%d preparing device\n", ret);
+                    goto unwind;
+                }
+                aif_obj->state = AIF_PREPARED;
             }
 
             if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_PREPARED ||
@@ -1030,14 +1025,8 @@ static int session_start(struct session_obj *sess_obj)
                 aif_obj->state = AIF_STARTED;
             }
         }
+        pthread_mutex_unlock(&hwep_lock);
 
-        if (dir == RX) {
-            ret = graph_start(sess_obj->graph);
-            if (ret) {
-                AGM_LOGE("Error:%d starting graph\n", ret);
-                goto unwind;
-            }
-        }
 
     } else {
         ret = graph_start(sess_obj->graph);
@@ -1052,10 +1041,10 @@ static int session_start(struct session_obj *sess_obj)
 
 unwind:
 
-    if (dir == TX)
-        graph_stop(sess_obj->graph, NULL);
+    pthread_mutex_lock(&hwep_lock);
+    graph_stop(sess_obj->graph, NULL);
 
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         list_for_each(node, &sess_obj->aif_pool) {
             aif_obj = node_to_item(node, struct aif, node);
             if (aif_obj && (aif_obj->state == AIF_STARTED)) {
@@ -1066,6 +1055,7 @@ unwind:
             }
         }
     }
+    pthread_mutex_unlock(&hwep_lock);
 done:
     return ret;
 }
@@ -1085,11 +1075,13 @@ static int session_stop(struct session_obj *sess_obj)
         goto done;
     }
 
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         if (dir == RX) {
+            pthread_mutex_lock(&hwep_lock);
             ret = graph_stop(sess_obj->graph, NULL);
             if (ret) {
                 AGM_LOGE("Error:%d stopping graph\n", ret);
+                pthread_mutex_unlock(&hwep_lock);
                 goto done;
             }
         }
@@ -1117,6 +1109,7 @@ static int session_stop(struct session_obj *sess_obj)
                 AGM_LOGE("Error:%d stopping graph\n", ret);
             }
         }
+        pthread_mutex_unlock(&hwep_lock);
     } else {
             ret = graph_stop(sess_obj->graph, NULL);
             if (ret) {
@@ -1141,8 +1134,9 @@ static int session_close(struct session_obj *sess_obj)
         return -EALREADY;
     }
 
+    pthread_mutex_lock(&hwep_lock);
     if (sess_obj->state == SESSION_STARTED) {
-        ret = graph_stop (sess_obj->graph, NULL);
+        ret = graph_stop(sess_obj->graph, NULL);
         if (ret) {
            AGM_LOGE("Error:%d closing graph\n", ret);
         }
@@ -1155,7 +1149,7 @@ static int session_close(struct session_obj *sess_obj)
     sess_obj->graph = NULL;
     sess_obj->ec_ref_state = false;
 
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         list_for_each(node, &sess_obj->aif_pool) {
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
@@ -1173,6 +1167,7 @@ static int session_close(struct session_obj *sess_obj)
             }
         }
     }
+    pthread_mutex_unlock(&hwep_lock);
     sess_obj->state = SESSION_CLOSED;
     AGM_LOGE("exit");
     return ret;
@@ -1208,6 +1203,7 @@ int session_obj_init()
         AGM_LOGE("Error:%d initializing session_pool\n", ret);
         goto graph_deinit;
     }
+    pthread_mutex_init(&hwep_lock, (const pthread_mutexattr_t *) NULL);
     goto done;
 
 graph_deinit:
@@ -1400,6 +1396,80 @@ done:
     return ret;
 }
 
+int session_obj_rw_acdb_params_with_tag(
+    struct session_obj *sess_obj, uint32_t aif_id,
+    struct agm_acdb_param *acdb_param, bool is_set)
+{
+    int ret = 0;
+    struct aif *aif_obj = NULL;
+    struct agm_meta_data_gsl *merged_metadata = NULL;
+    struct agm_key_vector_gsl tckv;
+    uint8_t *ptr = NULL;
+    uint8_t enable_flag = 1;
+    uint32_t actual_size = 0;
+
+    pthread_mutex_lock(&sess_obj->lock);
+    ret = graph_enable_acdb_persistence(enable_flag);
+    if (ret) {
+        AGM_LOGE("Error: graph_enable_acdb_persistence failed. ret = %d\n", ret);
+        goto error;
+    }
+
+    if (aif_id < UINT_MAX) {
+        ret = aif_obj_get(sess_obj, aif_id, &aif_obj);
+        if (ret) {
+            AGM_LOGE("Error obtaining aif object with sess_id:%d,  aif id:%d\n",
+                sess_obj->sess_id, aif_id);
+            goto error;
+        }
+
+        merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
+                          &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+    }
+
+    if (!merged_metadata) {
+        AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
+            sess_obj->sess_id, aif_obj->aif_id);
+        ret = -ENOMEM;
+        goto error;
+    }
+
+    tckv.num_kvs= acdb_param->num_kvs;
+    tckv.kv = (struct agm_key_value *)calloc(1,
+                    tckv.num_kvs * sizeof(struct agm_key_value));
+    if (!tckv.kv) {
+        ret = -ENOMEM;
+        goto free_metadata;
+    }
+
+    memcpy((uint8_t *)tckv.kv, acdb_param->blob,
+                tckv.num_kvs*sizeof(struct agm_key_value));
+    ptr = acdb_param->blob + tckv.num_kvs * sizeof(struct agm_key_value);
+    actual_size = acdb_param->blob_size -
+                        acdb_param->num_kvs * sizeof(struct agm_key_value);
+    if (acdb_param->isTKV) {
+        AGM_LOGD("%s: TKV param to ACDB.\n", __func__);
+        ret = graph_set_tag_data_to_acdb(&merged_metadata->gkv,
+                                acdb_param->tag, &tckv,
+                                ptr, actual_size);
+    } else {
+        AGM_LOGD("%s: CKV param to ACDB.\n", __func__);
+        ret = graph_set_cal_data_to_acdb(&merged_metadata->gkv,
+                                    &tckv, ptr, actual_size);
+    }
+    free(tckv.kv);
+
+free_metadata:
+    if (merged_metadata) {
+        metadata_free(merged_metadata);
+        free(merged_metadata);
+    }
+error:
+    pthread_mutex_unlock(&sess_obj->lock);
+
+    return ret;
+}
+
 int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
     uint32_t aif_id,
     struct agm_cal_config *cal_config)
@@ -1557,7 +1627,7 @@ int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
         merged_metadata = metadata_merge(1, &sess_obj->sess_meta);
         if (!merged_metadata) {
             AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
-                sess_obj->sess_id, aif_obj->aif_id);
+                     sess_obj->sess_id, aif_id);
             ret = -ENOMEM;
             goto done;
         }
@@ -1566,8 +1636,8 @@ int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
     ret = graph_get_tags_with_module_info(&merged_metadata->gkv, payload, size);
     if (ret) {
         AGM_LOGE("Error getting tag with module info from graph for \
-                  session_id:%d aif_id:%d\n",
-                  sess_obj->sess_id, aif_obj->aif_id);
+                 session_id:%d aif_id:%d\n",
+                 sess_obj->sess_id, aif_id);
         goto done;
     }
 
@@ -1791,8 +1861,9 @@ int session_obj_open(uint32_t session_id,
         ret = -EALREADY;
         goto done;
     }
+    sess_obj->stream_config.sess_mode = sess_mode;
 
-    if (sess_mode == AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode == AGM_SESSION_NON_TUNNEL || sess_mode == AGM_SESSION_NO_CONFIG) {
         /**
          *AGM session can be opened in any one of the agm_session_modes
          *If it is a AGM_SESSUION_NON_TUNNEL mode, then that indicates
