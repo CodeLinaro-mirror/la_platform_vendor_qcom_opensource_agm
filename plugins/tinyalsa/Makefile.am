@@ -28,7 +28,7 @@ endif
 
 lib_LTLIBRARIES      += libagm_pcm_passthrough_plugin.la
 libagm_pcm_passthrough_plugin_la_SOURCES   = src/agm_pcm_plugin.c
-libagm_pcm_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS)
+libagm_pcm_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS) -DBYPASS_AGM_IPC
 libagm_pcm_passthrough_plugin_la_LDFLAGS  = -ltinyalsa -lsndcardparser -avoid-version -shared
 if BUILDSYSTEM_OPENWRT
 libagm_pcm_passthrough_plugin_la_LDFLAGS += -lagm
@@ -45,7 +45,7 @@ libagm_compress_plugin_la_LDFLAGS   = -ltinyalsa -ltinycompress -lsndcardparser 
 
 lib_LTLIBRARIES      += libagm_compress_passthrough_plugin.la
 libagm_compress_passthrough_plugin_la_SOURCES   = src/agm_compress_plugin.c
-libagm_compress_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS)
+libagm_compress_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS) -DBYPASS_AGM_IPC
 libagm_compress_passthrough_plugin_la_LDFLAGS   = -ltinyalsa -lsndcardparser -lpthread  -avoid-version -laudio_log_utils -shared -lagm
 endif
 
@@ -61,7 +61,7 @@ endif
 
 lib_LTLIBRARIES      += libagm_mixer_passthrough_plugin.la
 libagm_mixer_passthrough_plugin_la_SOURCES   = src/agm_mixer_plugin.c
-libagm_mixer_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS)
+libagm_mixer_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS) -DBYPASS_AGM_IPC
 libagm_mixer_passthrough_plugin_la_LDFLAGS  = -ltinyalsa -lsndcardparser -avoid-version -shared
 if BUILDSYSTEM_OPENWRT
 libagm_mixer_passthrough_plugin_la_LDFLAGS += -lagm
