@@ -1,5 +1,6 @@
 /*
 ** Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -831,7 +832,11 @@ static int agm_populate_codec_caps(struct agm_compress_priv *priv)
     return 0;
 };
 
+#ifdef BYPASS_AGM_IPC
+COMPRESS_PLUGIN_OPEN_FN(agm_compress_passthrough_plugin)
+#else
 COMPRESS_PLUGIN_OPEN_FN(agm_compress_plugin)
+#endif
 {
     struct compress_plugin *agm_compress_plugin;
     struct agm_compress_priv *priv;
@@ -898,6 +903,14 @@ COMPRESS_PLUGIN_OPEN_FN(agm_compress_plugin)
                                            __func__, device);
         goto err_card_put;
     }
+
+#ifdef BYPASS_AGM_IPC
+    ret = agm_init();
+    if (ret) {
+        AGM_LOGE("%s: agm init failed\n", __func__);
+        goto err_card_put;
+    }
+#endif
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {
