@@ -6,7 +6,6 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CFLAGS        += -v -Wall
-LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
 LOCAL_SHARED_LIBRARIES := \
@@ -20,6 +19,8 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     libagm
 
+LOCAL_HEADER_LIBRARIES := libagmclient_headers
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
@@ -30,7 +31,6 @@ LOCAL_VENDOR_MODULE        := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
-LOCAL_C_INCLUDES           := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES            := src/service.cpp
 
 LOCAL_SHARED_LIBRARIES := \
@@ -44,5 +44,7 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     vendor.qti.hardware.AGMIPC@1.0-impl \
     libagm
+
+LOCAL_HEADER_LIBRARIES := libagmclient_headers
 
 include $(BUILD_EXECUTABLE)
