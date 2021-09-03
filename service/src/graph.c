@@ -252,6 +252,17 @@ int graph_init()
                 if (strstr(snd_card_name, "qrd")) {
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "QRD");
                 } else if (strstr(snd_card_name, "gvmauto")){
+                       if (strstr(snd_card_name,"6155")){
+                         chipset_value = CHIPSET_6155;
+                       } else if (strstr(snd_card_name,"8155")){
+                         chipset_value = CHIPSET_8155;
+                       } else {
+                         AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s",snd_card_name);
+                         free(snd_card_name);
+                         snd_card_name = NULL;
+                         ret = -EINVAL;
+                         goto err;
+                       }
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "ADP_AR");
                 } else {
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "IDP");
@@ -263,11 +274,12 @@ int graph_init()
             }
         }
     }
-
+    AGM_LOGV("going to load acdb file from path %s",acdb_path);
     ret = get_acdb_files_from_directory(acdb_path, &acdb_files);
-    if (ret)
+    if (ret){
+       AGM_LOGE("failed to load acdb file from %s",acdb_path);
        goto err;
-
+    }
 #ifdef ACDB_DELTA_FILE_PATH
     delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH);
     if ((strlen(delta_file_path) + 1) > sizeof(delta_file.fileName)) {
