@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #define LOG_TAG "AGM: API"
-#include <agm/agm_api.h> 
+#include <agm/agm_api.h>
 #include <agm/device.h>
 #include <agm/session_obj.h>
 #include <agm/utils.h>
@@ -45,22 +45,23 @@
 
 static bool agm_initialized = 0;
 static pthread_t ats_thread;
+static const int MAX_RETRIES = 18;
 
 static void *ats_init_thread(void *obj __unused)
 {
     int ret = 0;
-    while(1) {
+    int retry = 0;
+    while(retry++ < MAX_RETRIES) {
         if (agm_initialized) {
-            sleep(2);
             ret = ats_init();
             if (0 != ret) {
-                AGM_LOGE("ats init failed with err = %d", ret);
+                AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
             } else {
-                AGM_LOGD("ATS initialized\n");
+                AGM_LOGD("ATS initialized");
                 break;
             }
         }
-        sleep(5);
+        sleep(10);
     }
     return NULL;
 }
@@ -124,6 +125,16 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info)
     return device_get_aif_info_list(aif_list, num_aif_info);
 }
 
+int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups)
+{
+    if (!num_groups || ((*num_groups != 0) && !aif_list)) {
+        AGM_LOGE("Error Invalid params\n");
+        return -EINVAL;
+    }
+
+    return device_get_group_list(aif_list, num_groups);
+}
+
 int agm_aif_set_metadata(uint32_t aif_id, uint32_t size, uint8_t *metadata)
 {
     struct device_obj *obj = NULL;
@@ -164,6 +175,30 @@ int agm_aif_set_media_config(uint32_t aif_id,
     if (ret) {
         AGM_LOGE("Error:%d setting mediaconfig device obj \
                               with audio_intf id=%d\n", ret, aif_id);
+        goto done;
+    }
+
+done:
+    return ret;
+}
+
+int agm_aif_group_set_media_config(uint32_t aif_group_id,
+                  struct agm_group_media_config *media_config)
+{
+    struct device_group_data *grp_data = NULL;
+    int ret = 0;
+
+    ret = device_get_group_data(aif_group_id, &grp_data);
+    if (ret) {
+        AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%d\n",
+                                                        ret, aif_group_id);
+        goto done;
+    }
+
+    ret = device_group_set_media_config(grp_data, media_config);
+    if (ret) {
+        AGM_LOGE("Error:%d setting mediaconfig for device group \
+                              with group id=%d\n", ret, aif_group_id);
         goto done;
     }
 
@@ -602,6 +637,16 @@ int agm_session_resume(uint64_t hndl)
     return session_obj_resume(handle);
 }
 
+int agm_session_suspend(uint64_t hndl)
+{
+    struct session_obj *handle = (struct session_obj *) hndl;
+    if (!handle) {
+        AGM_LOGE("Invalid handle\n");
+        return -EINVAL;
+    }
+    return session_obj_suspend(handle);
+}
+
 int agm_session_write(uint64_t hndl, void *buff, size_t *count)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
@@ -763,7 +808,7 @@ int agm_set_gapless_session_metadata(uint64_t handle,
 }
 
 int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buff,
-                                    uint32_t *consumed_size)
+                                    size_t *consumed_size)
 {
     if (!handle) {
         AGM_LOGE("%s Invalid handle\n", __func__);
