@@ -293,7 +293,7 @@ static int configure_i2s_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
-    tag_key_vect.num_kvps = 1;
+    tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
 
@@ -305,6 +305,9 @@ static int configure_i2s_ep(struct module_info *mod,
 
     tag_key_vect.kvp[0].key = CHANNELS;
     tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+    tag_key_vect.kvp[1].key = CHIPSET;
+    tag_key_vect.kvp[1].value = chipset_value;
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
@@ -390,7 +393,7 @@ static int configure_tdm_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
-    tag_key_vect.num_kvps = 1;
+    tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
 
@@ -402,6 +405,9 @@ static int configure_tdm_ep(struct module_info *mod,
 
     tag_key_vect.kvp[0].key = CHANNELS;
     tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+    tag_key_vect.kvp[1].key = CHIPSET;
+    tag_key_vect.kvp[1].value = chipset_value;
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
@@ -516,7 +522,7 @@ static int configure_aux_pcm_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
-    tag_key_vect.num_kvps = 1;
+    tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
 
@@ -528,6 +534,9 @@ static int configure_aux_pcm_ep(struct module_info *mod,
 
     tag_key_vect.kvp[0].key = CHANNELS;
     tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+    tag_key_vect.kvp[1].key = CHIPSET;
+    tag_key_vect.kvp[1].value = chipset_value;
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
