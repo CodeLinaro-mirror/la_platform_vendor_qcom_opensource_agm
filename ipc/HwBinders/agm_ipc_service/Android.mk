@@ -34,6 +34,12 @@ include $(CLEAR_VARS)
 LOCAL_MODULE               := vendor.qti.hardware.AGMIPC@1.0-service
 LOCAL_INIT_RC              := vendor.qti.hardware.AGMIPC@1.0-service.rc
 LOCAL_VENDOR_MODULE        := true
+ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service-v2.rc
+LOCAL_VINTF_FRAGMENTS := vendor.qti.hardware.AGMIPC@1.0-service-v2.xml
+else
+LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service.rc
+endif
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
@@ -53,3 +59,13 @@ LOCAL_SHARED_LIBRARIES := \
     libagm
 
 include $(BUILD_EXECUTABLE)
+
+ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+include $(CLEAR_VARS)
+LOCAL_MODULE       := init.qti.AGMIPC.sh
+LOCAL_MODULE_TAGS  := optional
+LOCAL_MODULE_CLASS := ETC
+LOCAL_SRC_FILES    := $(LOCAL_MODULE)
+LOCAL_MODULE_PATH  := $(TARGET_OUT_VENDOR_EXECUTABLES)
+include $(BUILD_PREBUILT)
+endif
