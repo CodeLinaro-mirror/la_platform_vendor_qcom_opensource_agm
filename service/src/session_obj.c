@@ -32,6 +32,7 @@
 #include <string.h>
 #include "session_obj.h"
 #include "utils.h"
+#include <limits.h>
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>

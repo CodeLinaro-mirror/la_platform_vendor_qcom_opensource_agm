@@ -26,8 +26,7 @@ h_sources = ${top_srcdir}/inc/agm_api.h \
             ${top_srcdir}/inc/agm_list.h \
             ${top_srcdir}/inc/utils.h
 
-AM_CFLAGS = -I ${top_srcdir}/inc  -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/spf
-AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
+AM_CFLAGS = -I ${top_srcdir}/inc
 
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
@@ -38,16 +37,20 @@ agm_sources = ${top_srcdir}/src/graph.c \
               ${top_srcdir}/src/device_hw_ep.c \
               ${top_srcdir}/src/metadata.c \
               ${top_srcdir}/src/session_obj.c \
-              ${top_srcdir}/src/agm.c
+              ${top_srcdir}/src/agm.c \
+              ${top_srcdir}/src/utils.c
 
 endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-libagm_la_LIBADD = -ltinyalsa -lar_osal -lgsl -lats
-
-if !BUILDSYSTEM_OPENWRT
-libagm_la_LIBADD += -laudio_log_utils
+libagm_la_LIBADD = -lasound -lar_osal
+if !TARGET_HYPERVISOR
+libagm_la_LIBADD +=  -lgsl -lats
+else
+libagm_la_LIBADD +=  -lgsl_fe -lats
+AM_CFLAGS += -DTARGET_HYPERVISOR
+AM_CFLAGS += -DDEVICE_USES_ALSALIB
 endif
 
 libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/data/audio/delta"
@@ -55,5 +58,5 @@ if BUILDSYSTEM_OPENWRT
 libagm_la_LIBADD += -lglib-2.0
 endif
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
-libagm_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+libagm_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 libagm_la_LDFLAGS = -module -shared -avoid-version
