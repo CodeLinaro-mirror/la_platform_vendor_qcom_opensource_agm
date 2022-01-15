@@ -49,6 +49,7 @@
 
 /*qfactor should be set to 23 only for 24_3LE and 24_LE formats*/
 #define GET_Q_FACTOR(format, bit_width) (bit_width - 1)
+extern uint8_t chipset_value;
 
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
