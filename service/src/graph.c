@@ -115,6 +115,7 @@ typedef struct module_info_link_list {
 }module_info_link_list_t;
 
 static char acdb_path[ACDB_PATH_MAX_LENGTH];
+uint8_t chipset_value;
 
 static int get_acdb_files_from_directory(const char* acdb_files_path,
                                          struct gsl_acdb_data_files *data_files)
