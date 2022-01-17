@@ -552,6 +552,8 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                       ret, sess_obj->sess_id, aif_obj->aif_id);
         }
     }
+    if (sess_obj->state == SESSION_STARTED)
+        device_stop(aif_obj->dev_obj);
 
     ret = device_close(aif_obj->dev_obj);
     if (ret) {
@@ -774,10 +776,12 @@ static int session_connect_aif(struct session_obj *sess_obj,
     goto done;
 
 graph_cleanup:
-    if (opened_count == 0)
+    if (opened_count == 0) {
         graph_close(sess_obj->graph);
-    else
+        sess_obj->graph = NULL;
+    } else {
         graph_remove(sess_obj->graph, merged_metadata);
+    }
 
 close_device:
     if (aif_obj->params) {
@@ -921,6 +925,7 @@ static int session_open_without_device(struct session_obj *sess_obj)
 
 graph_cleanup:
         graph_close(sess_obj->graph);
+        sess_obj->graph = NULL;
 done:
     return ret;
 }
@@ -1261,6 +1266,11 @@ static int session_close(struct session_obj *sess_obj)
                 }
                 aif_obj->state = AIF_CLOSED;
             }
+
+            if (aif_obj->tag_config) {
+                free(aif_obj->tag_config);
+                aif_obj->tag_config = NULL;
+            }
         }
     }
     pthread_mutex_unlock(&hwep_lock);
@@ -1340,6 +1350,9 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
        sess_obj->params_size = 0;
    }
 
+   if ((size == 0) ||(payload == NULL))
+       goto done;
+
    sess_obj->params = calloc(1, size);
    if (!sess_obj->params) {
        AGM_LOGE("No memory for sess params on sess_id:%d\n",
@@ -1388,6 +1401,9 @@ int session_obj_set_sess_aif_params(struct session_obj *sess_obj,
        aif_obj->params = NULL;
        aif_obj->params_size = 0;
    }
+
+   if ((size == 0) || (payload == NULL))
+       goto done;
 
    aif_obj->params = calloc(1, size);
    if (!aif_obj->params) {
@@ -1975,6 +1991,7 @@ int session_obj_open(uint32_t session_id,
 
     struct session_obj *sess_obj = NULL;
     int ret = 0;
+    int ret_unwind = 0;
     struct listnode *node;
     struct aif *aif_obj = NULL;
 
@@ -2058,17 +2075,17 @@ unwind:
         aif_obj = node_to_item(node, struct aif, node);
         if (aif_obj && aif_obj->state == AIF_OPENED) {
             /*TODO: fix the 3rd argument to provide correct count*/
-            ret = session_disconnect_aif(sess_obj, aif_obj, 1);
-            if (ret) {
+            ret_unwind = session_disconnect_aif(sess_obj, aif_obj, 1);
+            if (ret_unwind) {
                 AGM_LOGE("Error:%d Failed to disconnect device\n",
-                                                     ret);
+                                                     ret_unwind);
             }
             aif_obj->state = AIF_OPEN;
         }
     }
-    ret = graph_close(sess_obj->graph);
-    if (ret) {
-        AGM_LOGE("Error:%d Failed to close graph\n", ret);
+    ret_unwind = graph_close(sess_obj->graph);
+    if (ret_unwind) {
+        AGM_LOGE("Error:%d Failed to close graph\n", ret_unwind);
     }
     sess_obj->graph = NULL;
 
