@@ -41,7 +41,7 @@
 #endif
 
 #define GSL_EVENT_SRC_MODULE_ID_GSL 0x2001 // DO NOT CHANGE
-
+struct session_pool *sess_pool;
 //forward declarations
 static int session_close(struct session_obj *sess_obj);
 static int session_set_loopback(struct session_obj *sess_obj,
