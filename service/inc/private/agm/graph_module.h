@@ -159,5 +159,6 @@ struct graph_obj {
 
 void get_stream_module_list_array(module_info_t **info, size_t *size);
 void get_hw_ep_module_list_array(module_info_t **info, size_t *size);
-
+bool compare_tdm_custom_config(param_id_tdm_intf_cfg_t* tdm_config_p1, param_id_tdm_intf_cfg_t* tdm_config_p2);
+bool compare_hw_ep_media_config(param_id_hw_ep_mf_t* hw_ep_media_conf_p1, param_id_hw_ep_mf_t* hw_ep_media_conf_p2);
 #endif /*GPH_MODULE_H*/
