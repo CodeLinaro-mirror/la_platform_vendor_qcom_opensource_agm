@@ -218,7 +218,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         buf_config.attributes = GSL_DATA_MODE_PUSH_PULL;
     else {
         AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
-        buf_config.attributes = GSL_DATA_MODE_BLOCKING;
+        buf_config.attributes = GSL_DATA_MODE_NON_BLOCKING;
     }
 
     size = sizeof(struct gsl_cmd_configure_read_write_params);
@@ -299,8 +299,11 @@ int graph_init()
                          goto err;
                        }
                     snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "ADP_AR");
-                } else {
-                    snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "IDP");
+                } else if (strstr(snd_card_name,"8295")) {
+                    snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "ADP_AR");
+                }
+                else {
+                        snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, "IDP");
                 }
                 free(snd_card_name);
                 snd_card_name = NULL;
