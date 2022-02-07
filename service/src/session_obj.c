@@ -1179,8 +1179,8 @@ static int session_close(struct session_obj *sess_obj)
 
 int session_obj_deinit()
 {
-    session_pool_free();
     device_deinit();
+    session_pool_free();
     graph_deinit();
     return 0;
 }
