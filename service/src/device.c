@@ -1063,13 +1063,13 @@ static int wait_for_snd_card_to_online()
 int device_init()
 {
     int ret = 0;
-
+#if 0
     ret = wait_for_snd_card_to_online();
     if (ret) {
         AGM_LOGE("Not found any SND card online\n");
         return ret;
     }
-
+#endif
     ret = parse_snd_card();
     if (ret)
         AGM_LOGE("no valid snd device found\n");
