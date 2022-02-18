@@ -1012,7 +1012,8 @@ static void ipc_agm_session_aif_get_tag_module_info_size(DBusConnection *conn,
                                                          void *userdata) {
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i, array_i, r_arg;
-    uint32_t session_id, aif_id, size;
+    uint32_t session_id, aif_id;
+    size_t size=0;
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
@@ -1063,7 +1064,8 @@ static void ipc_agm_session_aif_get_tag_module_info(DBusConnection *conn,
                                                     void *userdata) {
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i, array_i, r_arg, r_array_i;
-    uint32_t session_id, aif_id, size;
+    uint32_t session_id, aif_id;
+    size_t size=0;
     void *buf = NULL;
     char *value = NULL;
     char **addr_value = &value;
@@ -1960,7 +1962,7 @@ static void ipc_agm_session_write(DBusConnection *conn,
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i, array_i, r_arg;
     agm_session_data *ses_data = (agm_session_data *)userdata;
-    uint32_t buf_size;
+    uint32_t buf_size=0;
     void *buf;
     char *value = NULL;
     char **addr_value = &value;
@@ -2020,7 +2022,7 @@ static void ipc_agm_session_read(DBusConnection *conn,
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i;
     DBusMessageIter r_arg, r_array_i;
-    uint32_t buf_size;
+    size_t buf_size=0;
     agm_session_data *ses_data = (agm_session_data *)userdata;
     void *buf = NULL;
 
