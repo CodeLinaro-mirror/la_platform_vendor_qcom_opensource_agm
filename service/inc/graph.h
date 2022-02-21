@@ -49,8 +49,6 @@ typedef enum state
     STOPPED = 0x1000,
 } graph_state_t;
 
-uint8_t chipset_value;
-
 /**
  * \brief Callback function signature for events to client
  *

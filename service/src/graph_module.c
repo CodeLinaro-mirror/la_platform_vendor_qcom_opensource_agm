@@ -49,6 +49,7 @@
 
 /*qfactor should be set to 23 only for 24_3LE and 24_LE formats*/
 #define GET_Q_FACTOR(format, bit_width) (bit_width - 1)
+extern uint8_t chipset_value;
 
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
@@ -293,6 +294,7 @@ static int configure_i2s_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
+#ifdef SUPPORT_CHIPSET_TKV
     tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
@@ -308,6 +310,22 @@ static int configure_i2s_ep(struct module_info *mod,
 
     tag_key_vect.kvp[1].key = CHIPSET;
     tag_key_vect.kvp[1].value = chipset_value;
+#else
+
+    tag_key_vect.num_kvps = 1;
+    tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
+                                sizeof(struct gsl_key_value_pair));
+
+    if (!tag_key_vect.kvp) {
+        AGM_LOGE("Not enough memory for KVP");
+        ret = -ENOMEM;
+        goto free_payload;
+    }
+
+    tag_key_vect.kvp[0].key = CHANNELS;
+    tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+#endif
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
@@ -393,6 +411,7 @@ static int configure_tdm_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
+#ifdef SUPPORT_CHIPSET_TKV
     tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
@@ -408,6 +427,22 @@ static int configure_tdm_ep(struct module_info *mod,
 
     tag_key_vect.kvp[1].key = CHIPSET;
     tag_key_vect.kvp[1].value = chipset_value;
+#else
+
+    tag_key_vect.num_kvps = 1;
+    tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
+                                sizeof(struct gsl_key_value_pair));
+
+    if (!tag_key_vect.kvp) {
+        AGM_LOGE("Not enough memory for KVP");
+        ret = -ENOMEM;
+        goto free_payload;
+    }
+
+    tag_key_vect.kvp[0].key = CHANNELS;
+    tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+#endif
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
@@ -522,6 +557,7 @@ static int configure_aux_pcm_ep(struct module_info *mod,
      * For Codec dma we need to configure the following tags
      * 1.Channels  - Channels are reused to derive the active channel mask
      */
+#ifdef SUPPORT_CHIPSET_TKV
     tag_key_vect.num_kvps = 2;
     tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
                                 sizeof(struct gsl_key_value_pair));
@@ -537,6 +573,22 @@ static int configure_aux_pcm_ep(struct module_info *mod,
 
     tag_key_vect.kvp[1].key = CHIPSET;
     tag_key_vect.kvp[1].value = chipset_value;
+#else
+
+    tag_key_vect.num_kvps = 1;
+    tag_key_vect.kvp = calloc(tag_key_vect.num_kvps,
+                                sizeof(struct gsl_key_value_pair));
+
+    if (!tag_key_vect.kvp) {
+        AGM_LOGE("Not enough memory for KVP");
+        ret = -ENOMEM;
+        goto free_payload;
+    }
+
+    tag_key_vect.kvp[0].key = CHANNELS;
+    tag_key_vect.kvp[0].value = dev_obj->media_config.channels;
+
+#endif
 
     ret = gsl_get_tagged_data((struct gsl_key_vector *)mod->gkv,
                                mod->tag, &tag_key_vect, (uint8_t *)payload,
