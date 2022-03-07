@@ -74,6 +74,8 @@ static void sigint_handler(int sig)
     capturing = 0;
 }
 
+static long int stream_x = 0, stream_pp = 0, instance = 1, device_pp = 0, device_x = 0;
+
 int main(int argc, char **argv)
 {
     FILE *file;
@@ -94,8 +96,9 @@ int main(int argc, char **argv)
 
     if (argc < 2) {
         printf("Usage: %s file.wav [-D card] [-d device]"
-                " [-c channels] [-r rate] [-b bits] [-p period_size]"
-                " [-n n_periods] [-T capture time] [-i intf_name]\n", argv[0]);
+               " [-c channels] [-r rate] [-b bits] [-p period_size]"
+               " [-n n_periods] [-T capture_time] [-i intf_name]"
+               " [-sx stream_rx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_rx]\n", argv[0]);
         return 1;
     }
 
@@ -146,9 +149,35 @@ int main(int argc, char **argv)
             if (*argv)
                 intf_name = *argv;
         }
+        if (strcmp(*argv, "-sx") == 0) {
+            argv++;
+            if (*argv)
+                stream_x = strtol(*argv, NULL, 16); // stream_tx
+        }
+        if (strcmp(*argv, "-spp") == 0) {
+            argv++;
+            if (*argv)
+                stream_pp = strtol(*argv, NULL, 16);
+        }
+        if (strcmp(*argv, "-ist") == 0) {
+            argv++;
+            if (*argv)
+                instance = strtol(*argv, NULL, 16);
+        }
+        if (strcmp(*argv, "-dpp") == 0) {
+            argv++;
+            if (*argv)
+                device_pp = strtol(*argv, NULL, 16);
+        }
+        if (strcmp(*argv, "-dx") == 0) {
+            argv++;
+            if (*argv)
+                device_x = strtol(*argv, NULL, 16); // device_tx
+        }
         if (*argv)
             argv++;
     }
+    printf("Stream Tx = 0x%lx, Stream PP = 0x%lx, Instance = 0x%lx, Device PP = 0x%lx, Device TX = 0x%lx\n", stream_x, stream_pp, instance, device_pp, device_x);
 
     header.riff_id = ID_RIFF;
     header.riff_sz = 0;
@@ -242,6 +271,8 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         printf("Failed to open mixer\n");
         return 0;
     }
+
+    update_graph(stream_x, stream_pp, instance, device_pp, device_x);
 
     /* set device/audio_intf media config mixer control */
     if (set_agm_device_media_config(mixer, dev_config->ch, dev_config->rate,
