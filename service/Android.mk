@@ -20,7 +20,11 @@ agm-def += -D_ANDROID_
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/inc
 
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/ar_osal
+ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+endif
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/acdb
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/acdbdata
 LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
