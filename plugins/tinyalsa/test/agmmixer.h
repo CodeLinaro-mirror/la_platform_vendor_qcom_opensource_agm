@@ -85,4 +85,7 @@ int get_device_media_config(char* filename, char *intf_name, struct device_confi
 int get_group_device_info(char* filename, char *intf_name, struct group_config *config);
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
                        unsigned int channels, unsigned int bits);
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
+                       unsigned int channels, unsigned int bits);
+void update_graph(unsigned int stream_x, unsigned int stream_pp, unsigned int instance, unsigned int device_pp, unsigned int device_x);
 #endif
