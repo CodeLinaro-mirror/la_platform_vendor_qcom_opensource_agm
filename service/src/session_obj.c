@@ -1440,8 +1440,10 @@ int session_obj_rw_acdb_params_with_tag(
             goto error;
         }
 
+        pthread_mutex_lock(&aif_obj->dev_obj->lock);
         merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                           &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+        pthread_mutex_unlock(&aif_obj->dev_obj->lock);
     }
 
     if (!merged_metadata) {
