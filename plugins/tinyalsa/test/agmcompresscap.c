@@ -369,8 +369,9 @@ static void capture_samples(char *name, unsigned int card, unsigned int device,
 		goto comp_exit;
 	}
 
-	fprintf(finfo, "Recording file %s On Card %u device %u, with buffer of %lu bytes\n",
-	       name, card, device, buffer_size);
+	if (name)
+		fprintf(finfo, "Recording file %s On Card %u device %u, with buffer of %lu bytes\n",
+				name, card, device, buffer_size);
 	fprintf(finfo, "Codec %u Format %u Channels %u, %u Hz\n",
 	       codec.id, codec.format, codec.ch_out, rate);
 
@@ -463,7 +464,7 @@ int main(int argc, char **argv)
 	unsigned int card = 0, device = 0, frag = 0, length = 0;
 	unsigned int rate = DEFAULT_RATE, channels = DEFAULT_CHANNELS;
 	unsigned int format = DEFAULT_FORMAT;
-	unsigned int audio_intf;
+	unsigned int audio_intf = 0;
 
 	if (signal(SIGINT, sig_handler) == SIG_ERR) {
 		fprintf(stderr, "Error registering signal handler\n");
@@ -539,7 +540,8 @@ int main(int argc, char **argv)
 	capture_samples(file, card, device, buffer_size, frag, length,
 			rate, channels, format, audio_intf);
 
-	fprintf(finfo, "Finish capturing... Close Normally\n");
+	if (finfo)
+		fprintf(finfo, "Finish capturing... Close Normally\n");
 
 	exit(EXIT_SUCCESS);
 }

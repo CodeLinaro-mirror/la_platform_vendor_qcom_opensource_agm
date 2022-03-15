@@ -116,44 +116,44 @@ int main(int argc, char **argv)
             if (*argv)
                 p_device = atoi(*argv);
         }
-	 if (strcmp(*argv, "-C") == 0) {
+	else if (strcmp(*argv, "-C") == 0) {
             argv++;
             if (*argv)
                 c_device = atoi(*argv);
         }
-        if (strcmp(*argv, "-p") == 0) {
+	else if (strcmp(*argv, "-p") == 0) {
             argv++;
             if (*argv)
                 period_size = atoi(*argv);
         }
-        if (strcmp(*argv, "-n") == 0) {
+	else if (strcmp(*argv, "-n") == 0) {
             argv++;
             if (*argv)
                 period_count = atoi(*argv);
         }
-	if (strcmp(*argv, "-c") == 0) {
+	else if (strcmp(*argv, "-c") == 0) {
             argv++;
             if (*argv)
                 num_channels = atoi(*argv);
         }
-	if (strcmp(*argv, "-r") == 0) {
+	else if (strcmp(*argv, "-r") == 0) {
             argv++;
             if (*argv)
                 sample_rate = atoi(*argv);
         }
 
-	if (strcmp(*argv, "-T") == 0) {
+	else if (strcmp(*argv, "-T") == 0) {
             argv++;
             if (*argv)
                 play_cap_time = atoi(*argv);
         }
 
-        if (strcmp(*argv, "-D") == 0) {
+	else if (strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
                 card = atoi(*argv);
         }
-        if (strcmp(*argv, "-i") == 0) {
+	else if (strcmp(*argv, "-i") == 0) {
             argv++;
             if (*argv)
                 c_audio_intf = atoi(*argv);
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-o") == 0) {
+	else if (strcmp(*argv, "-o") == 0) {
             argv++;
             if (*argv)
                 p_audio_intf = atoi(*argv);
@@ -207,7 +207,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
                  unsigned int period_count, unsigned int play_cap_time, unsigned int capture_intf, unsigned int play_intf)
 {
     struct pcm_config config;
-    struct pcm *p_pcm, *c_pcm;
+    struct pcm *p_pcm = NULL, *c_pcm = NULL;
     struct mixer *mixer;
     char *buffer;
     char *p_intf_name = playback_audio_interface_name[play_intf];
