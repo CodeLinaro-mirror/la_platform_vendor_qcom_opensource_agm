@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -152,8 +153,10 @@ static struct agm_meta_data_gsl* session_get_merged_metadata(struct session_obj 
                 AGM_LOGD("ignore closed AIF node");
                 continue;
             }
+            pthread_mutex_lock(&aif_node->dev_obj->lock);
             merged = metadata_merge(4, temp, &sess_obj->sess_meta,
                            &aif_node->sess_aif_meta, &aif_node->dev_obj->metadata);
+            pthread_mutex_unlock(&aif_node->dev_obj->lock);
             if (temp) {
                 metadata_free(temp);
                 free(temp);
@@ -459,7 +462,9 @@ static int session_set_ec_ref(struct session_obj *sess_obj, uint32_t aif_id,
         goto done;
     }
 
+    pthread_mutex_lock(&dev_obj->lock);
     merged_metadata = metadata_merge(2, capture_metadata, &dev_obj->metadata);
+    pthread_mutex_unlock(&dev_obj->lock);
     if (!merged_metadata) {
         ret = -ENOMEM;
         AGM_LOGE("Error:%d, merging metadata with capture \
@@ -501,8 +506,10 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
     struct agm_meta_data_gsl temp = {0};
     struct graph_obj *graph = sess_obj->graph;
 
+    pthread_mutex_lock(&aif_obj->dev_obj->lock);
     merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                       &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+    pthread_mutex_unlock(&aif_obj->dev_obj->lock);
     if (!merged_metadata) {
         AGM_LOGE("No memory to create merged_metadata session_id: %d, \
                       audio interface id:%d \n",
@@ -515,8 +522,10 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
     if (opened_count == 1) {
         //this is SSSD condition, hence stop just the stream/stream-device,
         //merged only sess-aif, aif
+        pthread_mutex_lock(&aif_obj->dev_obj->lock);
         merged_meta_sess_aif = metadata_merge(2, &aif_obj->sess_aif_meta,
                                             &aif_obj->dev_obj->metadata);
+        pthread_mutex_unlock(&aif_obj->dev_obj->lock);
         if (!merged_meta_sess_aif) {
             AGM_LOGE("No memory to create merged_metadata session_id: %d, \
                           audio interface id:%d \n",
@@ -637,8 +646,10 @@ static int session_connect_aif(struct session_obj *sess_obj,
     struct graph_obj *graph = sess_obj->graph;
 
     //step 2.a  merge metadata
+    pthread_mutex_lock(&aif_obj->dev_obj->lock);
     merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                          &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+    pthread_mutex_unlock(&aif_obj->dev_obj->lock);
     if (!merged_metadata) {
         AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
             sess_obj->sess_id, aif_obj->aif_id);
@@ -1350,8 +1361,10 @@ int session_obj_set_sess_aif_params_with_tag(struct session_obj *sess_obj,
             goto done;
         }
 
+        pthread_mutex_lock(&aif_obj->dev_obj->lock);
         merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                           &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+        pthread_mutex_unlock(&aif_obj->dev_obj->lock);
         if (!merged_metadata) {
             AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
                 sess_obj->sess_id, aif_obj->aif_id);
@@ -1427,8 +1440,10 @@ int session_obj_rw_acdb_params_with_tag(
             goto error;
         }
 
+        pthread_mutex_lock(&aif_obj->dev_obj->lock);
         merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                           &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+        pthread_mutex_unlock(&aif_obj->dev_obj->lock);
     }
 
     if (!merged_metadata) {
@@ -1505,8 +1520,10 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
         metadata_update_cal(&aif_obj->sess_aif_meta, &ckv);
         metadata_update_cal(&aif_obj->dev_obj->metadata, &ckv);
 
+        pthread_mutex_lock(&aif_obj->dev_obj->lock);
         merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                           &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+        pthread_mutex_unlock(&aif_obj->dev_obj->lock);
         if (!merged_metadata) {
             AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
                 sess_obj->sess_id, aif_obj->aif_id);
@@ -1615,8 +1632,10 @@ int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
                 goto done;
             }
 
+            pthread_mutex_lock(&aif_obj->dev_obj->lock);
             merged_metadata = metadata_merge(3, &sess_obj->sess_meta,
                                 &aif_obj->sess_aif_meta, &aif_obj->dev_obj->metadata);
+            pthread_mutex_unlock(&aif_obj->dev_obj->lock);
             if (!merged_metadata) {
                 AGM_LOGE("Error merging metadata session_id:%d aif_id:%d\n",
                     sess_obj->sess_id, aif_obj->aif_id);
@@ -2401,10 +2420,13 @@ int session_obj_read_with_metadata(struct session_obj *sess_obj,
     }
     pthread_mutex_unlock(&sess_obj->lock);
 
-    ret = graph_read(sess_obj->graph, buffer, captured_size);
+    size_t read_size;
+    ret = graph_read(sess_obj->graph, buffer, &read_size);
     if (ret) {
         AGM_LOGE("Error:%d reading from graph\n", ret);
     }
+
+    *captured_size = (uint32_t)read_size;
 
 done:
     return ret;
