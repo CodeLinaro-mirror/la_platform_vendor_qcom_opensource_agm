@@ -53,6 +53,9 @@ static void *ats_init_thread(void *obj __unused)
     int ret = 0;
     int retry = 0;
 
+#ifdef BYPASS_ATS_INIT
+    AGM_LOGD("ATS init skipped for Automotive Hypervisor");
+#else
     while(retry++ < MAX_RETRIES) {
         if (agm_initialized) {
             ret = ats_init();
@@ -66,6 +69,7 @@ static void *ats_init_thread(void *obj __unused)
         }
         usleep(RETRY_INTERVAL_US);
     }
+#endif
     return NULL;
 }
 
