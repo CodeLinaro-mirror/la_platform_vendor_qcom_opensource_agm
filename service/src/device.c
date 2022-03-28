@@ -40,8 +40,10 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <agm/device.h>
+#include <agm/graph.h>
 #include <agm/metadata.h>
 #include <agm/utils.h>
+ #include "kvh2xml.h"
 #ifdef DEVICE_USES_ALSALIB
 #include <alsa/asoundlib.h>
 #else
@@ -1253,7 +1255,21 @@ bool get_file_path_extn(char* file_path_extn)
         snd_card_found = update_snd_card_info(snd_card_name);
 
         if (snd_card_found) {
-            split_snd_card_name(snd_card_name, file_path_extn);
+            if (strstr(snd_card_name, "gvmauto")) {
+                if (strstr(snd_card_name,"6155")){
+                    chipset_value = CHIPSET_6155;
+                } else if (strstr(snd_card_name,"8155")){
+                    chipset_value = CHIPSET_8155;
+                } else if (strstr(snd_card_name,"8295")){
+                } else {
+                    AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s",snd_card_name);
+                    snd_card_found = false;
+                    break;
+                }
+                strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
+            } else {
+                split_snd_card_name(snd_card_name, file_path_extn);
+            }
             AGM_LOGV("Found Codec sound card");
             break;
         } else {

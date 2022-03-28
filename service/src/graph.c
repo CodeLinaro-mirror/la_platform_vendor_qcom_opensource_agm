@@ -298,9 +298,12 @@ int graph_init()
     }
     AGM_LOGI("acdb file path: %s\n", acdb_path);
 
+    AGM_LOGV("going to load acdb file from path %s",acdb_path);
     ret = get_acdb_files_from_directory(acdb_path, &acdb_files);
-    if (ret)
+    if (ret) {
+       AGM_LOGE("failed to load acdb file from %s",acdb_path);
        goto err;
+    }
 
 #ifdef ACDB_DELTA_FILE_PATH
     delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH);

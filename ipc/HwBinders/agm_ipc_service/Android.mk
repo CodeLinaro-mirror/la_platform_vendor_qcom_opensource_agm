@@ -9,6 +9,8 @@ LOCAL_CFLAGS        += -v -Wall
 LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+
 LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     libutils \
@@ -16,9 +18,14 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libhardware \
     libbase \
-    libar-gsl \
     vendor.qti.hardware.AGMIPC@1.0 \
     libagm
+
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+else
+LOCAL_SHARED_LIBRARIES += libar-gsl
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 
