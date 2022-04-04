@@ -1880,11 +1880,13 @@ int agm_session_close(uint64_t handle) {
     g_hash_table_remove(mdata->ses_hash_table,
                         GINT_TO_POINTER(ses_data->session_id));
     g_free(ses_data->obj_path);
+
+    if (ses_data->proxy != NULL) {
+        g_object_unref(ses_data->proxy);
+        ses_data->proxy = NULL;
+    }
+
     g_free(ses_data);
-
-
-    g_object_unref(ses_data->proxy);
-    ses_data->proxy = NULL;
     g_variant_unref(result);
     return 0;
 }
