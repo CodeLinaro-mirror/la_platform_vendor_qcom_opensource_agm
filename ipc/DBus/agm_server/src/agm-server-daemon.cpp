@@ -1,6 +1,5 @@
 /*
 ** Copyright (c) 2020, The Linux Foundation. All rights reserved.
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -35,7 +34,7 @@
 #include <stdio.h>
 
 #include "agm_server_wrapper_dbus.h"
-#include <utils.h>
+#include "utils.h"
 
 GMainLoop *mainloop = NULL;
 
