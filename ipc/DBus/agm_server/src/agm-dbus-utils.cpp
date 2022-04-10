@@ -448,15 +448,22 @@ int agm_dbus_remove_interface(agm_dbus_connection *conn,
         return -1;
 
     if ((interface = (agm_dbus_interface *)
-               g_hash_table_lookup(object->interfaces, interface_path)) == NULL)
+               g_hash_table_remove(object->interfaces, interface_path)) == NULL)
         return -1;
 
-    g_hash_table_remove(object->interfaces,interface_path);
+    g_hash_table_remove_all(interface->methods);
+    g_hash_table_unref(interface->methods);
+
+    g_hash_table_remove_all(interface->signals);
+    g_hash_table_unref(interface->signals);
+
+    free(interface);
     interface = NULL;
 
     if (g_hash_table_size(object->interfaces) == 0) {
         unregister_object(conn, object);
         g_hash_table_remove(conn->objects, (void *)object->obj_path);
+        free(object);
         object = NULL;
     }
 
