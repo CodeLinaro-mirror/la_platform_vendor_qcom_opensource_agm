@@ -996,7 +996,7 @@ static int agm_get_aif_info_list_size(size_t *num_aif_info) {
 }
 
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
-    GVariant *value_1 = NULL, *argument = NULL;
+    GVariant *value_1, *argument;
     GVariant *result = NULL, *array_v, *struct_v;
     GError *error = NULL;
     GVariantIter arg_i, struct_i, array_i;
@@ -1055,7 +1055,7 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
 int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
                              uint32_t flag)
 {
-    GVariant *value_1 = NULL, *value_2 = NULL, *struct_v = NULL, *argument = NULL;
+    GVariant *value_1, *value_2, *struct_v, *argument;
     GVariant *val_arr = NULL, *result = NULL;
     GVariantIter arg_i, struct_i;
     GError *error = NULL;
@@ -1110,7 +1110,7 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
 int agm_aif_set_params(uint32_t aif_id, void* payload,
                        size_t size) {
-    GVariant *value_1 = NULL, *value_2 = NULL, *value_3 = NULL, *argument = NULL;
+    GVariant *value_1, *value_2, *value_3, *argument;
     GVariant *result = NULL;
     GError *error = NULL;
     int rc = 0;
@@ -1891,7 +1891,7 @@ int agm_session_close(uint64_t handle) {
 
 int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint64_t *handle) {
 
-    GVariant *value_1 = NULL, *value_2 = NULL, *argument = NULL;
+    GVariant *value_1, *value_2, *argument = NULL;
 
     GVariant *result = NULL;
     GError *error = NULL;
