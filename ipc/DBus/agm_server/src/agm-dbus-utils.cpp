@@ -27,6 +27,41 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/*
+** Changes from Qualcomm Innovation Center are provided under the following license:
+** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+**
+** Redistribution and use in source and binary forms, with or without
+** modification, are permitted (subject to the limitations in the
+** disclaimer below) provided that the following conditions are met:
+**
+**    * Redistributions of source code must retain the above copyright
+**      notice, this list of conditions and the following disclaimer.
+**
+**    * Redistributions in binary form must reproduce the above
+**      copyright notice, this list of conditions and the following
+**      disclaimer in the documentation and/or other materials provided
+**      with the distribution.
+**
+**    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
+**      contributors may be used to endorse or promote products derived
+**      from this software without specific prior written permission.
+**
+** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
+** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**/
+
 #define LOG_TAG "agm_dbus_utils"
 
 #include <stdio.h>
@@ -84,6 +119,7 @@ static DBusHandlerResult server_message_handler(DBusConnection *connection,
                 return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
             } else {
                 method->cb_func(connection, message, interface->userdata);
+                return DBUS_HANDLER_RESULT_HANDLED;
             }
         }
     }
@@ -131,8 +167,11 @@ static void agm_free_dbus_watch_data(void *userdata) {
         watch_data->watch_id = 0;
     }
 
-    dbus_connection_unref(watch_data->conn);
-    free(watch_data);
+    if (watch_data->conn)
+        dbus_connection_unref(watch_data->conn);
+
+    if (watch_data)
+        free(watch_data);
 }
 
 static void agm_remove_dbus_watch_cb(DBusWatch *watch, void *userdata) {
@@ -443,22 +482,15 @@ int agm_dbus_remove_interface(agm_dbus_connection *conn,
         return -1;
 
     if ((interface = (agm_dbus_interface *)
-               g_hash_table_remove(object->interfaces, interface_path)) == NULL)
+               g_hash_table_lookup(object->interfaces, interface_path)) == NULL)
         return -1;
 
-    g_hash_table_remove_all(interface->methods);
-    g_hash_table_unref(interface->methods);
-
-    g_hash_table_remove_all(interface->signals);
-    g_hash_table_unref(interface->signals);
-
-    free(interface);
+    g_hash_table_remove(object->interfaces,interface_path);
     interface = NULL;
 
     if (g_hash_table_size(object->interfaces) == 0) {
         unregister_object(conn, object);
         g_hash_table_remove(conn->objects, (void *)object->obj_path);
-        free(object);
         object = NULL;
     }
 
