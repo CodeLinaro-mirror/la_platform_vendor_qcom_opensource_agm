@@ -46,6 +46,8 @@
 #define PARAM_ID_DETECTION_ENGINE_GENERIC_EVENT_CFG 0x0800104E
 #define PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT            0x08001024
 
+static long int gStream_x = 0, gStream_pp = 0, gInstance = 1, gDevice_pp = 0, gDevice_x = 0;
+
 enum pcm_channel_map
 {
    PCM_CHANNEL_L = 1,
@@ -384,13 +386,13 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
 
     if (d == PLAYBACK) {
         gkv[0].key = DEVICERX;
-        gkv[0].value = SPEAKER;
+        gkv[0].value = gDevice_x;
     } else if (!strcmp(intf_name, "CODEC_DMA-LPAIF_VA-TX-0")) {
         gkv[0].key = DEVICETX;
         gkv[0].value = HANDSETMIC_VA;
     } else {
         gkv[0].key = DEVICETX;
-        gkv[0].value = HANDSETMIC;
+        gkv[0].value = gDevice_x;
     }
     ckv[ckv_index].key = SAMPLINGRATE;
     ckv[ckv_index].value = rate;
@@ -561,7 +563,7 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     if (stype == STREAM_COMPRESS)
         stream = "COMPRESS";
 
-    if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK)
+    if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK || gInstance > 0)
         num_gkv += 1;
 
     if (val == VOICE_UI) {
@@ -569,6 +571,10 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             num_gkv = 2;
         else
             num_gkv = 3;
+    }
+
+    if (d == CAPTURE) {
+        num_gkv = 3;
     }
 
     gkv_size = num_gkv * sizeof(struct agm_key_value);
@@ -619,19 +625,21 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
         gkv[index].value = val;
 
         index++;
-        if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK) {
+        if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK || gInstance > 0) {
             gkv[index].key = INSTANCE;
-            gkv[index].value = INSTANCE_1;
+            gkv[index].value = gInstance;
             index++;
         }
 
-        if (d == PLAYBACK) {
+        if (d == PLAYBACK)
             gkv[index].key = DEVICEPP_RX;
-            gkv[index].value = DEVICEPP_RX_AUDIO_MBDRC;
-        } else {
+        else
             gkv[index].key = DEVICEPP_TX;
-            gkv[index].value = DEVICEPP_TX_AUDIO_FLUENCE_SMECNS;
-        }
+        gkv[index].value = gDevice_pp;
+    }
+
+    for (int i = 0; i < index + 1; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
     index = 0;
@@ -999,4 +1007,15 @@ int agm_mixer_get_buf_tstamp(struct mixer *mixer, int device, enum stream_type s
 exit:
     free(mixer_str);
     return ret;
+}
+
+void update_graph(long int stream_x, long int stream_pp, long int instance, long int device_pp, long int device_x)
+{
+     gStream_x = stream_x;
+     gStream_pp = stream_pp;
+     gInstance = instance;
+     gDevice_pp = device_pp;
+     gDevice_x = device_x;
+
+     printf("agm mixer - Stream = 0x%lx, Stream PP = 0x%lx, Instance = 0x%lx, Device PP = 0x%lx, Device = 0x%lx\n", gStream_x, gStream_pp, gInstance, gDevice_pp, gDevice_x);
 }
