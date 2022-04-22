@@ -1,4 +1,4 @@
-#                                               -*- Autoconf -*-
+#            -*- Autoconf -*-
 # configure.ac -- Autoconf script for halinterface
 #
 
@@ -29,6 +29,10 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
+
+PKG_CHECK_MODULES([GIO], [gio-2.0])
+AC_SUBST([GIO_CFLAGS])
+AC_SUBST([GIO_LIBS])
 
 AC_ARG_WITH([glib],
       AC_HELP_STRING([--with-glib],
