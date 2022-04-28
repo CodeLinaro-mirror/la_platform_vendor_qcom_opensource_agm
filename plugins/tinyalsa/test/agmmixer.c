@@ -45,6 +45,11 @@
 
 #define PARAM_ID_DETECTION_ENGINE_GENERIC_EVENT_CFG 0x0800104E
 #define PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT            0x08001024
+#define PARAM_ID_PCM_OUTPUT_FORMAT_CFG             0x08001008
+#define MEDIA_FMT_ID_PCM                  0x09001000
+#define PCM_LITTLE_ENDIAN                 1
+#define PCM_DEINTERLEAVED_UNPACKED        3
+#define PCM_LSB_ALIGNED                   1
 
 static long int gStream_x = 0, gStream_pp = 0, gInstance = 1, gDevice_pp = 0, gDevice_x = 0;
 
@@ -105,6 +110,31 @@ struct apm_module_param_data_t
    uint32_t param_id;
    uint32_t param_size;
    uint32_t error_code;
+};
+
+struct media_format_t
+{
+   uint32_t data_format;
+   uint32_t fmt_id;
+   uint32_t payload_size;
+#if defined(__H2XML__)
+   uint8_t  payload[0];
+#endif
+};
+
+struct payload_pcm_output_format_cfg_t
+{
+   int16_t bit_width;
+   int16_t alignment;
+   int16_t bits_per_sample;
+   int16_t q_factor;
+   int16_t endianness;
+   int16_t interleaved;
+   int16_t reserved;
+   int16_t num_channels;
+#if defined(__H2XML__)
+   uint8_t channel_mapping[0];
+#endif
 };
 
 struct detection_engine_generic_event_cfg {
@@ -514,6 +544,27 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_LB;
         pcmChannel[3] = PCM_CHANNEL_RB;
+    } else if (numChannel == 5) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LB;
+        pcmChannel[4] = PCM_CHANNEL_RB;
+    } else if (numChannel == 6) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+    } else if (numChannel == 7) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_CS;
     } else if (numChannel == 8) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
@@ -523,6 +574,45 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[5] = PCM_CHANNEL_RB;
         pcmChannel[6] = PCM_CHANNEL_LS;
         pcmChannel[7] = PCM_CHANNEL_RS;
+    } else if (numChannel == 10) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TS;
+        pcmChannel[9] = PCM_CHANNEL_TFC;
+    } else if (numChannel == 12) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TS;
+        pcmChannel[9] = PCM_CHANNEL_TFC;
+        pcmChannel[10] = PCM_CHANNEL_MS;
+        pcmChannel[11] = PCM_CHANNEL_FLC;
+    } else if (numChannel == 14) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TS;
+        pcmChannel[9] = PCM_CHANNEL_TFC;
+        pcmChannel[10] = PCM_CHANNEL_MS;
+        pcmChannel[11] = PCM_CHANNEL_FLC;
+        pcmChannel[12] = PCM_CHANNEL_FRC;
+        pcmChannel[13] = PCM_CHANNEL_RLC;
     } else if (numChannel == 16) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
@@ -626,6 +716,75 @@ int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
 
 }
 
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
+                  enum stream_type stype, unsigned int rate,
+                  unsigned int channels, unsigned int bits)
+{
+
+    struct apm_module_param_data_t* header = NULL;
+    struct media_format_t *mediaFmtHdr;
+    struct payload_pcm_output_format_cfg_t *mediaFmtPayload;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0, size;
+    uint8_t *pcmChannel;
+    int ret = 0;
+    uint32_t miid = 0;
+
+    ret = agm_mixer_get_miid(mixer, device, intf_name, stype, tag, &miid);
+    if (ret) {
+        printf("%s Get MIID from tag data failed\n", __func__);
+        return ret;
+    }
+
+    payloadSize = sizeof(struct apm_module_param_data_t) +
+                  sizeof(struct media_format_t) +
+                  sizeof(struct payload_pcm_output_format_cfg_t) +
+                  sizeof(uint8_t)*channels;
+
+    padBytes = PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        return -ENOMEM;
+    }
+
+    header          = (struct apm_module_param_data_t*)payloadInfo;
+    mediaFmtHdr     = (struct media_format_t*)(payloadInfo +
+                      sizeof(struct apm_module_param_data_t));
+    mediaFmtPayload = (struct payload_pcm_output_format_cfg_t*)(payloadInfo +
+                      sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct media_format_t));
+    pcmChannel      = (uint8_t*)(payloadInfo + sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct media_format_t) +
+                      sizeof(struct payload_pcm_output_format_cfg_t));
+
+    header->module_instance_id = miid;
+    header->param_id           = PARAM_ID_PCM_OUTPUT_FORMAT_CFG;
+    header->error_code         = 0x0;
+    header->param_size         = payloadSize - sizeof(struct apm_module_param_data_t);
+
+    mediaFmtHdr->data_format  = AGM_DATA_FORMAT_FIXED_POINT;
+    mediaFmtHdr->fmt_id       = MEDIA_FMT_ID_PCM;
+    mediaFmtHdr->payload_size = sizeof(struct payload_pcm_output_format_cfg_t) +
+                                sizeof(uint8_t) * channels;
+
+    mediaFmtPayload->endianness = PCM_LITTLE_ENDIAN;
+    mediaFmtPayload->bit_width = 16;
+
+    mediaFmtPayload->alignment = PCM_LSB_ALIGNED;
+    mediaFmtPayload->num_channels = channels;
+
+    mediaFmtPayload->bits_per_sample = 16;
+    mediaFmtPayload->q_factor = 15;
+
+    mediaFmtPayload->interleaved = PCM_DEINTERLEAVED_UNPACKED;
+
+    populateChannelMap(pcmChannel, channels);
+    size = payloadSize + padBytes;
+
+    return agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+
+}
 int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum dir d, enum stream_type stype, char *intf_name)
 {
     char *stream = "PCM";

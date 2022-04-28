@@ -254,6 +254,14 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
+    /*Configure PCM Converter*/
+    if (configure_pcm_converter(mixer, device, name, STREAM_PCM_CONVERTER,
+                           STREAM_PCM, fmt.sample_rate, fmt.num_channels,
+                           fmt.bits_per_sample)) {
+        printf("Failed to configure pcm converter\n");
+        goto err_close_mixer;
+    }
+
     if (configure_mfc(mixer, device, name, PER_STREAM_PER_DEVICE_MFC,
                            STREAM_PCM, dev_config->rate, dev_config->ch,
                            dev_config->bits)) {

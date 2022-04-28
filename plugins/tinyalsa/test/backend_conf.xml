@@ -42,5 +42,9 @@
     <device name="TDM-LPAIF_VA-TX-PRIMARY" rate="48000" ch="16" bits="16" />
     <device name="TDM-LPAIF_RXTX-RX-PRIMARY" rate="48000" ch="32" bits="16" />
     <device name="TDM-LPAIF_RXTX-TX-PRIMARY" rate="48000" ch="32" bits="16" />
+    <device name="TDM-LPAIF-TX-TERTIARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF-RX-TERTIARY" rate="48000" ch="2" bits="16" />
+    <device name="TDM-LPAIF-TX-QUATERNARY" rate="48000" ch="32" bits="16" />
+    <device name="TDM-LPAIF-RX-QUATERNARY" rate="48000" ch="32" bits="16" />
 </config>
 
