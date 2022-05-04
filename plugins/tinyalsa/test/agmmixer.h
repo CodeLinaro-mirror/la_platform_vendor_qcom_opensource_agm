@@ -71,4 +71,7 @@ int agm_mixer_get_buf_tstamp(struct mixer *mixer, int device, enum stream_type s
 int get_device_media_config(char* filename, char *intf_name, struct device_config *config);
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
                        unsigned int channels, unsigned int bits);
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
+                       unsigned int channels, unsigned int bits);
+void update_graph(long int stream_x, long int stream_pp, long int instance, long int device_pp, long int device_x);
 #endif
