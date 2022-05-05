@@ -51,7 +51,7 @@
 #define PCM_DEINTERLEAVED_UNPACKED        3
 #define PCM_LSB_ALIGNED                   1
 
-static long int gStream_x = 0, gStream_pp = 0, gInstance = 1, gDevice_pp = 0, gDevice_x = 0;
+static long int gStream_x = 0, gStream_pp = 0, gInstance = 0, gDevice_pp = 0, gDevice_x = 0;
 
 enum pcm_channel_map
 {
