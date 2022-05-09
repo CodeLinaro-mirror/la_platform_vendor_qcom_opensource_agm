@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     struct chunk_header chunk_header;
     struct chunk_fmt chunk_fmt;
     unsigned int card = 100, device = 100;
-    bool haptics;
+    bool haptics = false;
     char *intf_name = NULL;
     struct device_config config;
     char *filename;
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 
     filename = argv[1];
     file = fopen(filename, "rb");
-    if (!file) {
+    if (!file){
         printf("Unable to open file '%s'\n", filename);
         return 1;
     }
@@ -145,8 +145,7 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 intf_name = *argv;
-        }
-       if (strcmp(*argv, "-h") == 0) {
+        } else if (strcmp(*argv, "-h") == 0) {
             argv++;
             if (*argv)
                 haptics = *argv;

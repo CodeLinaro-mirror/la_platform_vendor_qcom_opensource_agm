@@ -209,11 +209,17 @@ static void* merge_payload(uint32_t miid, int num, int *sum,  ...)
 {
     va_list valist;
     int i = 0, total_size = 0, offset = 0;
-    int *size = calloc(num, sizeof(int));
-    char **temp = calloc(num, sizeof(char *));
+    int *size = NULL;
+    char **temp = NULL;
     void *payload = NULL;
     uint8_t *buf;
     uint32_t *module_instance_id = NULL;
+    size = calloc(num, sizeof(int));
+    if(!size)
+	    return NULL;
+    temp = calloc(num, sizeof(char *));
+    if(!temp)
+	    return NULL;
 
     va_start(valist, num);
     for (i = 0; i < num; i++) {
@@ -393,12 +399,12 @@ int main(int argc, char **argv)
             if (*argv)
                 device = atoi(*argv);
         }
-        if (strcmp(*argv, "-D") == 0) {
+	else if(strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
                 card = atoi(*argv);
         }
-        if (strcmp(*argv, "-i") == 0) {
+	else if (strcmp(*argv, "-i") == 0) {
             argv++;
             if (*argv)
                 audio_intf = atoi(*argv);
@@ -407,7 +413,7 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-e") == 0) {
+	else if (strcmp(*argv, "-e") == 0) {
             argv++;
             if (*argv)
                 ec_aif = atoi(*argv);
@@ -416,7 +422,7 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-T") == 0) {
+	else if (strcmp(*argv, "-T") == 0) {
             argv++;
             if (*argv)
                 cap_time = atoi(*argv);
