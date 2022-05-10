@@ -60,7 +60,7 @@
 <config>
     <group_device name="TDM-LPAIF-RX-TERTIARY" rate="96000" ch="3" bits="16" slot_mask="7"/>
     <device name="TDM-LPAIF-RX-TERTIARY-VIRT-0" rate="96000" ch="2" bits="16" />
-    <device name="CODEC_DMA-LPAIF_WSA-RX-0" rate="48000" ch="1" bits="16" />
+    <device name="CODEC_DMA-LPAIF_WSA-RX-0" rate="48000" ch="2" bits="16" />
     <device name="CODEC_DMA-LPAIF_WSA-RX-1" rate="48000" ch="1" bits="16" />
     <device name="CODEC_DMA-LPAIF_RXTX-RX-0" rate="48000" ch="1" bits="16" />
     <device name="CODEC_DMA-LPAIF_WSA-TX-0" rate="48000" ch="2" bits="16" />
