@@ -46,7 +46,7 @@ lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -lasound -lar_osal
 if !TARGET_HYPERVISOR
-libagm_la_LIBADD +=  -lgsl -lats -lgpr
+libagm_la_LIBADD +=  -lar_gsl -lats -lgpr
 AM_CFLAGS += -DDEVICE_USES_ALSALIB
 else
 libagm_la_LIBADD +=  -lgsl_fe -lats
