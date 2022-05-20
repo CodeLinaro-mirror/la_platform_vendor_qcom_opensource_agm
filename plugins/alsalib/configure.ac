@@ -1,16 +1,17 @@
-#                                               -*- Autoconf -*-
-# configure.ac -- Autoconf script for agm
-#
-
-# Process this file with autoconf to produce a configure script
-
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
-# Initialize the audio-ms12-noship package version 1.0.0
-AC_INIT([agm],1.0.1)
+# Initialize the agm plugin package version 1.0.0
+AC_INIT([agmplugin],1.0.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
+# Disables auto rebuilding of configure, Makefile.ins
+AM_MAINTAINER_MODE
+# Verifies the --srcdir is correct by checking for the path
+AC_CONFIG_SRCDIR([src/agm_io_plugin.c])
+# defines some macros variable to be included by source
+AC_CONFIG_MACRO_DIR([m4])
 
+# Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
@@ -39,22 +40,5 @@ fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
-# Checks for libraries
-PKG_CHECK_MODULES([SPF], [spf])
-AC_SUBST([SPF_CFLAGS])
-
-AC_ARG_WITH([openwrt],
-    AS_HELP_STRING([use openwrt (default is no)]),
-    [with_openwrt=$withval],
-    [with_openwrt=no])
-AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
-
-AC_ARG_ENABLE([target-hypervisor],
-    AC_HELP_STRING([--enable-target-hypervisor],
-            [Enable conditional compile for target hypervisor [default=no]]),
-    [target_hypervisor="${enableval}"],
-    target_hypervisor=no)
-AM_CONDITIONAL(TARGET_HYPERVISOR, test "x$target_hypervisor" = "xyes")
-
-AC_CONFIG_FILES([ Makefile agm.pc ])
+AC_CONFIG_FILES([ Makefile agmplugin.pc ])
 AC_OUTPUT

@@ -609,6 +609,14 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
         return  reply.readInt32();
     }
 
+#ifdef __LINUX__
+    virtual int ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
+                                                    uint32_t aif_id,
+                                                    void* payload, size_t size)
+    {
+        return 0;
+    }
+#endif
     virtual int ipc_agm_session_eos(uint64_t handle)
     {
         android::Parcel data, reply;
@@ -1404,7 +1412,9 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         uint64_t handle = (uint64_t )data.readInt64();
         uint32_t type = data.readUint32();
         uint32_t silence = data.readUint32();
+#ifndef __LINUX__
         rc = ipc_agm_set_gapless_session_metadata(handle, init_silence, trail_silence);
+#endif
         reply->writeInt32(rc);
         break; }
 

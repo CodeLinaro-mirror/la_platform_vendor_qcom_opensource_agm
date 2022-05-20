@@ -1267,7 +1267,11 @@ bool get_file_path_extn(char* file_path_extn)
                     break;
                 }
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
-            } else {
+            }
+            else if (strstr(snd_card_name,"8295")) {
+                strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
+            }
+            else {
                 split_snd_card_name(snd_card_name, file_path_extn);
             }
             AGM_LOGV("Found Codec sound card");

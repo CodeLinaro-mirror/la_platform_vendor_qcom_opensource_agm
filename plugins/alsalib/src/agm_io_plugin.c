@@ -282,7 +282,7 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     struct agmio_priv *pcm = io->private_data;
     struct agm_session_config *session_config = NULL;
     uint64_t handle = 0;
-    int ret = 0, sess_mode = 0;
+    int ret = 0, sess_mode = 0, data_mode = 0;
     snd_pcm_uframes_t start_threshold;
     snd_pcm_uframes_t stop_threshold;
 
@@ -292,9 +292,11 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     session_config = pcm->session_config;
 
     snd_card_def_get_int(pcm->pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm->pcm_node, "agm_data_mode", &data_mode);
 
     session_config->dir = (io->stream == SND_PCM_STREAM_PLAYBACK) ? RX : TX;
     session_config->sess_mode = sess_mode;
+    session_config->data_mode = data_mode;
     snd_pcm_sw_params_get_start_threshold(params, &start_threshold);
     snd_pcm_sw_params_get_stop_threshold(params, &stop_threshold);
     snd_pcm_sw_params_get_boundary(params, &pcm->boundary);

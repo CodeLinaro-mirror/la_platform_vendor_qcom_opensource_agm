@@ -34,8 +34,6 @@ h_sources = ${top_srcdir}/inc/public/agm/agm_api.h \
 AM_CFLAGS = @SPF_CFLAGS@
 AM_CFLAGS += -I ${top_srcdir}/inc/public
 AM_CFLAGS += -I ${top_srcdir}/inc/private
-AM_CFLAGS += @MMHEADERS_CFLAGS@
-AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
 
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
@@ -53,11 +51,12 @@ endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-libagm_la_LIBADD = -ltinyalsa -lar_osal -lar_gsl -lats -laudio_log_utils
-
-if !BUILDSYSTEM_OPENWRT
-libagm_la_LIBADD += -laudio_log_utils
+if !TARGET_HYPERVISOR
+libagm_la_LIBADD = -lasound -lar_osal -lar_gsl -lats
+else
+libagm_la_LIBADD = -lasound -lar_osal -lats -lgsl_fe
 endif
+AM_CFLAGS += -DDEVICE_USES_ALSALIB
 
 libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/data/audio/delta"
 if BUILDSYSTEM_OPENWRT
