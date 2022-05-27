@@ -22,7 +22,11 @@ LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
+ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+endif
 
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
