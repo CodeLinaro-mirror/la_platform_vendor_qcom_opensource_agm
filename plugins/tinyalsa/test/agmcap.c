@@ -74,7 +74,7 @@ static void sigint_handler(int sig)
     capturing = 0;
 }
 
-static long int stream_x = 0, stream_pp = 0, instance = 1, device_pp = 0, device_x = 0;
+static long int stream_x = 0, stream_pp = 0, instance = 0, device_pp = 0, device_x = 0;
 
 int main(int argc, char **argv)
 {
