@@ -74,6 +74,7 @@
 #define AGM_SESSION_IFACE "org.Qti.Agm.Session"
 #define AGM_DBUS_CONNECTION "org.Qti.AgmService"
 #define AGM_MAX_G_OBJ_PATH 128
+#define AGM_DBUS_ASYNC_CALL_TIMEOUT_MS 1000
 
 typedef struct {
     GDBusConnection *conn;
@@ -90,6 +91,13 @@ typedef struct {
     GThread *thread_loop;
     GMainLoop *loop;
     GList *callbacks;
+    GMainLoop *ses_loop;
+    GThread *ses_thread_loop;
+    guint sub_id;
+    GMutex mutex;
+    GCond cond;
+    void *buf;
+    uint32_t buf_size;
 } agm_client_session_data;
 
 typedef struct {
@@ -213,6 +221,57 @@ static void on_emit_signal_callback(GDBusConnection *conn,
     cb_data->cb(cb_data->session_id, event_params_l, cb_data->client_data);
 }
 
+static void on_emit_ses_signal_callback(GDBusConnection *conn,
+                                    const gchar *sender_name,
+                                    const gchar *object_path,
+                                    const gchar *interface_name,
+                                    const gchar *signal_name,
+                                    GVariant *parameters,
+                                    gpointer data) {
+
+    agm_client_session_data *ses_data = NULL;
+    GVariantIter arg_i;
+    GVariant *array_v;
+    gconstpointer value;
+    gsize n_elements;
+    gsize element_size = sizeof(guchar);
+    uint32_t dir = 0;
+    uint32_t status = 0;
+    uint32_t session_id = 0;
+
+    g_variant_iter_init(&arg_i, parameters);
+    g_variant_iter_next(&arg_i, "u", &dir);
+    g_variant_iter_next(&arg_i, "u", &status);
+    g_variant_iter_next(&arg_i, "u", &session_id);
+
+    if ((ses_data = (agm_client_session_data *)
+                        g_hash_table_lookup(mdata->ses_hash_table,
+                                       GINT_TO_POINTER(session_id))) == NULL) {
+        AGM_LOGE("%s: Invalid session id received\n", __func__);
+    }
+
+    AGM_LOGD("Waking up session threads read/write = %d thread sts:%u, sid:%d\n",
+        dir, status, session_id);
+
+    if(!dir){
+        array_v = g_variant_iter_next_value(&arg_i);
+        value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
+        AGM_LOGD("%s:n_elements %d, element_size %d, %p\n", __func__,
+            n_elements, element_size, ses_data->buf);
+        if (n_elements <= ses_data->buf_size) {
+            memcpy(ses_data->buf, value, n_elements);
+            ses_data->buf_size = n_elements;
+        } else  {
+            AGM_LOGE("Insufficient bytes size to copy bytes read\n");
+        }
+        g_variant_unref(array_v);
+    }
+
+    g_mutex_lock(&ses_data->mutex);
+    g_cond_signal(&ses_data->cond);
+    g_mutex_unlock(&ses_data->mutex);
+}
+
 static void free_callbacks(agm_client_session_data *ses_data) {
     GList *node;
     agm_callback_data *cb_data;
@@ -229,6 +288,40 @@ static void free_callbacks(agm_client_session_data *ses_data) {
     }
 
     g_list_free(ses_data->callbacks);
+}
+
+static int subscribe_ses_callback_event(agm_client_session_data *ses_data,
+                                    bool subscribe) {
+    GVariant *result;
+    GError *error = NULL;
+    gint ret = 0;
+    GHashTableIter iter;
+    gpointer key, value;
+    GList *node = NULL;
+    agm_callback_data *node_data = NULL;
+
+    g_assert(mdata != NULL);
+
+    if (subscribe) {
+        AGM_LOGD("Subscribing to session events\n");
+        ses_data->sub_id = g_dbus_connection_signal_subscribe(
+                                          mdata->conn,
+                                          NULL,
+                                          AGM_SESSION_IFACE,
+                                          "AgmSesEventCb",
+                                          ses_data->obj_path,
+                                          NULL,
+                                          G_DBUS_SIGNAL_FLAGS_NONE,
+                                          on_emit_ses_signal_callback,
+                                          ses_data,
+                                          NULL);
+
+    } else {
+        AGM_LOGD("Unsubscribing to session events\n");
+        g_dbus_connection_signal_unsubscribe(mdata->conn, ses_data->sub_id);
+    }
+
+    return 0;
 }
 
 static int subscribe_callback_event(agm_client_session_data *ses_data,
@@ -303,6 +396,27 @@ static void *signal_threadloop(void *cookie) {
 exit:
     return NULL;
 }
+
+static void *ses_signal_threadloop(void *cookie) {
+    agm_client_session_data *ses_data = (agm_client_session_data *)cookie;
+
+    AGM_LOGD("Enter %s %p\n", __func__, ses_data);
+    if (!ses_data) {
+        AGM_LOGE("Invalid thread params");
+        goto exit;
+    }
+
+    ses_data->ses_loop = g_main_loop_new(NULL, FALSE);
+    AGM_LOGE("initiate ses main loop run for callbacks");
+    g_main_loop_run(ses_data->ses_loop);
+
+    AGM_LOGE("out of ses main loop\n");
+    g_main_loop_unref(ses_data->ses_loop);
+
+exit:
+    return NULL;
+}
+
 
 static int agm_session_deregister_cb(uint32_t session_id,
                                      enum event_type evt_type,
@@ -483,7 +597,7 @@ int agm_session_register_cb(uint32_t session_id,
 
         ses_data->session_id = session_id;
         snprintf(thread_name, sizeof(thread_name), "agm_loop_%d", session_id);
-        AGM_LOGE("create thread %s\n", thread_name);
+        AGM_LOGD("%s:create thread %s\n", __func__, thread_name);
         ses_data->thread_loop = g_thread_try_new(thread_name, signal_threadloop,
                                 ses_data, &error);
         if (!ses_data->thread_loop) {
@@ -1626,6 +1740,8 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
     agm_client_session_data *ses_data = (agm_client_session_data *) handle;
     GVariant *result = NULL, *arr = NULL, *argument = NULL;
     GError *error = NULL;
+    gint64 start_time, end_time;
+    int ret = 0;
 
     g_assert(ses_data != NULL);
     g_assert(ses_data->proxy != NULL);
@@ -1637,6 +1753,7 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
                                     sizeof(guchar));
     argument = g_variant_new("(@u@ay)", g_variant_new_uint32(*byte_count), arr);
 
+    g_mutex_lock(&ses_data->mutex);
     result = g_dbus_proxy_call_sync(ses_data->proxy,
                                     "AgmSessionWrite",
                                     argument,
@@ -1649,13 +1766,21 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
         AGM_LOGE("%s: Error invoking AgmSessionWrite: %s\n", __func__,
                   error->message);
         g_error_free(error);
+        g_mutex_unlock(&ses_data->mutex);
         return -EINVAL;
     }
 
+    start_time = g_get_monotonic_time();
+    end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
+    g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+    if (g_get_monotonic_time() >= end_time){
+        AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+    }
+
+    g_mutex_unlock(&ses_data->mutex);
     g_variant_get(result, "(u)", byte_count);
-    g_variant_unref(arr);
     g_variant_unref(result);
-    return 0;
+    return ret;
 }
 
 int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
@@ -1666,13 +1791,17 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
     gconstpointer value;
     gsize n_elements;
     gsize element_size = sizeof(guchar);
+    gint64 start_time, end_time;
 
     g_assert(ses_data != NULL);
     g_assert(ses_data->proxy != NULL);
     AGM_LOGD("%s\n", __func__);
 
     argument = g_variant_new("(@u)", g_variant_new_uint32(*byte_count));
+    ses_data->buf_size = *byte_count;
+    ses_data->buf = buf;
 
+    g_mutex_lock(&ses_data->mutex);
     result = g_dbus_proxy_call_sync(ses_data->proxy,
                                     "AgmSessionRead",
                                     argument,
@@ -1688,17 +1817,15 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
         return -EINVAL;
     }
 
-    val_arr = g_variant_get_child_value(result, 0);
-    value = g_variant_get_fixed_array(val_arr, &n_elements, element_size);
-    if (n_elements <= *byte_count) {
-        memcpy(buf, value, n_elements);
-        *byte_count = n_elements;
-    } else  {
-        AGM_LOGE("Insufficient bytes size to copy bytes read\n");
-        return -ENOMEM;
+    start_time = g_get_monotonic_time();
+    end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
+    g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+    if (g_get_monotonic_time() >= end_time){
+        AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
     }
+    *byte_count = ses_data->buf_size;
 
-    g_variant_unref(val_arr);
+    g_mutex_unlock(&ses_data->mutex);
     g_variant_unref(result);
     return 0;
 }
@@ -1871,10 +1998,21 @@ int agm_session_close(uint64_t handle) {
     free_callbacks(ses_data);
 
     if (ses_data->thread_loop) {
-        AGM_LOGE("Quitting loop");
+        AGM_LOGE("%s:Quitting loop", __func__);
         g_main_loop_quit(ses_data->loop);
         g_thread_join(ses_data->thread_loop);
         ses_data->thread_loop = NULL;
+    }
+
+    subscribe_ses_callback_event(ses_data, false);
+    g_cond_clear(&ses_data->cond);
+    g_mutex_clear(&ses_data->mutex);
+
+    if (ses_data->ses_thread_loop) {
+        AGM_LOGE("Quitting ses thread loop");
+        g_main_loop_quit(ses_data->ses_loop);
+        g_thread_join(ses_data->ses_thread_loop);
+        ses_data->ses_thread_loop = NULL;
     }
 
     g_hash_table_remove(mdata->ses_hash_table,
@@ -1899,6 +2037,8 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
     GError *error = NULL;
     int rc = 0;
     agm_client_session_data *ses_data = NULL;
+    agm_callback_data *cb_data;
+    gchar thread_name[16] = "";
 
     g_assert(handle != NULL);
     AGM_LOGD("%s\n", __func__);
@@ -1929,6 +2069,7 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
         rc = -EINVAL;
         goto exit;
     }
+
 
     if ((ses_data = (agm_client_session_data *)g_hash_table_lookup(
                                         mdata->ses_hash_table,
@@ -1963,11 +2104,32 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
                             GINT_TO_POINTER(ses_data->session_id),
                             ses_data);
         g_variant_unref(result);
-        return rc;
     } else {
         *handle = (uint64_t)ses_data;
-        return rc;
     }
+
+    g_mutex_init(&ses_data->mutex);
+    g_cond_init(&ses_data->cond);
+    snprintf(thread_name, sizeof(thread_name), "ses_loop_%d", session_id);
+    AGM_LOGD("create thread %s\n", thread_name);
+    ses_data->ses_thread_loop = g_thread_try_new(thread_name, ses_signal_threadloop, ses_data, &error);
+    if (!ses_data->ses_thread_loop) {
+        rc = -EINVAL;
+        AGM_LOGE("Could not create thread %s, error %s\n", thread_name,
+                  error->message);
+        g_error_free(error);
+        g_free(ses_data);
+        goto exit;
+    }
+
+    if (subscribe_ses_callback_event(ses_data, true)) {
+        AGM_LOGE("Unable to subscribe for ses callback event\n");
+        g_error_free(error);
+        g_free(ses_data);
+        rc = -EINVAL;
+    }
+
+    return rc;
 
 exit:
     if (ses_data != NULL)
