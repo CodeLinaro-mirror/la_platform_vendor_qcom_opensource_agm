@@ -103,13 +103,6 @@ typedef struct {
     /* List which maintains all the callbacks associated with a session id.
        Used to de-register callbacks when client dies abruptly */
     GList *callbacks;
-
-    char buf[8196];
-    uint32_t buf_size;
-    int thread_state;
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
-    pthread_t ses_tid;
 } agm_session_data;
 
 typedef struct {
@@ -165,15 +158,7 @@ enum AgmSessionMethods {
 
 enum AgmEventSignals {
     AgmEventCb,
-    AgmSesEventCb,
     AgmSignalMax
-};
-
-enum {
-    SES_THREAD_IDLE,
-    SES_THREAD_READ_QUEUED,
-    SES_THREAD_WRITE_QUEUED,
-    SES_THREAD_EXIT,
 };
 
 static void ipc_agm_audio_intf_set_metadata(DBusConnection *conn,
@@ -281,8 +266,6 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
 static void ipc_agm_session_deregister_cb(DBusConnection *conn,
                                           DBusMessage *msg,
                                           void *userdata);
-static void ses_write_done(agm_session_data *ses_data, uint32_t status);
-static void ses_read_done(agm_session_data *ses_data, uint32_t status);
 
 static agm_dbus_method agm_dbus_module_methods[AgmDbusModuleMethodMax] = {
     {"AgmAifSetMediaConfig", "u(uuiu)", ipc_agm_audio_intf_set_media_config},
@@ -330,8 +313,7 @@ static agm_dbus_method agm_dbus_session_methods[AgmDbusSessionMethodMax] = {
 };
 
 static agm_dbus_signal event_callback[AgmSignalMax] = {
-    {"AgmEventCb", "uuuay"},
-    {"AgmSesEventCb", "uuuay"}
+    {"AgmEventCb", "uuuay"}
 };
 
 agm_dbus_interface_info module_interface_info = {
@@ -349,47 +331,6 @@ agm_dbus_interface_info session_interface_info = {
     .signals=event_callback,
     .signal_count=AgmSignalMax
 };
-
-static void* async_thread_func(void *userdata) {
-    agm_session_data *ses_data = (agm_session_data *)userdata;
-    int ret = 0;
-
-    AGM_LOGE("Starting Async Thread\n");
-
-    pthread_mutex_lock(&ses_data->lock);
-    while (ses_data->thread_state != SES_THREAD_EXIT) {
-        pthread_cond_wait(&ses_data->cond, &ses_data->lock);
-
-        if(ses_data->thread_state == SES_THREAD_EXIT)
-            break;
-
-        if (ses_data->thread_state == SES_THREAD_WRITE_QUEUED) {
-            pthread_mutex_unlock(&ses_data->lock);
-
-           if (agm_session_write(ses_data->handle, ses_data->buf, (size_t *) &ses_data->buf_size)) {
-                AGM_LOGE("agm_session_write failed");
-                ret = -1;
-            }
-            pthread_mutex_lock(&ses_data->lock);
-            ses_write_done(ses_data, ret);
-            ses_data->thread_state = SES_THREAD_IDLE;
-        }
-
-        if (ses_data->thread_state == SES_THREAD_READ_QUEUED) {
-            pthread_mutex_unlock(&ses_data->lock);
-            if (agm_session_read(ses_data->handle, ses_data->buf, (size_t *) &ses_data->buf_size)) {
-                AGM_LOGE("agm_session_read failed");
-                ret = -1;
-            }
-            pthread_mutex_lock(&ses_data->lock);
-            ses_read_done(ses_data, ret);
-            ses_data->thread_state = SES_THREAD_IDLE;
-        }
-    }
-    pthread_mutex_unlock(&ses_data->lock);
-    AGM_LOGD("Exiting asycn thread for session id = %d\n", ses_data->session_id);
-    return NULL;
-}
 
 static DBusHandlerResult disconnection_filter_cb(DBusConnection *conn,
                                                  DBusMessage *msg,
@@ -565,63 +506,6 @@ static void agmevent_cb(uint32_t session_id,
     dbus_message_unref(message);
     free(buf);
     buf = NULL;
-}
-
-static void ses_write_done(agm_session_data *ses_data, uint32_t status) {
-    DBusMessage *message = NULL;
-    DBusMessageIter arg_i, array_i;
-    uint32_t dir = 1;
-
-    AGM_LOGD("%s: Received write done event for session %d, status:%d", __func__,
-        ses_data->session_id, status);
-
-    message = dbus_message_new_signal(ses_data->dbus_obj_path,
-                                      session_interface_info.name,
-                                      event_callback[AgmSesEventCb].method_name);
-
-    dbus_message_iter_init_append(message, &arg_i);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &dir);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &status);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &ses_data->session_id);
-    dbus_message_iter_open_container(&arg_i,
-                                     DBUS_TYPE_ARRAY,
-                                     "y",
-                                     &array_i);
-    dbus_message_iter_close_container(&arg_i, &array_i);
-
-    agm_dbus_send_signal(mdata->conn, message);
-    dbus_message_unref(message);
-}
-
-static void ses_read_done(agm_session_data *ses_data, uint32_t status) {
-    DBusMessage *message = NULL;
-    DBusMessageIter arg_i, array_i;
-    uint32_t dir = 0;
-    void *arr = ses_data->buf;
-
-    AGM_LOGD("%s: Received read done event for session %d, status:%d", __func__,
-        ses_data->session_id, status);
-
-    message = dbus_message_new_signal(ses_data->dbus_obj_path,
-                                      session_interface_info.name,
-                                      event_callback[AgmSesEventCb].method_name);
-
-    dbus_message_iter_init_append(message, &arg_i);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &dir);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &status);
-    dbus_message_iter_append_basic(&arg_i, DBUS_TYPE_UINT32, &ses_data->session_id);
-    dbus_message_iter_open_container(&arg_i,
-                                     DBUS_TYPE_ARRAY,
-                                     "y",
-                                     &array_i);
-    dbus_message_iter_append_fixed_array(&array_i,
-                                         DBUS_TYPE_BYTE,
-                                         &arr,
-                                         ses_data->buf_size);
-    dbus_message_iter_close_container(&arg_i, &array_i);
-
-    agm_dbus_send_signal(mdata->conn, message);
-    dbus_message_unref(message);
 }
 
 static void ipc_agm_session_deregister_cb(DBusConnection *conn,
@@ -2109,11 +1993,11 @@ static void ipc_agm_session_eos(DBusConnection *conn,
 static void ipc_agm_session_write(DBusConnection *conn,
                                   DBusMessage *msg,
                                   void *userdata) {
-
     DBusMessage *reply = NULL;
     DBusMessageIter arg_i, array_i, r_arg;
     agm_session_data *ses_data = (agm_session_data *)userdata;
     uint32_t buf_size=0;
+    void *buf;
     char *value = NULL;
     char **addr_value = &value;
     int n_elements = 0;
@@ -2139,27 +2023,30 @@ static void ipc_agm_session_write(DBusConnection *conn,
         return;
     }
 
+    AGM_LOGV("%s : ", __func__);
+
     dbus_message_iter_get_basic(&arg_i, &buf_size);
     dbus_message_iter_next(&arg_i);
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
+    buf = (void *)malloc(n_elements*sizeof(char));
+    memcpy(buf, value, n_elements);
 
-    pthread_mutex_lock(&ses_data->lock);
-    if (ses_data->thread_state != SES_THREAD_IDLE) {
-        pthread_mutex_unlock(&ses_data->lock);
-        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "write via async failed");
+    if (agm_session_write(ses_data->handle, buf, (size_t *) &buf_size)) {
+        AGM_LOGE("agm_session_write failed.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "agm_session_write failed.");
+        free(buf);
+        buf = NULL;
         return;
     }
-    memcpy(ses_data->buf, value, n_elements);
-    ses_data->buf_size = buf_size;
-    ses_data->thread_state = SES_THREAD_WRITE_QUEUED;
-    pthread_mutex_unlock(&ses_data->lock);
-    pthread_cond_signal(&ses_data->cond);
 
     reply = dbus_message_new_method_return(msg);
     dbus_message_iter_init_append(reply, &r_arg);
     dbus_message_iter_append_basic(&r_arg, DBUS_TYPE_UINT32, &buf_size);
     dbus_connection_send(conn, reply, NULL);
+    free(buf);
+    buf = NULL;
     dbus_message_unref(reply);
 }
 
@@ -2171,6 +2058,7 @@ static void ipc_agm_session_read(DBusConnection *conn,
     DBusMessageIter r_arg, r_array_i;
     size_t buf_size=0;
     agm_session_data *ses_data = (agm_session_data *)userdata;
+    void *buf = NULL;
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
@@ -2197,19 +2085,26 @@ static void ipc_agm_session_read(DBusConnection *conn,
 
     dbus_message_iter_get_basic(&arg_i, &buf_size);
 
-    pthread_mutex_lock(&ses_data->lock);
-    if (ses_data->thread_state != SES_THREAD_IDLE) {
-        pthread_mutex_unlock(&ses_data->lock);
-        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "read via async failed");
+    buf = (void *)malloc(buf_size);
+
+    if (agm_session_read(ses_data->handle, buf, (size_t *) &buf_size)) {
+        AGM_LOGE("agm_session_read failed.");
+        agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                            "agm_session_read failed.");
+        free(buf);
+        buf = NULL;
         return;
     }
-    ses_data->buf_size = buf_size;
-    ses_data->thread_state = SES_THREAD_READ_QUEUED;
-    pthread_mutex_unlock(&ses_data->lock);
-    pthread_cond_signal(&ses_data->cond);
 
     reply = dbus_message_new_method_return(msg);
+    dbus_message_iter_init_append(reply, &r_arg);
+    dbus_message_iter_open_container(&r_arg, DBUS_TYPE_ARRAY, "y", &r_array_i);
+    dbus_message_iter_append_fixed_array(&r_array_i, DBUS_TYPE_BYTE, &buf,
+                                         buf_size);
+    dbus_message_iter_close_container(&r_arg, &r_array_i);
     dbus_connection_send(conn, reply, NULL);
+    free(buf);
+    buf = NULL;
     dbus_message_unref(reply);
 }
 
@@ -2362,15 +2257,9 @@ static void ipc_agm_session_close(DBusConnection *conn,
         return;
     }
 
-    AGM_LOGD("%s : ", __func__);
+    AGM_LOGV("%s : ", __func__);
 
     dbus_connection_remove_filter(conn, disconnection_filter_cb, ses_data);
-
-    ses_data->thread_state = SES_THREAD_EXIT;
-    pthread_cond_signal(&ses_data->cond);
-    pthread_join(ses_data->ses_tid, NULL);
-    pthread_cond_destroy(&ses_data->cond);
-    pthread_mutex_destroy(&ses_data->lock);
 
     if (agm_session_close(ses_data->handle)) {
         AGM_LOGE("agm_session_close failed.");
@@ -2412,8 +2301,6 @@ static void ipc_agm_session_open(DBusConnection *conn,
     DBusMessageIter arg_i;
     uint32_t session_id, sess_mode;
     char *dbus_obj_path = NULL;
-    gchar thread_name[32] = "";
-    int32_t ret;
     agm_session_data *ses_data = NULL;
 
     if (userdata == NULL) {
@@ -2451,14 +2338,6 @@ static void ipc_agm_session_open(DBusConnection *conn,
                             "agm_session_open failed.");
         return;
     }
-
-    ses_data->lock = PTHREAD_MUTEX_INITIALIZER;
-    ses_data->cond = PTHREAD_COND_INITIALIZER;
-    ses_data->thread_state = SES_THREAD_IDLE;
-    snprintf(thread_name, sizeof(thread_name), "agm_ses_async_thread_%d", session_id);
-    if (pthread_create(&ses_data->ses_tid, NULL, async_thread_func, ses_data))
-        AGM_LOGE("%s: agm session async thread creation failed", __func__);
-    AGM_LOGD("%s: agm session async write thread created", __func__);
 
     if (!dbus_connection_add_filter(conn,
                                     disconnection_filter_cb,
