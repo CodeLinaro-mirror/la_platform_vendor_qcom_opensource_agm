@@ -1146,7 +1146,7 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
     if (key >= agmctl->total_ctl_cnt)
         return -EINVAL;
 
-    len = (size_t)*(tlv + sizeof(unsigned int));
+    len = *(size_t *)(tlv + sizeof(unsigned int));
     data = (unsigned char *)(tlv + 2 * sizeof(unsigned int));
 
     switch (agmctl->controls[key].ctl_id) {
@@ -1169,6 +1169,11 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         rc = -EINVAL;
         AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
         break;
+    }
+    if(rc == 0) {
+        unsigned int numid = ((unsigned int *)tlv)[0];
+        if (numid == -1)
+            ((unsigned int *)tlv)[0] = 0;
     }
     return rc;
 }
