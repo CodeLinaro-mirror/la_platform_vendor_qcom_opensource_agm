@@ -62,6 +62,6 @@ libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FIL
 if BUILDSYSTEM_OPENWRT
 libagm_la_LIBADD += -lglib-2.0
 endif
-libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
+libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -fcommon
 libagm_la_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libagm_la_LDFLAGS = -module -shared -avoid-version

@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     unsigned int rate = 48000;
     unsigned int bits = 16;
     unsigned int frames;
-    unsigned int period_size;
+    unsigned int period_size = 0;
     unsigned int period_count = 2;
     unsigned int cap_time = 0;
     char *intf_name = NULL;
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
     if (argc < 2) {
         printf("Usage: %s file.wav [-D card] [-d device]"
-               " [-c channels] [-r rate] [-b bits] [-T capture_time] [-i intf_name]"
+               " [-c channels] [-r rate] [-b bits] [-p period_sizei] [-n period_count] [-T capture_time] [-i intf_name]"
                " [-sx stream_tx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_tx]\n", argv[0]);
         return 1;
     }
@@ -130,6 +130,14 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 card = atoi(*argv);
+        } else if (strcmp(*argv, "-p") == 0) {
+            argv++;
+            if (*argv)
+                period_size = atoi(*argv);
+        } else if (strcmp(*argv, "-n") == 0) {
+            argv++;
+            if (*argv)
+                period_count = atoi(*argv);
         } else if (strcmp(*argv, "-T") == 0) {
             argv++;
             if (*argv)
@@ -192,40 +200,42 @@ int main(int argc, char **argv)
     if (intf_name == NULL)
         return 1;
 
-    switch (rate) {
-    case 8000:
-        period_size = 40;
-        break;
-    case 12000:
-        period_size = 60;
-        break;
-    case 16000:
-        period_size = 80;
-        break;
-    case 24000:
-        period_size = 120;
-        break;
-    case 32000:
-        period_size = 160;
-        break;
-    case 44100:
-        period_size = 220;
-        break;
-    case 48000:
-        period_size = 240;
-        break;
-    case 64000:
-        period_size = 320;
-        break;
-    case 96000:
-        period_size = 480;
-        break;
-    case 192000:
-        period_size = 960;
-        break;
-    default:
-        period_size = 240;
-        break;
+    if (period_size == 0) {
+        switch (rate) {
+        case 8000:
+            period_size = 40;
+            break;
+        case 12000:
+            period_size = 60;
+            break;
+        case 16000:
+            period_size = 80;
+            break;
+        case 24000:
+            period_size = 120;
+            break;
+        case 32000:
+            period_size = 160;
+            break;
+        case 44100:
+            period_size = 220;
+            break;
+        case 48000:
+            period_size = 240;
+            break;
+        case 64000:
+            period_size = 320;
+            break;
+        case 96000:
+            period_size = 480;
+            break;
+        case 192000:
+            period_size = 960;
+            break;
+        default:
+            period_size = 240;
+            break;
+        }
     }
 
     ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
