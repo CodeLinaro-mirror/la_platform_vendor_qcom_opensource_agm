@@ -272,13 +272,6 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
-    if (configure_mfc(mixer, device, name, PER_STREAM_PER_DEVICE_MFC,
-                           STREAM_PCM, dev_config->rate, dev_config->ch,
-                           dev_config->bits)) {
-        printf("Failed to configure pspd mfc\n");
-        goto err_close_mixer;
-    }
-
     if (strstr(name, "VIRT-")) {
         if (get_group_device_info(BACKEND_CONF_FILE, name, &grp_config))
             goto err_close_mixer;
