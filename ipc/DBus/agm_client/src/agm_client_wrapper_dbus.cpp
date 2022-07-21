@@ -597,7 +597,7 @@ int agm_session_register_cb(uint32_t session_id,
 
         ses_data->session_id = session_id;
         snprintf(thread_name, sizeof(thread_name), "agm_loop_%d", session_id);
-        AGM_LOGD("%s:create thread %s\n", __func__, thread_name);
+        AGM_LOGE("create thread %s\n", thread_name);
         ses_data->thread_loop = g_thread_try_new(thread_name, signal_threadloop,
                                 ses_data, &error);
         if (!ses_data->thread_loop) {
@@ -1998,7 +1998,7 @@ int agm_session_close(uint64_t handle) {
     free_callbacks(ses_data);
 
     if (ses_data->thread_loop) {
-        AGM_LOGE("%s:Quitting loop", __func__);
+        AGM_LOGE("Quitting loop");
         g_main_loop_quit(ses_data->loop);
         g_thread_join(ses_data->thread_loop);
         ses_data->thread_loop = NULL;
