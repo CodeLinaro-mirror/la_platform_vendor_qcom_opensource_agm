@@ -1364,6 +1364,10 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
        free(sess_obj->params);
        sess_obj->params = NULL;
        sess_obj->params_size = 0;
+   } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
    }
 
 done:
@@ -1715,11 +1719,15 @@ int session_obj_get_sess_params(struct session_obj *sess_obj,
             if (ret)
                 AGM_LOGE("Error:%d get sess params on sess_id:%d\n",
                               ret, sess_obj->sess_id);
-    }
+    } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
+   }
 
-
-    pthread_mutex_unlock(&sess_obj->lock);
-    return ret;
+done:
+   pthread_mutex_unlock(&sess_obj->lock);
+   return ret;
 }
 
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
