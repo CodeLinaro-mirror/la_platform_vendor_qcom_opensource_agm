@@ -1200,8 +1200,9 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                 AGM_LOGE("calloc failed\n");
                 return -ENOMEM;
             }
+            size_t tmp_count = count;
             rc = ipc_agm_session_aif_get_tag_module_info(pcm_idx, be_idx,
-                                                     bn_payload, &count);
+                                                         bn_payload, &tmp_count);
             android::Parcel::WritableBlob tag_info_blob;
             reply->writeBlob(count, false, &tag_info_blob);
             memcpy(tag_info_blob.data(), bn_payload, count);
