@@ -131,5 +131,8 @@ interface IAGM
                                uint32_t num_groups_ret);
     ipc_agm_session_write_datapath_params(uint32_t session_id, vec<AgmBuff> buff)
                     generates (int32_t ret);
+    ipc_agm_get_shmem_buf_info(uint32_t session_id, vec<AgmShmemInfo> buf_info,
+                     uint32_t size)
+                     generates (int32_t ret, vec<AgmShmemInfo> buf_info);
 
 };

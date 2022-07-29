@@ -121,6 +121,8 @@ class IAgmService: public ::android::IInterface
                                     uint32_t silence) = 0;
         virtual int ipc_agm_session_get_buf_info(uint32_t session_id,
                            struct agm_buf_info *buf_info, uint32_t flag) = 0;
+        virtual int ipc_agm_session_get_shmem_buf_info(uint32_t session_id,
+                            struct agm_shmem_info *buf_info, uint32_t size) = 0;
 };
 
 class BnAgmService : public ::android::BnInterface<IAgmService> {

@@ -400,6 +400,14 @@ struct agm_acdb_param {
     uint8_t blob[];            /**< kv + payload */
 };
 
+struct agm_shmem_info {
+    uint64_t spf_addr;
+    uint32_t ion_fd;
+    uint32_t spf_mem_handle;
+    uint32_t size;
+    uint32_t cache;
+};
+
 /**
  * Event types
  */
@@ -983,6 +991,20 @@ int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp);
 int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info, uint32_t flag);
 
 /**
+ * \brief Get shared memory buf_info of a given session
+ *
+ * \param[in] session_id - Valid audio session id
+ * \param[out] buf_info - agm_shmem_info structure with ion_fd
+ * \param[in] size - payload size
+ *
+ * \return 0 on success, error code on failure.
+ * If the session is not opened,
+ * api will return failure.
+ */
+int agm_get_shmem_buf_info(uint32_t session_id,
+                           struct agm_shmem_info *buf_info, size_t size);
+
+/**
   * \brief This api is a no-op if agm runs in clients context.
   *        In scenarios where AGM runs in its own process context
   *        and clients talk to AGM over IPC, this api could be used
@@ -998,7 +1020,6 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
   *
   * \return 0 on success, error code otherwise
   */
-
 int agm_register_service_crash_callback(agm_service_crash_cb cb,
                                          uint64_t cookie);
 

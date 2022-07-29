@@ -1834,6 +1834,47 @@ int graph_get_buf_info(struct graph_obj *graph_obj, struct agm_buf_info *buf_inf
     return ret;
 }
 
+int graph_get_shmem_buf_info(struct graph_obj *graph_obj, struct agm_shmem_info *buf_info, size_t size)
+{
+    struct session_obj *sess_obj = NULL;
+    struct gsl_shmem_info info;
+    enum gsl_cmd_id cmd_id;
+    int ret = -EINVAL;
+
+    if (graph_obj == NULL) {
+        AGM_LOGE("invalid graph object");
+        ret = -EINVAL;
+        goto error;
+    }
+
+    sess_obj = graph_obj->sess_obj;
+    if (sess_obj == NULL) {
+        AGM_LOGE("invalid sess object");
+        ret = -EINVAL;
+        goto error;
+    }
+
+    info.size = buf_info->size;
+    info.cache = buf_info->cache;
+    ret = gsl_get_shmem_buf_info(&info);
+    if(ret) {
+        AGM_LOGE("failed to get shmem info");
+        ret = -EINVAL;
+        goto error;
+    }
+
+    buf_info->ion_fd = info.ion_fd;
+    buf_info->spf_addr = info.spf_addr;
+    buf_info->spf_mem_handle = info.spf_mem_handle;
+    return ret;
+
+error:
+    buf_info->ion_fd = 0;
+    buf_info->spf_addr = 0;
+    buf_info->spf_mem_handle = 0;
+    return ret;
+}
+
 int graph_set_gapless_metadata(struct graph_obj *graph_obj,
                                enum agm_gapless_silence_type type,
                                uint32_t silence)

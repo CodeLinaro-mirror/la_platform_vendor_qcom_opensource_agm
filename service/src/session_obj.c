@@ -2503,6 +2503,26 @@ done:
     return ret;
 }
 
+int session_obj_get_sess_shmem_buf_info(struct session_obj *sess_obj, struct agm_shmem_info *buf_info, size_t size)
+{
+    int ret = 0;
+
+    pthread_mutex_lock(&sess_obj->lock);
+    if (sess_obj->state == SESSION_CLOSED) {
+        AGM_LOGE("Invalid session state:%d\n", sess_obj->state);
+        ret = -EINVAL;
+        goto done;
+    }
+
+    ret = graph_get_shmem_buf_info(sess_obj->graph, buf_info, size);
+    if (ret)
+        AGM_LOGE("graph_get_shmem_buf_info failed %d\n", ret);
+
+done:
+    pthread_mutex_unlock(&sess_obj->lock);
+    return ret;
+}
+
 int session_obj_set_gapless_metadata(struct session_obj *sess_obj,
                                      enum agm_gapless_silence_type type,
                                      uint32_t silence)
