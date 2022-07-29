@@ -371,6 +371,19 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
     return -EAGAIN;
 }
 
+int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
+                                             void *payload, size_t size)
+{
+    if (!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_set_params_with_tag_to_acdb(session_id,
+                                    aif_id, payload, size);
+    }
+    AGM_LOGE("%s: agm service is not running\n", __func__);
+
+    return -EINVAL;
+}
+
 int agm_session_register_for_events(uint32_t session_id,
                   struct agm_event_reg_cfg *evt_reg_cfg)
 {

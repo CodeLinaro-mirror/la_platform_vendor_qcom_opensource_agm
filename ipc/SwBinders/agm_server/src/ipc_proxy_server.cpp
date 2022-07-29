@@ -106,6 +106,7 @@ enum {
     SESSION_AIF_SET_PARAMS,
     SESSION_SET_PARAMS,
     SET_PARAMS_WITH_TAG,
+    SET_PARAMS_WITH_TAG_TO_ACDB,
     SET_ECREF,
     SET_CALIBRATION,
     EOS,
@@ -609,14 +610,26 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
         return  reply.readInt32();
     }
 
-#ifdef __LINUX__
     virtual int ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
                                                     uint32_t aif_id,
                                                     void* payload, size_t size)
     {
-        return 0;
-    }
-#endif
+        android::Parcel data, reply;
+        android::Parcel::WritableBlob blob;
+
+        data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+        data.writeUint32(session_id);
+        data.writeUint32(aif_id);
+
+        data.writeUint32(size);
+        data.writeBlob(size, false, &blob);
+        memset(blob.data(), 0x0, size);
+        memcpy(blob.data(), payload, size);
+
+        remote()->transact(SET_PARAMS_WITH_TAG_TO_ACDB, data, &reply);
+        blob.release();
+        return  reply.readInt32();    }
+
     virtual int ipc_agm_session_eos(uint64_t handle)
     {
         android::Parcel data, reply;
@@ -1312,6 +1325,30 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         tkv_blob.release();
         rc = ipc_agm_set_params_with_tag (pcm_idx, be_idx, atc);
     set_param_with_tag_fail:
+        reply->writeInt32(rc);
+        break; }
+
+    case SET_PARAMS_WITH_TAG_TO_ACDB: {
+        uint32_t rc, pcm_idx, be_idx;
+        size_t count = 0;
+        android::Parcel::ReadableBlob blob;
+        void *bn_payload;
+
+        pcm_idx = data.readUint32();
+        be_idx = data.readUint32();
+        count = (size_t) data.readUint32();
+        data.readBlob(count, &blob);
+
+        bn_payload = calloc(count, sizeof(uint8_t));
+        if (!bn_payload) {
+            AGM_LOGE("calloc failed\n");
+            rc =  -ENOMEM;
+            goto session_set_param_with_tag_to_acdb_fail;
+        }
+        memcpy(bn_payload, blob.data(), count);
+        rc = ipc_agm_set_params_with_tag_to_acdb(pcm_idx, be_idx, bn_payload, count);
+        free(bn_payload);
+    session_set_param_with_tag_to_acdb_fail:
         reply->writeInt32(rc);
         break; }
 
