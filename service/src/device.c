@@ -1268,7 +1268,7 @@ bool get_file_path_extn(char* file_path_extn)
                 }
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
-            else if (strstr(snd_card_name,"8295")) {
+            else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")) {
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
             else {
