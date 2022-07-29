@@ -163,7 +163,7 @@ static void update_sysfs_fd (int8_t pcm_id, int8_t state)
     }
 }
 
-int device_get_snd_card_id()
+int device_get_snd_card_id(void)
 {
     struct device_obj *dev_obj = node_to_item(list_head(&device_list),
                                               struct device_obj, list_node);
@@ -925,7 +925,7 @@ done:
     return grp_data;
 }
 
-int parse_snd_card()
+int parse_snd_card(void)
 {
     char buffer[MAX_BUF_SIZE];
     unsigned int count = 0, i = 0;
@@ -1260,7 +1260,7 @@ bool get_file_path_extn(char* file_path_extn)
                     chipset_value = CHIPSET_6155;
                 } else if (strstr(snd_card_name,"8155")){
                     chipset_value = CHIPSET_8155;
-                } else if (strstr(snd_card_name,"8295")){
+                } else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")){
                 } else {
                     AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s",snd_card_name);
                     snd_card_found = false;
