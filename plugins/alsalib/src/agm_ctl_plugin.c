@@ -54,6 +54,7 @@ enum {
     AGM_FE_CTL_NAME_SET_CALIBRATION,
     AGM_FE_CTL_NAME_GET_PARAM,
     AGM_FE_CTL_NAME_BUF_INFO,
+    AGM_FE_CTL_NAME_SET_PARAM_TAG_ACDB,
     /* Add new common FE control enum here */
     AGM_FE_CTL_END,
     AGM_TX_CTL_START = AGM_FE_CTL_END,
@@ -97,6 +98,8 @@ static const struct agm_ctl_attribute_info {
                                    SND_CTL_EXT_ACCESS_TLV_CALLBACK, 128 * 1024},
     [AGM_FE_CTL_NAME_BUF_INFO] = {SND_CTL_ELEM_TYPE_BYTES, SND_CTL_EXT_ACCESS_TLV_READWRITE |
                                   SND_CTL_EXT_ACCESS_TLV_CALLBACK, 512},
+    [AGM_FE_CTL_NAME_SET_PARAM_TAG_ACDB] = {SND_CTL_ELEM_TYPE_BYTES, SND_CTL_EXT_ACCESS_TLV_READWRITE |
+                                       SND_CTL_EXT_ACCESS_TLV_CALLBACK, 128 * 1024},
     /*********************** END OF COMMON FE CONTROLS ************************/
     /********************** START OF TX FE CONTROLS ***********************/
     [AGM_FE_TX_CTL_NAME_LOOPBACK] = {SND_CTL_ELEM_TYPE_ENUMERATED, SND_CTL_EXT_ACCESS_READWRITE, 1},
@@ -125,7 +128,8 @@ static char *agm_fe_ctl_name_extn[] = {
     "event",
     "setCalibration",
     "getParam",
-    "getBufInfo"
+    "getBufInfo",
+    "setParamTagACDB",
     /* add new control entry here */
 };
 
@@ -297,6 +301,31 @@ static int agmctl_pcm_setparamtag_put(struct agm_mixer_controls *control,
 
     if (ret)
         AGM_LOGE("%s: set_paramtag failed err %d for %d\n",
+               __func__, ret, pcm_idx);
+    return ret;
+}
+
+static int agmctl_pcm_setparamtagacdb_put(struct agm_mixer_controls *control,
+                                   unsigned char *data, size_t max_bytes)
+{
+    int pcm_idx = control->pcm_be_id;
+    int ret = 0, be_idx = -1;
+    int pcm_control;
+
+    pcm_control = agmctl_pcm_get_control_value(control->priv, pcm_idx);
+
+    if (pcm_control <= 0) {
+        AGM_LOGE("%s: err: control not set to Backend\n", __func__);
+        return -EINVAL;
+    }
+
+    be_idx = pcm_control - 1;
+    ret = agm_set_params_with_tag_to_acdb(pcm_idx, be_idx, (struct agm_acdb_param *)data, max_bytes);
+    if (ret == -EALREADY)
+        ret = 0;
+
+    if (ret)
+        AGM_LOGE("%s: set_paramtagacdb failed err %d for %d\n",
                __func__, ret, pcm_idx);
     return ret;
 }
@@ -1146,7 +1175,7 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
     if (key >= agmctl->total_ctl_cnt)
         return -EINVAL;
 
-    len = (size_t)*(tlv + sizeof(unsigned int));
+    len = *(size_t *)(tlv + sizeof(unsigned int));
     data = (unsigned char *)(tlv + 2 * sizeof(unsigned int));
 
     switch (agmctl->controls[key].ctl_id) {
@@ -1169,6 +1198,11 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         rc = -EINVAL;
         AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
         break;
+    }
+    if(rc == 0) {
+        unsigned int numid = ((unsigned int *)tlv)[0];
+        if (numid == -1)
+            ((unsigned int *)tlv)[0] = 0;
     }
     return rc;
 }
@@ -1196,6 +1230,9 @@ static int agmctl_write_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         break;
     case AGM_FE_CTL_NAME_SET_PARAM_TAG:
         rc = agmctl_pcm_setparamtag_put(&agmctl->controls[key], data, len);
+        break;
+    case AGM_FE_CTL_NAME_SET_PARAM_TAG_ACDB:
+        rc = agmctl_pcm_setparamtagacdb_put(&agmctl->controls[key], data, len);
         break;
     case AGM_FE_CTL_NAME_EVENT:
         rc = agmctl_pcm_event_put(&agmctl->controls[key], data, len);
