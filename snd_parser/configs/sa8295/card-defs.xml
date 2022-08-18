@@ -340,6 +340,20 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
             <agm_data_mode>2</agm_data_mode>
         </props>
     </pcm-device>
+
+    <pcm-device>
+        <id>203</id>
+        <name>HOSTLESS3p</name>
+        <pcm_plugin>
+            <so-name>libasound_module_pcm_agm.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>1</playback>
+            <capture>0</capture>
+            <session_mode>1</session_mode>
+            <agm_data_mode>2</agm_data_mode>
+        </props>
+    </pcm-device>
 <!-- hostless capture devices -->
     <pcm-device>
         <id>300</id>
@@ -358,6 +372,20 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
     <pcm-device>
         <id>301</id>
         <name>HOSTLESS1c</name>
+        <pcm_plugin>
+            <so-name>libasound_module_pcm_agm.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <session_mode>1</session_mode>
+            <agm_data_mode>2</agm_data_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>302</id>
+        <name>HOSTLESS2c</name>
         <pcm_plugin>
             <so-name>libasound_module_pcm_agm.so</so-name>
         </pcm_plugin>
