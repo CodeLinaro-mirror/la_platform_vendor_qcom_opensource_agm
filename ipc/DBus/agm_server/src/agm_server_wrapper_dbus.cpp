@@ -104,7 +104,7 @@ typedef struct {
        Used to de-register callbacks when client dies abruptly */
     GList *callbacks;
 
-    char buf[8196];
+    char buf[16392];
     uint32_t buf_size;
     int thread_state;
     pthread_mutex_t lock;
@@ -2165,13 +2165,13 @@ static void ipc_agm_session_write(DBusConnection *conn,
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
 
     pthread_mutex_lock(&ses_data->lock);
+    ses_data->buf_size = buf_size;
     if (ses_data->thread_state != SES_THREAD_IDLE) {
         pthread_mutex_unlock(&ses_data->lock);
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "write via async failed");
         return;
     }
     memcpy(ses_data->buf, value, n_elements);
-    ses_data->buf_size = buf_size;
     ses_data->thread_state = SES_THREAD_WRITE_QUEUED;
     snprintf(ses_data->eventType, sizeof("Signal"), "%s", "Signal");
     pthread_mutex_unlock(&ses_data->lock);
@@ -2222,12 +2222,12 @@ static void ipc_agm_session_read(DBusConnection *conn,
     dbus_message_iter_get_basic(&arg_i, &buf_size);
 
     pthread_mutex_lock(&ses_data->lock);
+    ses_data->buf_size = buf_size;
     if (ses_data->thread_state != SES_THREAD_IDLE) {
         pthread_mutex_unlock(&ses_data->lock);
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED, "read via async failed");
         return;
     }
-    ses_data->buf_size = buf_size;
     ses_data->thread_state = SES_THREAD_READ_QUEUED;
     snprintf(ses_data->eventType, sizeof("Signal"), "%s", "Signal");
     pthread_mutex_unlock(&ses_data->lock);
