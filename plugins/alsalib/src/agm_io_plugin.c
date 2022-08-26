@@ -54,6 +54,7 @@ struct agmio_priv {
     int card;
     int device;
 
+    int session_id;
     void *card_node;
     void *pcm_node;
     uint64_t handle;
@@ -68,6 +69,46 @@ struct agmio_priv {
     int event_fd;
 /* add private variables here */
 };
+
+void agm_pcm_event_cb(uint32_t session_id __unused,
+                           struct agm_event_cb_params *event_params,
+                           void *client_data)
+{
+    struct agmio_priv *priv = (struct agmio_priv *)client_data;
+
+    if (!priv) {
+        AGM_LOGE("%s: Private data is NULL\n", __func__);
+        return;
+    }
+    if (!event_params) {
+        AGM_LOGE("%s: event params is NULL\n", __func__);
+        return;
+    }
+
+    if (event_params->event_id == AGM_EVENT_WRITE_DONE) {
+        /*
+         * Write done cb is expected for every DSP write with
+         * fragment size even for partial buffers
+         */
+        priv->hw_pointer += priv->period_size;
+        if (priv->hw_pointer > priv->boundary)
+            priv->hw_pointer -= priv->boundary;
+        eventfd_write(priv->event_fd, 1);
+    } else if (event_params->event_id == AGM_EVENT_READ_DONE) {
+        /* Read done cb expected for every DSP read with Fragment size */
+        priv->hw_pointer += priv->period_size;
+        if (priv->hw_pointer > priv->boundary)
+            priv->hw_pointer -= priv->boundary;
+        eventfd_write(priv->event_fd, 1);
+    } else if (event_params->event_id == AGM_EVENT_EOS_RENDERED) {
+        AGM_LOGD("%s: EOS event received \n", __func__);
+    } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
+        AGM_LOGD("%s: Early EOS event received \n", __func__);
+    } else {
+        AGM_LOGE("%s: error: Invalid event params id: %d\n", __func__,
+           event_params->event_id);
+    }
+}
 
 static int agm_get_session_handle(struct agmio_priv *priv,
                                   uint64_t *handle)
@@ -137,13 +178,7 @@ static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t * io)
     snd_pcm_sframes_t new_hw_ptr;
 
     new_hw_ptr = pcm->hw_pointer;
-    if (io->stream == SND_PCM_STREAM_CAPTURE) {
-        if (pcm->hw_pointer == 0)
-             new_hw_ptr = io->period_size * pcm->frame_size;
-    }
 
-
-    AGM_LOGD("%s %d\n", __func__, io->state);
     return new_hw_ptr;
 }
 
@@ -177,7 +212,6 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
 
     if (ret == 0) {
         ret = snd_pcm_bytes_to_frames(io->pcm, count);
-        pcm->hw_pointer += ret;
     }
 
     if (pcm->hw_pointer > pcm->boundary)
@@ -248,7 +282,7 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     struct agmio_priv *pcm = io->private_data;
     struct agm_session_config *session_config = NULL;
     uint64_t handle = 0;
-    int ret = 0, sess_mode = 0;
+    int ret = 0, sess_mode = 0, data_mode = 0;
     snd_pcm_uframes_t start_threshold;
     snd_pcm_uframes_t stop_threshold;
 
@@ -258,9 +292,11 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     session_config = pcm->session_config;
 
     snd_card_def_get_int(pcm->pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm->pcm_node, "agm_data_mode", &data_mode);
 
     session_config->dir = (io->stream == SND_PCM_STREAM_PLAYBACK) ? RX : TX;
     session_config->sess_mode = sess_mode;
+    session_config->data_mode = data_mode;
     snd_pcm_sw_params_get_start_threshold(params, &start_threshold);
     snd_pcm_sw_params_get_stop_threshold(params, &stop_threshold);
     snd_pcm_sw_params_get_boundary(params, &pcm->boundary);
@@ -282,7 +318,8 @@ static int agm_io_close(snd_pcm_ioplug_t * io)
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
-
+    ret = agm_session_register_cb(pcm->session_id, NULL,
+              AGM_EVENT_DATA_PATH, (void *)pcm);
     ret = agm_session_close(handle);
 
     snd_card_def_put_card(pcm->card_node);
@@ -347,7 +384,7 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
                                unsigned int nfds, unsigned short *revents)
 {
     struct agmio_priv *pcm = io->private_data;
-
+    eventfd_t evfd;
     /* TODO : Needed for ULL usecases, Need update */
     if (nfds != 1) {
         AGM_LOGE("%s nfds %u is not correct!\n", __func__, nfds);
@@ -359,6 +396,9 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
     } else if (pfd[0].revents & POLLOUT) {
         *revents = POLLOUT;
     }
+
+    eventfd_read(pcm->event_fd, &evfd);
+    AGM_LOGD("%s: exit\n", __func__);
     return 0;
 }
 
@@ -407,7 +447,7 @@ static int agm_hw_constraint(struct agmio_priv* priv)
         return ret;
 
     ret = snd_pcm_ioplug_set_param_minmax(io, SND_PCM_IOPLUG_HW_CHANNELS,
-                                          1, 8);
+                                          1, 32);
     if (ret < 0)
             return ret;
 
@@ -513,7 +553,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
         ret = -EINVAL;
         goto err_free_priv;
     }
-
+    priv->session_id = session_id;
     priv->media_config = media_config;
     priv->buffer_config = buffer_config;
     priv->session_config = session_config;
@@ -526,13 +566,21 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     priv->io.callback = &agm_io_callback;
     priv->io.private_data = priv;
 
+    ret = agm_session_register_cb(session_id, agm_pcm_event_cb,
+              AGM_EVENT_DATA_PATH, (void *)priv);
+    if (ret) {
+        AGM_LOGE("register event callback failure\n");
+        ret = -EINVAL;
+        goto err_free_priv;
+    }
+
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
     if (ret < 0) {
         AGM_LOGE("IO plugin create failed\n");
         goto err_free_priv;
     }
 
-    if ((priv->event_fd = eventfd(0, EFD_CLOEXEC)) == -1) {
+    if ((priv->event_fd = eventfd(0, EFD_NONBLOCK)) == -1) {
         AGM_LOGE("failed to create event_fd\n");
         ret = -EINVAL;
         goto err_free_priv;

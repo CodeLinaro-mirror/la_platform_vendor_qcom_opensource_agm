@@ -64,7 +64,7 @@ struct wav_header {
 int capturing = 1;
 
 static unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
-                            unsigned int dkv, unsigned int channels, unsigned int rate,
+                            unsigned int channels, unsigned int rate,
                             enum pcm_format format, unsigned int period_size,
                             unsigned int period_count, unsigned int cap_time,
                             struct device_config *dev_config);
@@ -74,6 +74,8 @@ static void sigint_handler(int sig)
     capturing = 0;
 }
 
+static unsigned int stream_x = 0, stream_pp = 0, instance = 0, device_pp = 0, device_x = 0;
+
 int main(int argc, char **argv)
 {
     FILE *file;
@@ -81,22 +83,21 @@ int main(int argc, char **argv)
     unsigned int card = 0;
     unsigned int device = 0;
     unsigned int channels = 2;
-    unsigned int rate = 44100;
+    unsigned int rate = 48000;
     unsigned int bits = 16;
     unsigned int frames;
-    unsigned int period_size = 1024;
-    unsigned int period_count = 4;
+    unsigned int period_size = 0;
+    unsigned int period_count = 2;
     unsigned int cap_time = 0;
     char *intf_name = NULL;
-    unsigned int device_kv = 0;
     struct device_config config;
     enum pcm_format format;
     int ret = 0;
 
     if (argc < 2) {
         printf("Usage: %s file.wav [-D card] [-d device]"
-                " [-c channels] [-r rate] [-b bits] [-p period_size]"
-                " [-n n_periods] [-T capture time] [-i intf_name] [-dkv device_kv]\n", argv[0]);
+               " [-c channels] [-r rate] [-b bits] [-p period_sizei] [-n period_count] [-T capture_time] [-i intf_name]"
+               " [-sx stream_tx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_tx]\n", argv[0]);
         return 1;
     }
 
@@ -145,15 +146,31 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 intf_name = *argv;
-        } else if (strcmp(*argv, "-dkv") == 0) {
+        } else if (strcmp(*argv, "-sx") == 0) {
             argv++;
             if (*argv)
-                device_kv = convert_char_to_hex(*argv);
+                stream_x = convert_char_to_hex(*argv);
+        } else if (strcmp(*argv, "-spp") == 0) {
+            argv++;
+            if (*argv)
+                stream_pp = convert_char_to_hex(*argv);
+        } else if (strcmp(*argv, "-ist") == 0) {
+            argv++;
+            if (*argv)
+                instance = convert_char_to_hex(*argv);
+        } else if (strcmp(*argv, "-dpp") == 0) {
+            argv++;
+            if (*argv)
+                device_pp = convert_char_to_hex(*argv);
+        } else if (strcmp(*argv, "-dx") == 0) {
+            argv++;
+            if (*argv)
+                device_x = convert_char_to_hex(*argv);
         }
-
         if (*argv)
             argv++;
     }
+    printf("Stream Tx = 0x%X, Stream PP = 0x%X, Instance = 0x%X, Device PP = 0x%X, Device TX = 0x%X\n", stream_x, stream_pp, instance, device_pp, device_x);
 
     header.riff_id = ID_RIFF;
     header.riff_sz = 0;
@@ -183,6 +200,44 @@ int main(int argc, char **argv)
     if (intf_name == NULL)
         return 1;
 
+    if (period_size == 0) {
+        switch (rate) {
+        case 8000:
+            period_size = 40;
+            break;
+        case 12000:
+            period_size = 60;
+            break;
+        case 16000:
+            period_size = 80;
+            break;
+        case 24000:
+            period_size = 120;
+            break;
+        case 32000:
+            period_size = 160;
+            break;
+        case 44100:
+            period_size = 220;
+            break;
+        case 48000:
+            period_size = 240;
+            break;
+        case 64000:
+            period_size = 320;
+            break;
+        case 96000:
+            period_size = 480;
+            break;
+        case 192000:
+            period_size = 960;
+            break;
+        default:
+            period_size = 240;
+            break;
+        }
+    }
+
     ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
     if (ret) {
         printf("Invalid input, entry not found for %s\n", intf_name);
@@ -202,7 +257,7 @@ int main(int argc, char **argv)
     signal(SIGINT, sigint_handler);
     signal(SIGHUP, sigint_handler);
     signal(SIGTERM, sigint_handler);
-    frames = capture_sample(file, card, device, device_kv, header.num_channels,
+    frames = capture_sample(file, card, device, header.num_channels,
                             header.sample_rate, format,
                             period_size, period_count, cap_time, &config);
     printf("Captured %u frames\n", frames);
@@ -219,7 +274,7 @@ int main(int argc, char **argv)
 }
 
 unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
-                            unsigned int dkv, unsigned int channels, unsigned int rate,
+                            unsigned int channels, unsigned int rate,
                             enum pcm_format format, unsigned int period_size,
                             unsigned int period_count, unsigned int cap_time,
                             struct device_config *dev_config)
@@ -241,15 +296,52 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     config.period_size = period_size;
     config.period_count = period_count;
     config.format = format;
-    config.start_threshold = 0;
-    config.stop_threshold = 0;
+    config.stop_threshold = INT_MAX;
     config.silence_threshold = 0;
+
+    switch (rate) {
+    case 8000:
+        config.start_threshold = 40 / 4;
+        break;
+    case 12000:
+        config.start_threshold = 60 / 4;
+        break;
+    case 16000:
+        config.start_threshold = 80 / 4;
+        break;
+    case 24000:
+        config.start_threshold = 120 / 4;
+        break;
+    case 32000:
+        config.start_threshold = 160 / 4;
+        break;
+    case 44100:
+        config.start_threshold = 220 / 4;
+        break;
+    case 48000:
+        config.start_threshold = 240 / 4;
+        break;
+    case 64000:
+        config.start_threshold = 320 / 4;
+        break;
+    case 96000:
+        config.start_threshold = 480 / 4;
+        break;
+    case 192000:
+        config.start_threshold = 960 / 4;
+        break;
+    default:
+        config.start_threshold = 240 / 4;
+        break;
+    }
 
     mixer = mixer_open(card);
     if (!mixer) {
         printf("Failed to open mixer\n");
         return 0;
     }
+
+    update_graph(stream_x, stream_pp, instance, device_pp, device_x);
 
     /* set device/audio_intf media config mixer control */
     if (set_agm_device_media_config(mixer, dev_config->ch, dev_config->rate,
@@ -259,7 +351,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     /* set audio interface metadata mixer control */
-    if (set_agm_audio_intf_metadata(mixer, intf_name, dkv, CAPTURE, dev_config->rate, dev_config->bits, PCM_RECORD)) {
+    if (set_agm_audio_intf_metadata(mixer, intf_name, device_x, CAPTURE, dev_config->rate, dev_config->bits, PCM_RECORD)) {
         printf("Failed to set device metadata\n");
         goto err_close_mixer;
     }
@@ -290,7 +382,8 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
-    buffer = malloc(size);
+    buffer = (char *)malloc(sizeof(char) * size);
+    memset(buffer, 0, sizeof(char) * size);
     if (!buffer) {
         printf("Unable to allocate %u bytes\n", size);
         goto err_close_pcm;
@@ -323,7 +416,12 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     frames = pcm_bytes_to_frames(pcm, bytes_read);
-    free(buffer);
+
+    pcm_stop(pcm);
+    if (buffer != NULL) {
+        free(buffer);
+        buffer = NULL;
+    }
 
     pcm_stop(pcm);
 err_close_pcm:

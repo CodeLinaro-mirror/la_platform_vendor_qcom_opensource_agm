@@ -22,11 +22,15 @@ LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
+ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+endif
 
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
+ifneq ($(filter 11 R 12, $(PLATFORM_VERSION)),)
 LOCAL_C_INCLUDES    += $(TOP)/vendor/qcom/opensource/tinyalsa/include
 endif
 
@@ -59,13 +63,19 @@ LOCAL_SHARED_LIBRARIES += libar-gsl_fe
   LOCAL_CFLAGS += -DSUPPORT_CHIPSET_TKV
   LOCAL_CFLAGS += -DBYPASS_ATS_INIT
   endif
+  ifeq ($(PRODUCT_NAME), msmnile_gvmq)
+    ifeq ($(TARGET_SUPPORT), $(filter $(TARGET_SUPPORT), sa8155))
+    LOCAL_CFLAGS += -DSUPPORT_CHIPSET_TKV
+    LOCAL_CFLAGS += -DBYPASS_ATS_INIT
+    endif
+  endif
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
 
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter R 11,$(PLATFORM_VERSION)),)
+ifneq ($(filter 11 R 12, $(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
 LOCAL_SHARED_LIBRARIES += libtinyalsa
