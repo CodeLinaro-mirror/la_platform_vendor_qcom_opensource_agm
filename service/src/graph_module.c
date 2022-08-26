@@ -1411,7 +1411,7 @@ int configure_placeholder_dec(struct module_info *mod,
     struct session_obj *sess_obj = NULL;
 
     size_t payload_size = 0, real_fmt_id = 0;
-
+    tkv.kvp =  NULL;
     AGM_LOGE("enter");
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object");
