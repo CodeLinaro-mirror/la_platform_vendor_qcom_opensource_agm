@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include <agm/agm_list.h>
+#include <cutils/properties.h>
 
 #define MAX_PATH 256
 #define BUF_SIZE 1024
@@ -445,6 +446,7 @@ void *snd_card_def_get_card(unsigned int card)
     struct xml_userdata card_data;
     struct snd_dev_def_card *card_def = NULL;
     char filename[MAX_PATH];
+    char card_def_file[MAX_PATH];
 
     snprintf(filename, MAX_PATH, "/proc/asound/card%d/id", card);
     if (access(filename, F_OK ) != -1 ) {
@@ -492,7 +494,8 @@ void *snd_card_def_get_card(unsigned int card)
     }
 
     /* read XML */
-    file = fopen(CARD_DEF_FILE, "r");
+    property_get("vendor.audio.card.def", card_def_file, CARD_DEF_FILE);
+    file = fopen(card_def_file, "r");
     if (!file) {
         pthread_rwlock_unlock(&snd_rwlock);
         free(snd_card_name);

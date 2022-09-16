@@ -342,6 +342,23 @@ done:
     pthread_mutex_unlock(&sess_pool->lock);
     return obj;
 }
+int session_obj_valid_check(uint64_t hndl)
+{
+
+    struct session_obj *obj = NULL;
+    struct listnode *node;
+
+    pthread_mutex_lock(&sess_pool->lock);
+    list_for_each(node, &sess_pool->session_list) {
+        obj = node_to_item(node, struct session_obj, node);
+        if (obj == hndl) {
+            pthread_mutex_unlock(&sess_pool->lock);
+            return  1;
+        }
+    }
+    pthread_mutex_unlock(&sess_pool->lock);
+    return 0;
+}
 
 /* returns session_obj associated with session id */
 int session_obj_get(int session_id, struct session_obj **obj)
@@ -1364,6 +1381,10 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
        free(sess_obj->params);
        sess_obj->params = NULL;
        sess_obj->params_size = 0;
+   } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
    }
 
 done:
@@ -1715,11 +1736,15 @@ int session_obj_get_sess_params(struct session_obj *sess_obj,
             if (ret)
                 AGM_LOGE("Error:%d get sess params on sess_id:%d\n",
                               ret, sess_obj->sess_id);
-    }
+    } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
+   }
 
-
-    pthread_mutex_unlock(&sess_obj->lock);
-    return ret;
+done:
+   pthread_mutex_unlock(&sess_obj->lock);
+   return ret;
 }
 
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
