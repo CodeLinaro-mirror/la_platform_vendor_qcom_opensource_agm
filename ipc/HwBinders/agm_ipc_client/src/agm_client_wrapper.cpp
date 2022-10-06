@@ -36,6 +36,7 @@
 
 #include <agm/agm_api.h>
 #include "inc/AGMCallback.h"
+#include <mutex>
 
 using android::hardware::Return;
 using android::hardware::hidl_vec;
@@ -52,6 +53,7 @@ bool agm_server_died = false;
 static pthread_mutex_t agmclient_init_lock = PTHREAD_MUTEX_INITIALIZER;
 android::sp<IAGM> agm_client = NULL;
 sp<server_death_notifier> Server_death_notifier = NULL;
+static std::mutex agm_session_register_cb_mutex;
 
 void server_death_notifier::serviceDied(uint64_t cookie,
                    const android::wp<::android::hidl::base::V1_0::IBase>& who __unused)
@@ -658,6 +660,7 @@ int agm_session_set_ec_ref(uint32_t capture_session_id,
 int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
                              enum event_type evt_type, void *client_data)
 {
+    std::lock_guard<std::mutex> lck(agm_session_register_cb_mutex);
     ALOGV("%s : sess_id = %d, evt_type = %d, client_data = %p \n", __func__,
            session_id, evt_type, client_data);
     if (!agm_server_died) {
