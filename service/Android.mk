@@ -60,7 +60,6 @@ LOCAL_SHARED_LIBRARIES := \
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
   ifeq ($(PRODUCT_NAME), msmnile_gvmgh)
-  LOCAL_CFLAGS += -DSUPPORT_CHIPSET_TKV
   LOCAL_CFLAGS += -DBYPASS_ATS_INIT
   endif
 else

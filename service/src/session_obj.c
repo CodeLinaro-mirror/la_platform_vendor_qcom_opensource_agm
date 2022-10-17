@@ -1831,7 +1831,6 @@ int session_obj_register_cb(struct session_obj *sess_obj, agm_event_cb cb,
                                            client_data, evt_type);
         list_add_tail(&sess_obj->cb_pool, &sess_cb->node);
     } else {
-        struct session_cb *sess_cb;
         struct listnode *node, *next;
         list_for_each_safe(node, next, &sess_obj->cb_pool) {
             sess_cb = node_to_item(node, struct session_cb, node);

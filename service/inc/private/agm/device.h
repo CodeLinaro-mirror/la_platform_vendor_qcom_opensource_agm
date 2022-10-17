@@ -191,7 +191,8 @@ int device_set_params(struct device_obj *obj, void *payload, size_t size);
 
 int populate_device_hw_ep_info(struct device_obj *dev_obj);
 
-int device_get_snd_card_id();
+int device_get_snd_card_id(void);
+int parse_snd_card(void);
 int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap);
 
 int device_group_set_media_config(struct device_group_data *grp_data,
@@ -201,4 +202,5 @@ int device_get_group_list(struct aif_info *aif_list, size_t *num_groups);
 
 int device_get_start_refcnt(struct device_obj *dev_obj);
 bool get_file_path_extn(char* file_path_extn);
+bool support_chipset_tkv(void);
 #endif
