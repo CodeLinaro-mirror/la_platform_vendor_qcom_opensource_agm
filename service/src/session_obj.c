@@ -1189,6 +1189,7 @@ static int session_close(struct session_obj *sess_obj)
     struct aif *aif_obj = NULL;
     enum agm_session_mode sess_mode = sess_obj->stream_config.sess_mode;
     struct listnode *node = NULL;
+    struct listnode *next = NULL;
 
     if (sess_obj->state == SESSION_CLOSED) {
         AGM_LOGE("session already in CLOSED state\n");
@@ -1210,7 +1211,7 @@ static int session_close(struct session_obj *sess_obj)
     sess_obj->ec_ref_state = false;
 
     if (sess_mode != AGM_SESSION_NON_TUNNEL) {
-        list_for_each(node, &sess_obj->aif_pool) {
+        list_for_each_safe(node, next, &sess_obj->aif_pool) {
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
                 AGM_LOGE("Error:%d could not find aif node\n", ret);
