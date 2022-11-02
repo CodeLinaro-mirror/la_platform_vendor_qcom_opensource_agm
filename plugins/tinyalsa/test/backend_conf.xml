@@ -55,7 +55,7 @@
     <device name="MI2S-LPAIF_WSA-RX-PRIMARY" rate="48000" ch="1" bits="16" />
     <device name="MI2S-LPAIF_WSA-TX-PRIMARY" rate="48000" ch="1" bits="16" />
     <device name="TDM-LPAIF-RX-PRIMARY" rate="48000" ch="8" bits="16" />
-    <device name="TDM-LPAIF-TX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF-TX-PRIMARY" rate="48000" ch="1" bits="16" />
     <device name="TDM-LPAIF-RX-TERTIARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF-TX-TERTIARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF-TX-QUATERNARY" rate="48000" ch="32" bits="16" />
@@ -65,7 +65,7 @@
     <device name="TDM-LPAIF_RXTX-TX-PRIMARY" rate="48000" ch="32" bits="16" />
     <!-- QUINARY -->
     <device name="TDM-LPAIF_VA-RX-PRIMARY" rate="48000" ch="16" bits="16" />
-    <device name="TDM-LPAIF_VA-TX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_VA-TX-PRIMARY" rate="48000" ch="16" bits="16" />
     <!-- SEN -->
     <device name="TDM-LPAIF_WSA-RX-PRIMARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_WSA-TX-PRIMARY" rate="48000" ch="8" bits="16" />
@@ -77,7 +77,7 @@
     <device name="TDM-LPAIF_SDR-TX-PRIMARY" rate="48000" ch="8" bits="16" />
     <!-- HS_IF1 -->
     <device name="TDM-LPAIF_SDR-RX-SECONDARY" rate="48000" ch="8" bits="16" />
-    <device name="TDM-LPAIF_SDR-TX-SECONDAR" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-SECONDARY" rate="48000" ch="8" bits="16" />
     <!-- HS_IF2 -->
     <device name="TDM-LPAIF_SDR-RX-TERTIARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_SDR-TX-TERTIARY" rate="48000" ch="8" bits="16" />
