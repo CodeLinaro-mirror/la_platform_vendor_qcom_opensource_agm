@@ -1265,6 +1265,10 @@ static int session_close(struct session_obj *sess_obj)
 
     if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         list_for_each_safe(node, next, &sess_obj->aif_pool) {
+            if (!node) {
+                AGM_LOGE("Error:%d could not find node\n", ret);
+                continue;
+            }
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
                 AGM_LOGE("Error:%d could not find aif node\n", ret);
