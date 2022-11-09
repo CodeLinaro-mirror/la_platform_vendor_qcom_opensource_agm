@@ -115,6 +115,7 @@ enum {
     BUF_TSTAMP,
     AIF_SET_PARAMS,
     SET_GAPLESS_SESSION_METADATA,
+    GET_SESSION_AVAILABLE_FRAME_COUNT,
     GET_BUF_INFO,
 };
 
@@ -756,6 +757,16 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
             buf_info->pos_buf_size = reply.readInt32();
         }
         return reply.readInt32();
+    }
+
+    virtual int ipc_agm_session_get_available_frame_count(uint32_t session_id, uint32_t *frame_count)
+    {
+        android::Parcel request, response;
+        request.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+        request.writeUint32(session_id);
+        remote()->transact(GET_SESSION_AVAILABLE_FRAME_COUNT, request, &response);
+        *frame_count = response.readUint32();
+        return response.readInt32();
     }
 };
 
@@ -1490,7 +1501,12 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         }
         reply->writeInt32(rc);
         break; }
-
+    case GET_SESSION_AVAILABLE_FRAME_COUNT : {
+        uint32_t session_id = (uint32_t )data.readUint32(), frame_count;
+        int32_t ret = ipc_agm_session_get_available_frame_count(session_id, &frame_count);
+        reply->writeUint32(frame_count);
+        reply->writeInt32(ret);
+        break; }
     default:
         return BBinder::onTransact(code, data, reply, flags);
     }

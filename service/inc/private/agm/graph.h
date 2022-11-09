@@ -311,6 +311,8 @@ int graph_set_config_with_tag(struct graph_obj *gph_obj,
 int graph_get_config(struct graph_obj *graph_obj, void *payload,
                      size_t payload_size);
 
+int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload);
+
 int graph_set_cal(struct graph_obj *gph_obj,
                               struct agm_meta_data_gsl *meta_data);
 
