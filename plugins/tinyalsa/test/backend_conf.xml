@@ -63,9 +63,12 @@
     <device name="TDM-LPAIF_RXTX-RX-PRIMARY" rate="48000" ch="32" bits="16" />
     <device name="TDM-LPAIF_RXTX-TX-PRIMARY" rate="48000" ch="32" bits="16" />
     <device name="TDM-LPAIF_WSA-RX-PRIMARY" rate="48000" ch="1" bits="16" />
-    <device name="TDM-LPAIF_WSA-TX-PRIMARY" rate="48000" ch="1" bits="16" />
+    <device name="TDM-LPAIF_WSA-TX-PRIMARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_VA-RX-PRIMARY" rate="48000" ch="16" bits="16" />
-    <device name="TDM-LPAIF_VA-TX-PRIMARY" rate="48000" ch="16" bits="16" />
+    <device name="TDM-LPAIF_VA-TX-PRIMARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_AUD-RX-PRIMARY" rate="48000" ch="1" bits="16" />
-    <device name="TDM-LPAIF_AUD-TX-PRIMARY" rate="48000" ch="1" bits="16" />
+    <device name="TDM-LPAIF_AUD-TX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-SECONDARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-TERTIARY" rate="48000" ch="8" bits="16" />
 </config>

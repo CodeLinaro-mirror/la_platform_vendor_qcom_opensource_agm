@@ -342,6 +342,23 @@ done:
     pthread_mutex_unlock(&sess_pool->lock);
     return obj;
 }
+int session_obj_valid_check(uint64_t hndl)
+{
+
+    struct session_obj *obj = NULL;
+    struct listnode *node;
+
+    pthread_mutex_lock(&sess_pool->lock);
+    list_for_each(node, &sess_pool->session_list) {
+        obj = node_to_item(node, struct session_obj, node);
+        if (obj == hndl) {
+            pthread_mutex_unlock(&sess_pool->lock);
+            return  1;
+        }
+    }
+    pthread_mutex_unlock(&sess_pool->lock);
+    return 0;
+}
 
 /* returns session_obj associated with session id */
 int session_obj_get(int session_id, struct session_obj **obj)
@@ -1364,6 +1381,10 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
        free(sess_obj->params);
        sess_obj->params = NULL;
        sess_obj->params_size = 0;
+   } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
    }
 
 done:
@@ -1715,11 +1736,15 @@ int session_obj_get_sess_params(struct session_obj *sess_obj,
             if (ret)
                 AGM_LOGE("Error:%d get sess params on sess_id:%d\n",
                               ret, sess_obj->sess_id);
-    }
+    } else {
+       AGM_LOGE("session closed, return fail\n");
+       ret = -EINVAL;
+       goto done;
+   }
 
-
-    pthread_mutex_unlock(&sess_obj->lock);
-    return ret;
+done:
+   pthread_mutex_unlock(&sess_obj->lock);
+   return ret;
 }
 
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
@@ -1790,15 +1815,15 @@ int session_obj_register_cb(struct session_obj *sess_obj, agm_event_cb cb,
     struct session_cb *sess_cb = NULL;
 
     pthread_mutex_lock(&sess_obj->cb_pool_lock);
-    sess_cb = calloc(1, sizeof(struct session_cb));
-    if (!sess_cb) {
-        AGM_LOGE("Error creating session_cb object with sess_id:%d\n",
-                                             sess_obj->sess_id);
-        ret = -ENOMEM;
-        goto done;
-    }
-
     if (cb != NULL) {
+        sess_cb = calloc(1, sizeof(struct session_cb));
+        if (!sess_cb) {
+            AGM_LOGE("Error creating session_cb object with sess_id:%d\n",
+                                                 sess_obj->sess_id);
+            ret = -ENOMEM;
+            goto done;
+        }
+
         sess_cb->cb = cb;
         sess_cb->client_data = client_data;
         sess_cb->evt_type = evt_type;
@@ -1806,7 +1831,6 @@ int session_obj_register_cb(struct session_obj *sess_obj, agm_event_cb cb,
                                            client_data, evt_type);
         list_add_tail(&sess_obj->cb_pool, &sess_cb->node);
     } else {
-        struct session_cb *sess_cb;
         struct listnode *node, *next;
         list_for_each_safe(node, next, &sess_obj->cb_pool) {
             sess_cb = node_to_item(node, struct session_cb, node);
