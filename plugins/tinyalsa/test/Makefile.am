@@ -3,9 +3,7 @@ pkgconfig_DATA = agmtest.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 AM_CFLAGS := -Wno-unused-parameter -Wno-unused-result
-if !BUILDSYSTEM_OPENWRT
 AM_CFLAGS += -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/
-endif
 AM_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 AM_CFLAGS += @MMHEADERS_CFLAGS@
 
@@ -34,7 +32,6 @@ agmhostless_SOURCES  := agmhostless.c
 agmhostless_la_CFLAGS := $(AM_CFLAGS)
 agmhostless_LDADD    := -ltinyalsa libagmmixer.la
 
-if !BUILDSYSTEM_OPENWRT
 bin_PROGRAMS += agmcompressplay
 agmcompressplay_SOURCES  := agmcompressplay.c
 
@@ -46,7 +43,6 @@ agmcompresscap_SOURCES  := agmcompresscap.c
 
 agmcompresscap_la_CFLAGS := $(AM_CFLAGS)
 agmcompresscap_LDADD    := -ltinycompress -ltinyalsa libagmmixer.la
-endif
 
 bin_PROGRAMS += agmvoiceui
 agmvoiceui_SOURCES  := agm_voiceui.c
