@@ -3,8 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: agmplugin
-Description: agm plugin library
+Name: agmalsaplugin
+Description: agm alsa plugin library
 Version: @VERSION@
-Libs: -L${libdir} -lagmplugin
+Libs: -L${libdir}
 Cflags: -I${includedir}

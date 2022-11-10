@@ -1,7 +1,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
-# Initialize the agm plugin package version 1.0.0
-AC_INIT([agmplugin],1.0.0)
+# Initialize the agm alsa plugin package version 1.0.0
+AC_INIT([agmalsaplugin],1.0.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 # Disables auto rebuilding of configure, Makefile.ins
@@ -40,5 +40,5 @@ fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
-AC_CONFIG_FILES([ Makefile agmplugin.pc ])
+AC_CONFIG_FILES([ Makefile agmalsaplugin.pc ])
 AC_OUTPUT
