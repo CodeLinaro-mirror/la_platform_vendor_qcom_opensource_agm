@@ -1287,3 +1287,21 @@ bool get_file_path_extn(char* file_path_extn)
 
     return snd_card_found;
 }
+
+bool support_chipset_tkv(void)
+{
+    char snd_card_name[FILE_PATH_EXTN_MAX_SIZE];
+    bool snd_card_found = false;
+    snd_card_found = update_snd_card_info(snd_card_name);
+    if (snd_card_found) {
+        if (strstr(snd_card_name, "gvmauto")) {
+            if (strstr(snd_card_name, "6155")){
+                return true;
+            }
+            if (strstr(snd_card_name, "8155")){
+                return true;
+            }
+        }
+    }
+    return false;
+}

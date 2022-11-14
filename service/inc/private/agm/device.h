@@ -202,4 +202,5 @@ int device_get_group_list(struct aif_info *aif_list, size_t *num_groups);
 
 int device_get_start_refcnt(struct device_obj *dev_obj);
 bool get_file_path_extn(char* file_path_extn);
+bool support_chipset_tkv(void);
 #endif

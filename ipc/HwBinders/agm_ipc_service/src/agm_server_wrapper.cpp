@@ -1478,6 +1478,46 @@ exit:
     return ret;
 }
 
+Return<void> AGM::ipc_agm_shmem_buf_alloc(const hidl_vec<AgmShmemInfo>& in_buf_hidl,
+        ipc_agm_shmem_buf_alloc_cb _hidl_cb) {
+    int32_t ret = -1;
+    struct agm_shmem_info buf_info_local;
+    hidl_vec<AgmShmemInfo>out_buf_hidl;
+    native_handle_t *dataHidlHandle = nullptr;
+
+    buf_info_local.size = in_buf_hidl.data()->size;
+    buf_info_local.cache = in_buf_hidl.data()->cache;
+
+    ret =  agm_shmem_buf_alloc(&buf_info_local);
+    if (ret == 0) {
+        out_buf_hidl.resize(sizeof(struct agm_shmem_info));
+        dataHidlHandle = native_handle_create(1, 0);
+        if (!dataHidlHandle) {
+            ALOGE("%s native_handle_create fails", __func__);
+            goto exit;
+        }
+        dataHidlHandle->data[0] = buf_info_local.ion_fd;
+        out_buf_hidl.data()->dataSharedMemory = hidl_memory("ar_shmem_data_buf",
+                hidl_handle(dataHidlHandle), buf_info_local.size);
+        out_buf_hidl.data()->spf_addr = buf_info_local.spf_addr;
+        out_buf_hidl.data()->spf_handle = buf_info_local.spf_mem_handle;
+    }
+
+    _hidl_cb(ret, out_buf_hidl);
+
+exit:
+    if (dataHidlHandle != nullptr)
+        native_handle_delete(dataHidlHandle);
+    return Void();
+}
+
+Return<int32_t> AGM::ipc_agm_shmem_buf_free(uint32_t spf_mem_handle) {
+    int32_t ret = -1;
+
+    ret = agm_shmem_buf_free(spf_mem_handle);
+
+    return ret;
+}
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace AGMIPC
