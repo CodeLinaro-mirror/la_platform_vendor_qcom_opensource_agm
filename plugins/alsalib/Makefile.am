@@ -1,5 +1,5 @@
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = agmplugin.pc
+pkgconfig_DATA = agmalsaplugin.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 library_includedir = $(includedir)
