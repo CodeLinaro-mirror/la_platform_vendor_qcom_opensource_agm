@@ -352,16 +352,6 @@ int graph_get_buf_info(struct graph_obj *gph_obj,
     struct agm_buf_info *buf_info, uint32_t flag);
 
 /**
- *\brief Get buffer shared memory info
- *\param [in] graph_obj: associated graph obj
- *\param [out] buf_info: agm_buf_info containing dma_buf info
- *\param [in] size: payload size
- *
- * return CASA_EOK on success or error code otherwise.
- */
-int graph_get_shmem_buf_info(struct graph_obj *graph_obj, struct agm_shmem_info *buf_info, size_t size);
-
-/**
  *\brief Set gapless metadata of the associated running graph
  *\param [in] graph_obj: associated graph obj
  *\param [in] type: Silence Type (Initial/Trailing)

@@ -806,31 +806,6 @@ done:
     return ret;
 }
 
-
-int agm_get_shmem_buf_info(uint32_t session_id,
-            struct agm_shmem_info *buf_info, size_t size)
-{
-    struct session_obj *obj = NULL;
-    int ret = 0;
-
-    ret = session_obj_get(session_id, &obj);
-    if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
-                ret, session_id);
-        goto done;
-    }
-
-    ret = session_obj_get_sess_shmem_buf_info(obj, buf_info, size);
-    if (ret) {
-        AGM_LOGE("Error:%d getting shmem buff info for session obj with"
-                "session id=%d\n",ret, session_id);
-        goto done;
-    }
-
-done:
-    return ret;
-}
-
 int agm_register_service_crash_callback(agm_service_crash_cb cb __unused,
                                         uint64_t cookie __unused)
 {

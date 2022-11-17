@@ -45,8 +45,7 @@ hidl_interface {
         "AgmBuff",
         "AgmExternAllocBuffInfo",
         "AgmEventReadWriteDonePayload",
-        "AgmReadWriteEventCbParams",
-        "AgmShmemInfo"
+        "AgmReadWriteEventCbParams"
     ],
     gen_java: false,
 }

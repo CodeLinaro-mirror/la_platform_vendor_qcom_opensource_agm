@@ -406,11 +406,3 @@ struct AgmReadWriteEventCbParams {
     vec<AgmEventReadWriteDonePayload> rw_payload;
 };
 
-/** shared Memory buffer info */
-struct AgmShmemInfo {
-    uint64_t spf_addr;
-    memory dataSharedMemory;
-    uint32_t spf_handle;
-    uint32_t size;
-    uint32_t cache;
-};

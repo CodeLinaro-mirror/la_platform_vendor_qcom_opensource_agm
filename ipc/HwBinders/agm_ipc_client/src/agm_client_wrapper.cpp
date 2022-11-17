@@ -1075,33 +1075,3 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
     }
     return -EINVAL;
 }
-
-int agm_get_shmem_buf_info(uint32_t session_id, struct agm_shmem_info *buf_info, size_t size)
-{
-    int ret = -EINVAL;
-    ALOGV("%s : sess_id = %d, size = %zu\n", __func__, session_id, size);
-    if (!agm_server_died) {
-        android::sp<IAGM> agm_client = get_agm_server();
-        const native_handle *datahandle = nullptr;
-
-        uint32_t size_hidl = (uint32_t) size;
-        hidl_vec<AgmShmemInfo> buf_info_hidl;
-        buf_info_hidl.resize(sizeof(struct agm_shmem_info));
-        buf_info_hidl.data()->size = buf_info->size;
-        buf_info_hidl.data()->cache = buf_info->cache;
-        auto status = agm_client->ipc_agm_get_shmem_buf_info(session_id, buf_info_hidl, size_hidl,
-          [&](int32_t ret_, hidl_vec<AgmShmemInfo> ret_buf_info_hidl)
-          { ret = ret_;
-          if (!ret) {
-            datahandle = ret_buf_info_hidl.data()->dataSharedMemory.handle();
-            buf_info->ion_fd = dup(datahandle->data[0]);
-            buf_info->spf_addr = ret_buf_info_hidl.data()->spf_addr;
-            buf_info->spf_mem_handle = ret_buf_info_hidl.data()->spf_handle;
-            }
-      });
-      if (!status.isOk()) {
-         ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
-      }
-    }
-    return ret;
-}

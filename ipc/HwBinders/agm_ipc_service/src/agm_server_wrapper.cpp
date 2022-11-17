@@ -1478,41 +1478,6 @@ exit:
     return ret;
 }
 
-Return<void> AGM::ipc_agm_get_shmem_buf_info(uint32_t session_id, const hidl_vec<AgmShmemInfo>& in_buf_hidl, uint32_t size,
-        ipc_agm_get_shmem_buf_info_cb _hidl_cb) {
-
-    ALOGV("%s : session_id = %d, size = %d\n", __func__, session_id, size);
-    int32_t ret = -1;
-    struct agm_shmem_info buf_info_local;
-    hidl_vec<AgmShmemInfo>out_buf_hidl;
-    native_handle_t *dataHidlHandle = nullptr;
-    size_t size_local = (size_t) size;
-
-    buf_info_local.size = in_buf_hidl.data()->size;
-    buf_info_local.cache = in_buf_hidl.data()->cache;
-
-    ret = agm_get_shmem_buf_info(session_id, &buf_info_local, size_local);
-    if (ret == 0) {
-        out_buf_hidl.resize(sizeof(struct agm_shmem_info));
-        dataHidlHandle = native_handle_create(1, 0);
-        if (!dataHidlHandle) {
-            ALOGE("%s native_handle_create fails", __func__);
-            goto exit;
-        }
-        dataHidlHandle->data[0] = buf_info_local.ion_fd;
-        out_buf_hidl.data()->dataSharedMemory = hidl_memory("ar_shmem_data_buf",
-                hidl_handle(dataHidlHandle), buf_info_local.size);
-        out_buf_hidl.data()->spf_addr = buf_info_local.spf_addr;
-        out_buf_hidl.data()->spf_handle = buf_info_local.spf_mem_handle;
-    }
-
-    _hidl_cb(ret, out_buf_hidl);
-
-exit:
-    if (dataHidlHandle != nullptr)
-        native_handle_delete(dataHidlHandle);
-    return Void();
-}
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace AGMIPC
