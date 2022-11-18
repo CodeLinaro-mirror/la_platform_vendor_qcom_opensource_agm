@@ -65,7 +65,7 @@ struct chunk_fmt {
 };
 
 static int close = 0;
-static unsigned int stream_x = 0, stream_pp = 0, instance = 0, device_pp = 0, device_x = 0;
+static unsigned int stream_x = 0, stream_pp = 0, instance = 0, device_pp = 0, device_x = 0, loop = 0;
 
 void play_sample(FILE *file, unsigned int card, unsigned int device,
                  struct chunk_fmt fmt, struct device_config *dev_config, bool haptics);
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     int more_chunks = 1, ret = 0;
 
     if (argc < 3) {
-        printf("Usage: %s file.wav [-D card] [-d device] [-i intf_name] [-h haptics] [-sx stream_rx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_rx]\n", argv[0]);
+        printf("Usage: %s file.wav [-D card] [-d device] [-i intf_name] [-h haptics] [-sx stream_rx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_rx] [-loop 1 to loop playback]\n", argv[0]);
         return 1;
     }
 
@@ -169,6 +169,10 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 device_x = convert_char_to_hex(*argv);
+        } else if (strcmp(*argv, "-loop") == 0) {
+            argv++;
+            if (*argv)
+                loop = atoi(*argv);
         }
         if (*argv)
             argv++;
@@ -203,6 +207,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     int num_read;
     char *name = dev_config->name;
     struct group_config grp_config;
+    long int data_start_pos;
 
     memset(&config, 0, sizeof(config));
     config.channels = fmt.num_channels;
@@ -314,8 +319,17 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     /* catch ctrl-c to shutdown cleanly */
     signal(SIGINT, stream_close);
 
+    if (loop)
+        data_start_pos = ftell(file);
+
     do {
         num_read = fread(buffer, 1, size, file);
+
+        if (num_read <=0 && loop) {
+            fseek(file, data_start_pos, SEEK_SET);
+            num_read = fread(buffer, 1, size, file);
+        }
+
         if (num_read > 0) {
             if (pcm_write(pcm, buffer, num_read)) {
                 printf("Error playing sample\n");
