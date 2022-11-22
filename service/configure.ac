@@ -46,14 +46,21 @@ AC_ARG_ENABLE([target-hypervisor],
     AC_HELP_STRING([--enable-target-hypervisor],
             [Enable conditional compile for target hypervisor [default=no]]),
     [target_hypervisor="${enableval}"],
-    target_hypervisor=no)
+     target_hypervisor=no)
 AM_CONDITIONAL(TARGET_HYPERVISOR, test "x$target_hypervisor" = "xyes")
+
+AC_ARG_ENABLE([alsalib-support],
+    AC_HELP_STRING([--enable-alsalib-support],
+            [Enable conditional compile for alsalib support [default=yes]]),
+    [alsalib_support="${enableval}"],
+     alsalib_support=yes)
+AM_CONDITIONAL(ALSALIB_SUPPORT, test "x$alsalib_support" = "xyes")
 
 AC_ARG_ENABLE([vendor-partition],
     AC_HELP_STRING([--enable-vendor-partition],
             [Enable conditional compile for vendor partition [default=no]]),
     [vendor_partition="${enableval}"],
-    vendor_partition=no)
+     vendor_partition=no)
 AM_CONDITIONAL(VENDOR_PARTITION, test "x$vendor_partition" = "xyes")
 
 AC_CONFIG_FILES([ Makefile agm.pc ])
