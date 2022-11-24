@@ -192,6 +192,9 @@ struct AGM : public IAGM {
     Return<int32_t> ipc_agm_set_gapless_session_metadata(uint64_t hndl,
                                               AgmGaplessSilenceType type,
                                               uint32_t silence) override;
+    Return<void> ipc_agm_shmem_buf_alloc(const hidl_vec<AgmShmemInfo>& buf_info,
+                             ipc_agm_shmem_buf_alloc_cb _hidl_cb) override;
+    Return<int32_t> ipc_agm_shmem_buf_free(uint32_t spf_mem_handle) override;
     Return<int32_t> ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
                        const hidl_vec<AgmSessionConfig>& session_config,
                        const hidl_vec<AgmMediaConfig>& in_media_config,

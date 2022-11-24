@@ -36,6 +36,10 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
+#include "gsl_intf.h"
+#include "gsl_shmem_mgr.h"
+
+#include "ar_osal_sys_id.h"
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -47,6 +51,24 @@
 static bool agm_initialized = 0;
 static pthread_t ats_thread;
 static const int MAX_RETRIES = 120;
+
+/** Get ADSP sub system mask */
+#define GSL_GET_SPF_SS_MASK(OSAL_SYS_ID) (1<<(OSAL_SYS_ID - 1))
+
+/** Shared Memory node structure */
+struct shmem_link_list {
+    /** List of shmem nodes */
+    struct listnode shmem_list;
+    /** lock object to serialize shmem_list iterations */
+    pthread_mutex_t lock;
+};
+
+typedef struct shmem_link_node {
+   struct gsl_shmem_alloc_data shmem;
+   struct listnode tagged_list;
+}shmem_link_node_t;
+
+struct shmem_link_list *g_shmem_list = NULL;
 
 static void *ats_init_thread(void *obj __unused)
 {
@@ -563,10 +585,11 @@ int agm_session_set_config(uint64_t hndl,
                            struct agm_buffer_config *buffer_config)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_set_config(handle, stream_config, media_config,
                                                        buffer_config);
 }
@@ -575,10 +598,11 @@ int agm_session_prepare(uint64_t hndl)
 {
 
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_prepare(handle);
 }
 
@@ -586,10 +610,11 @@ int agm_session_start(uint64_t hndl)
 {
 
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_start(handle);
 }
 
@@ -597,90 +622,99 @@ int agm_session_stop(uint64_t hndl)
 {
 
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_stop(handle);
 }
 
 int agm_session_close(uint64_t hndl)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_close(handle);
 }
 
 int agm_session_pause(uint64_t hndl)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_pause(handle);
 }
 
 int agm_session_flush(uint64_t hndl)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_flush(handle);
 }
 
 int agm_session_resume(uint64_t hndl)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_resume(handle);
 }
 
 int agm_session_suspend(uint64_t hndl)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_suspend(handle);
 }
 
 int agm_session_write(uint64_t hndl, void *buff, size_t *count)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_write(handle, buff, count);
 }
 
 int agm_session_read(uint64_t hndl, void *buff, size_t *count)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_read(handle, buff, count);
 }
 
 size_t agm_get_hw_processed_buff_cnt(uint64_t hndl, enum direction dir)
 {
     struct session_obj *handle = (struct session_obj *) hndl;
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(hndl))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
+
     return session_obj_hw_processed_buff_cnt(handle, dir);
 }
 
@@ -735,7 +769,7 @@ done:
 
 int agm_session_eos(uint64_t handle)
 {
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(handle))) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
@@ -745,10 +779,11 @@ int agm_session_eos(uint64_t handle)
 
 int agm_get_session_time(uint64_t handle, uint64_t *timestamp)
 {
-    if (!handle || !timestamp) {
+    if (!handle || !timestamp || (!session_obj_valid_check(handle))) {
         AGM_LOGE("Invalid handle or timestamp pointer\n");
         return -EINVAL;
     }
+
     return session_obj_get_timestamp((struct session_obj *) handle, timestamp);
 }
 
@@ -793,6 +828,110 @@ done:
     return ret;
 }
 
+int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info)
+{
+    shmem_link_node_t *shmem_node = NULL;
+    struct listnode *node = NULL;
+    uint64_t *ion_fd = NULL;
+    int ret = -1;
+
+    if (!buf_info) {
+        ret =  -EINVAL;
+        goto fail;
+    }
+
+    if (!g_shmem_list) {
+        g_shmem_list = malloc(sizeof(struct shmem_link_list));
+        if (!g_shmem_list) {
+            AGM_LOGE("Failed to allocate g_shmem_list");
+            goto fail;
+        }
+        list_init(&g_shmem_list->shmem_list);
+        pthread_mutex_init(&g_shmem_list->lock, (const pthread_mutexattr_t *)NULL);
+    }
+
+    shmem_node = malloc(sizeof(shmem_link_node_t));
+    if (!shmem_node) {
+        AGM_LOGE("Failed to allocate shmem_node");
+        goto fail;
+    }
+
+    ret = gsl_shmem_alloc_ext(buf_info->size,
+            GSL_GET_SPF_SS_MASK(AR_AUDIO_DSP), (buf_info->cache) ? GSL_SHMEM_MAP_UNCACHED : GSL_SHMEM_MAP_CACHED, 0, AR_AUDIO_DSP,
+            &shmem_node->shmem);
+    if (ret) {
+        AGM_LOGE("get shmem buf info failed with err %d", ret);
+        goto list_fail;
+    }
+
+    if (shmem_node->shmem.metadata) {
+        pthread_mutex_lock(&g_shmem_list->lock);
+        list_add_tail(&g_shmem_list->shmem_list, &shmem_node->tagged_list);
+        pthread_mutex_unlock(&g_shmem_list->lock);
+
+        ion_fd = (uint64_t *)shmem_node->shmem.metadata;
+        buf_info->ion_fd = (uint32_t)*ion_fd;
+        buf_info->spf_addr = shmem_node->shmem.spf_addr;
+        buf_info->spf_mem_handle = shmem_node->shmem.spf_mmap_handle;
+    } else {
+        ret =  -EINVAL;
+        goto list_fail;
+    }
+    return ret;
+
+list_fail:
+    free(shmem_node);
+fail:
+    if (g_shmem_list && list_empty(&g_shmem_list->shmem_list)) {
+        pthread_mutex_destroy(&g_shmem_list->lock);
+        free(g_shmem_list);
+        g_shmem_list = NULL;
+    }
+    buf_info->spf_addr = 0;
+    buf_info->ion_fd = 0;
+    buf_info->spf_mem_handle = 0;
+    return ret;
+}
+
+int agm_shmem_buf_free(uint32_t spf_mem_handle)
+{
+    struct listnode *node = NULL;
+    shmem_link_node_t *temp_mod = NULL;
+    int ret = 0;
+
+    if (g_shmem_list) {
+        pthread_mutex_lock(&g_shmem_list->lock);
+        if (!list_empty(&g_shmem_list->shmem_list)) {
+            list_for_each(node, &g_shmem_list->shmem_list) {
+                temp_mod = node_to_item(node, shmem_link_node_t, tagged_list);
+                if (temp_mod) {
+                    if (spf_mem_handle == temp_mod->shmem.spf_mmap_handle) {
+                        if (temp_mod->shmem.handle) {
+                            ret = gsl_shmem_free(&temp_mod->shmem);
+                            temp_mod->shmem.v_addr = NULL;
+                            temp_mod->shmem.handle = NULL;
+                            list_remove(node);
+                            free(temp_mod);
+                        }
+                    }
+                } else {
+                    AGM_LOGE("shmem.metadata is not valid");
+                }
+            }
+        }
+
+        if (list_empty(&g_shmem_list->shmem_list)) {
+            pthread_mutex_unlock(&g_shmem_list->lock);
+            pthread_mutex_destroy(&g_shmem_list->lock);
+            free(g_shmem_list);
+            g_shmem_list = NULL;
+        } else {
+            pthread_mutex_unlock(&g_shmem_list->lock);
+        }
+    }
+    return ret;
+}
+
 int agm_register_service_crash_callback(agm_service_crash_cb cb __unused,
                                         uint64_t cookie __unused)
 {
@@ -805,7 +944,7 @@ int agm_set_gapless_session_metadata(uint64_t handle,
                          enum agm_gapless_silence_type type,
                          uint32_t silence)
 {
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(handle))) {
         AGM_LOGE("%s Invalid handle\n", __func__);
         return -EINVAL;
     }
@@ -817,10 +956,11 @@ int agm_set_gapless_session_metadata(uint64_t handle,
 int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buff,
                                     size_t *consumed_size)
 {
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(handle))) {
         AGM_LOGE("%s Invalid handle\n", __func__);
         return -EINVAL;
     }
+
     return session_obj_write_with_metadata((struct session_obj *) handle, buff,
                                             consumed_size);
 }
@@ -828,10 +968,11 @@ int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buff,
 int agm_session_read_with_metadata(uint64_t handle __unused, struct agm_buff *buff __unused,
                                     uint32_t *captured_size __unused)
 {
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(handle))) {
         AGM_LOGE("%s Invalid handle\n", __func__);
         return -EINVAL;
     }
+
     return session_obj_read_with_metadata((struct session_obj *) handle, buff,
                                            captured_size);
 }
@@ -843,7 +984,7 @@ int agm_session_set_non_tunnel_mode_config(uint64_t handle,
                                        struct agm_buffer_config *in_buffer_config,
                                        struct agm_buffer_config *out_buffer_config)
 {
-    if (!handle) {
+    if (!handle || (!session_obj_valid_check(handle))) {
         AGM_LOGE("%s Invalid handle\n", __func__);
         return -EINVAL;
     }

@@ -194,7 +194,6 @@ int AgmService::ipc_agm_set_params_with_tag(uint32_t session_id,
     return agm_set_params_with_tag(session_id, aif_id, tag_config);
 };
 
-#ifdef __LINUX__
 int AgmService::ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
                                     uint32_t aif_id,
                                     void* payload, size_t size)
@@ -202,7 +201,6 @@ int AgmService::ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
     AGM_LOGV("%s called\n", __func__);
     return agm_set_params_with_tag_to_acdb(session_id, aif_id, payload, size);
 };
-#endif
 
 int AgmService::ipc_agm_session_open(uint32_t session_id,
                                      enum agm_session_mode sess_mode,

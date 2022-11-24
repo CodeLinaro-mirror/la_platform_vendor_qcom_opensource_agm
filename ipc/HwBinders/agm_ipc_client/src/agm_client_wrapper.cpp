@@ -37,6 +37,7 @@
 
 #include <agm/agm_api.h>
 #include "inc/AGMCallback.h"
+#include <mutex>
 
 using android::hardware::Return;
 using android::hardware::hidl_vec;
@@ -56,6 +57,7 @@ static sp<server_death_notifier> Server_death_notifier = NULL;
 static bool is_cb_registered = false;
 static list_declare(client_clbk_data_list);
 static pthread_mutex_t clbk_data_list_lock = PTHREAD_MUTEX_INITIALIZER;
+static std::mutex agm_session_register_cb_mutex;
 
 struct client_cb_data {
    struct listnode node;
@@ -667,6 +669,7 @@ int agm_session_set_ec_ref(uint32_t capture_session_id,
 int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
                              enum event_type evt_type, void *client_data)
 {
+    std::lock_guard<std::mutex> lck(agm_session_register_cb_mutex);
     ALOGV("%s : sess_id = %d, evt_type = %d, client_data = %p \n", __func__,
            session_id, evt_type, client_data);
     int32_t ret = 0;
@@ -1071,4 +1074,48 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
                                             session_id, buf_hidl);
     }
     return -EINVAL;
+}
+
+int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info)
+{
+    int ret = -EINVAL;
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        const native_handle *datahandle = nullptr;
+
+        if (!buf_info->size) {
+            ALOGE("%s: Invalid input param. ret=%d\n", __func__, ret);
+            return ret;
+        }
+
+        hidl_vec<AgmShmemInfo> buf_info_hidl;
+        buf_info_hidl.resize(sizeof(struct agm_shmem_info));
+        buf_info_hidl.data()->size = buf_info->size;
+        buf_info_hidl.data()->cache = buf_info->cache;
+        auto status = agm_client->ipc_agm_shmem_buf_alloc(buf_info_hidl,
+          [&](int32_t ret_, hidl_vec<AgmShmemInfo> ret_buf_info_hidl)
+          { ret = ret_;
+          if (!ret) {
+            datahandle = ret_buf_info_hidl.data()->dataSharedMemory.handle();
+            buf_info->ion_fd = dup(datahandle->data[0]);
+            buf_info->spf_addr = ret_buf_info_hidl.data()->spf_addr;
+            buf_info->spf_mem_handle = ret_buf_info_hidl.data()->spf_handle;
+            }
+        });
+        if (!status.isOk()) {
+            ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
+      }
+    }
+    return ret;
+}
+
+int agm_shmem_buf_free(uint32_t spf_mem_handle)
+{
+    int ret = -EINVAL;
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+
+        return agm_client->ipc_agm_shmem_buf_free(spf_mem_handle);
+    }
+      return ret;
 }
