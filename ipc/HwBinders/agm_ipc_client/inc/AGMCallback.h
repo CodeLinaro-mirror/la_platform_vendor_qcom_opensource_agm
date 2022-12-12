@@ -54,6 +54,7 @@ using AgmBuff = ::vendor::qti::hardware::AGMIPC::V1_0::AgmBuff;
 using AgmEventReadWriteDonePayload = ::vendor::qti::hardware::AGMIPC::V1_0::AgmEventReadWriteDonePayload;
 using android::hardware::hidl_handle;
 using android::hardware::hidl_memory;
+using AgmShmemInfo = ::vendor::qti::hardware::AGMIPC::V1_0::AgmShmemInfo;
 
 class server_death_notifier : public android::hardware::hidl_death_recipient
 {

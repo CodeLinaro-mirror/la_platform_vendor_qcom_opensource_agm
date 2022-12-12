@@ -6,7 +6,7 @@
 
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
-# Initialize the audio-ms12-noship package version 1.0.0
+# Initialize the agm package version 1.0.0
 AC_INIT([agm],1.0.1)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
@@ -36,25 +36,32 @@ if (test "x${with_glib}" = "xyes"); then
         AC_SUBST(GLIB_CFLAGS)
         AC_SUBST(GLIB_LIBS)
 fi
-
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
 # Checks for libraries
 PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST([SPF_CFLAGS])
 
-AC_ARG_WITH([openwrt],
-    AS_HELP_STRING([use openwrt (default is no)]),
-    [with_openwrt=$withval],
-    [with_openwrt=no])
-AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
-
 AC_ARG_ENABLE([target-hypervisor],
     AC_HELP_STRING([--enable-target-hypervisor],
             [Enable conditional compile for target hypervisor [default=no]]),
     [target_hypervisor="${enableval}"],
-    target_hypervisor=no)
+     target_hypervisor=no)
 AM_CONDITIONAL(TARGET_HYPERVISOR, test "x$target_hypervisor" = "xyes")
+
+AC_ARG_ENABLE([alsalib-support],
+    AC_HELP_STRING([--enable-alsalib-support],
+            [Enable conditional compile for alsalib support [default=yes]]),
+    [alsalib_support="${enableval}"],
+     alsalib_support=yes)
+AM_CONDITIONAL(ALSALIB_SUPPORT, test "x$alsalib_support" = "xyes")
+
+AC_ARG_ENABLE([vendor-partition],
+    AC_HELP_STRING([--enable-vendor-partition],
+            [Enable conditional compile for vendor partition [default=no]]),
+    [vendor_partition="${enableval}"],
+     vendor_partition=no)
+AM_CONDITIONAL(VENDOR_PARTITION, test "x$vendor_partition" = "xyes")
 
 AC_CONFIG_FILES([ Makefile agm.pc ])
 AC_OUTPUT
