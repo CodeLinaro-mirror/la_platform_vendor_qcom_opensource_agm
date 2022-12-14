@@ -1,7 +1,7 @@
 # Requires autoconf tool later than 2.61
 AC_PREREQ(2.69)
-# Initialize the agm plugin package version 1.0.0
-AC_INIT([agmplugin],1.0.0)
+# Initialize the agm tinyalsa plugin package version 1.0.0
+AC_INIT([agmtinyalsaplugin],1.0.0)
 # Does not strictly follow GNU Coding standards
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 # Disables auto rebuilding of configure, Makefile.ins
@@ -47,11 +47,5 @@ AC_SUBST([AGM_CFLAGS])
 PKG_CHECK_MODULES([SNDPARSER], [sndparser])
 AC_SUBST([SNDPARSER_CFLAGS])
 
-AC_ARG_WITH([openwrt],
-    AS_HELP_STRING([use openwrt (default is no)]),
-    [with_openwrt=$withval],
-    [with_openwrt=no])
-AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
-
-AC_CONFIG_FILES([ Makefile agmplugin.pc ])
+AC_CONFIG_FILES([ Makefile agmtinyalsaplugin.pc ])
 AC_OUTPUT
