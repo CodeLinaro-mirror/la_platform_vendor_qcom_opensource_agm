@@ -1877,6 +1877,8 @@ int configure_spr(struct module_info *spr_mod,
         }
     }
 done:
+    if (payload)
+        free(payload);
     return ret;
 }
 
@@ -1922,6 +1924,8 @@ int configure_gapless(struct module_info *gapless_mod,
     }
 
 done:
+    if (reg_ev_payload)
+        free(reg_ev_payload);
     return ret;
 }
 
