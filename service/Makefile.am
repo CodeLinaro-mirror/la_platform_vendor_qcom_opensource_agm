@@ -28,17 +28,25 @@ agm_sources = ${top_srcdir}/src/graph.c \
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
-if !TARGET_HYPERVISOR
-libagm_la_LIBADD = -lasound -lar_osal -lar_gsl -lats
-else
-libagm_la_LIBADD = -lasound -lar_osal -lats -lgsl_fe
-endif
-AM_CFLAGS += -DDEVICE_USES_ALSALIB
 
 libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_DELTA_FILE_PATH=\"/data/audio/delta\"
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -fcommon
 libagm_la_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libagm_la_LDFLAGS = -module -shared -avoid-version
+libagm_la_LIBADD = -lar_osal -lats
+
+if TARGET_HYPERVISOR
+    libagm_la_LIBADD += -lgsl_fe
+else
+    libagm_la_LIBADD += -lar_gsl
+endif
+
+if ALSALIB_SUPPORT
+    libagm_la_CFLAGS += -DDEVICE_USES_ALSALIB
+    libagm_la_LIBADD += -lasound
+else
+    libagm_la_LIBADD += -ltinyalsa
+endif
 
 if VENDOR_PARTITION
     libagm_la_CFLAGS += -DACDB_PATH=\"/vendor/etc/acdbdata\"
