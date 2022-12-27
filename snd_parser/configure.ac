@@ -54,14 +54,14 @@ if (test "x${with_glib}" = "xyes"); then
         AC_SUBST(GLIB_CFLAGS)
         AC_SUBST(GLIB_LIBS)
 fi
-
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
-AC_ARG_WITH([openwrt],
-    AS_HELP_STRING([use openwrt (default is no)]),
-    [with_openwrt=$withval],
-    [with_openwrt=no])
-AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
+AC_ARG_ENABLE([vendor-partition],
+    AC_HELP_STRING([--enable-vendor-partition],
+            [Enable conditional compile for vendor partition [default=no]]),
+    [vendor_partition="${enableval}"],
+    vendor_partition=no)
+AM_CONDITIONAL(VENDOR_PARTITION, test "x$vendor_partition" = "xyes")
 
 AC_CONFIG_FILES([ \
         Makefile \
