@@ -48,9 +48,8 @@ lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -ltinyalsa -lar_osal -lar_gsl -lats
 
-if !BUILDSYSTEM_OPENWRT
+
 libagm_la_LIBADD += -laudio_log_utils
-endif
 
 libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/data/audio/delta"
 if BUILDSYSTEM_OPENWRT
