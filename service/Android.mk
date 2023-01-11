@@ -30,7 +30,7 @@ endif
 
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter 11 R 12, $(PLATFORM_VERSION)),)
+ifneq ($(filter 11 R 12 13 T, $(PLATFORM_VERSION)),)
 LOCAL_C_INCLUDES    += $(TOP)/vendor/qcom/opensource/tinyalsa/include
 endif
 
@@ -68,7 +68,7 @@ endif
 
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter 11 R 12, $(PLATFORM_VERSION)),)
+ifneq ($(filter 11 R 12 13 T, $(PLATFORM_VERSION)),)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
 LOCAL_SHARED_LIBRARIES += libtinyalsa
