@@ -1,5 +1,6 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
+** Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Copyright 2011, The Android Open Source Project
 **
@@ -383,11 +384,11 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
 
     size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
     buffer = (char *)malloc(sizeof(char) * size);
-    memset(buffer, 0, sizeof(char) * size);
     if (!buffer) {
         printf("Unable to allocate %u bytes\n", size);
         goto err_close_pcm;
     }
+    memset(buffer, 0, sizeof(char) * size);
 
     printf("Capturing sample: %u ch, %u hz, %u bit\n", channels, rate,
            pcm_format_to_bits(format));
