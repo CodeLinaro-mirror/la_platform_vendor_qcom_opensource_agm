@@ -2281,7 +2281,11 @@ struct mixer_plugin_ops amp_ops = {
     .read_event = amp_read_event,
 };
 
+#ifdef BYPASS_AGM_IPC
+MIXER_PLUGIN_OPEN_FN(agm_mixer_passthrough_plugin)
+#else
 MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
+#endif
 {
     struct mixer_plugin *amp;
     struct amp_priv *amp_priv;
@@ -2304,6 +2308,14 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
         ret = -ENOMEM;
         goto err_priv_alloc;
     }
+
+#ifdef BYPASS_AGM_IPC
+    ret = agm_init();
+    if (ret) {
+        AGM_LOGE("%s: agm init failed\n", __func__);
+        goto err_get_card;
+    }
+#endif
 
     amp_priv->card = card;
     amp_priv->card_node = snd_card_def_get_card(amp_priv->card);

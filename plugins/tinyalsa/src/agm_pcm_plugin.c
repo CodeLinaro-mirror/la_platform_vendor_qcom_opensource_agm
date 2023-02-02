@@ -925,7 +925,11 @@ struct pcm_plugin_ops agm_pcm_ops = {
     .ioctl = agm_pcm_ioctl,
 };
 
+#ifdef BYPASS_AGM_IPC
+PCM_PLUGIN_OPEN_FN(agm_pcm_passthrough_plugin)
+#else
 PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
+#endif
 {
     struct pcm_plugin *agm_pcm_plugin;
     struct agm_pcm_priv *priv;
@@ -1005,6 +1009,14 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     priv->session_id = session_id;
     priv->mmap_status = false;
     snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+
+#ifdef BYPASS_AGM_IPC
+    ret = agm_init();
+    if (ret) {
+        AGM_LOGE("%s: agm init failed\n", __func__);
+        goto err_card_put;
+    }
+#endif
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {

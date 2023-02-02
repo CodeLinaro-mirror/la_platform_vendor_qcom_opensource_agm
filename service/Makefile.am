@@ -32,6 +32,7 @@ h_sources = ${top_srcdir}/inc/public/agm/agm_api.h \
             ${top_srcdir}/inc/private/agm/device.h
 
 AM_CFLAGS = @SPF_CFLAGS@
+AM_CFLAGS += -fcommon
 AM_CFLAGS += -I ${top_srcdir}/inc/public
 AM_CFLAGS += -I ${top_srcdir}/inc/private
 AM_CFLAGS += @MMHEADERS_CFLAGS@
