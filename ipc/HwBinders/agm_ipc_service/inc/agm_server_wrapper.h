@@ -213,6 +213,8 @@ struct AGM : public IAGM {
                                ipc_agm_get_aif_info_list_cb _hidl_cb) override;
     Return<int32_t> ipc_agm_session_write_datapath_params(uint32_t session_id,
                                const hidl_vec<AgmBuff>& buff) override;
+    Return<void> ipc_agm_session_get_available_frame_count(uint32_t session_id,
+                                ipc_agm_session_get_available_frame_count_cb _hidl_cb) override;
 
     int is_agm_initialized() { return agm_initialized;}
 
