@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1982,6 +1983,25 @@ int graph_set_media_config_datapath(struct graph_obj *graph_obj)
     } else {
         AGM_LOGD("Media configuration on dataptah is not needed for format %d",
                  sess_obj->out_media_config.format);
+    }
+    return ret;
+}
+
+int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct listnode *node = NULL;
+    module_info_t *mod = NULL;
+
+    list_for_each(node, &graph_obj->tagged_mod_list) {
+        mod = node_to_item(node, module_info_t, list);
+        if (mod->tag == STREAM_PCM_ENCODER) {
+            ret = mod->configure(mod, graph_obj);
+            if (ret != 0) {
+                AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+                          mod->miid, mod->mid, mod->tag, ret);
+            }
+        }
     }
     return ret;
 }
