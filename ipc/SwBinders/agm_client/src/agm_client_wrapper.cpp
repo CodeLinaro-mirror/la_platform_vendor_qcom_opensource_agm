@@ -496,3 +496,14 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     ALOGE("%s: agm service is not running\n", __func__);
     return -EAGAIN;
 }
+
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload)
+{
+    if (!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_session_get_available_frame_count(session_id, payload);
+    }
+
+    AGM_LOGE("%s: agm service is not running\n", __func__);
+    return -EAGAIN;
+}

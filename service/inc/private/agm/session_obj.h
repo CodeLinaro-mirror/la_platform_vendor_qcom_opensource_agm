@@ -142,6 +142,7 @@ int session_obj_set_sess_aif_params(struct session_obj *sess_obj,
                              void *payload, size_t size);
 int session_obj_get_sess_params(struct session_obj *sess_obj,
                              void *payload, size_t size);
+int session_obj_get_available_frame_count(struct session_obj *sess_obj, uint32_t *payload);
 int session_obj_set_sess_aif_params_with_tag(struct session_obj *sess_obj,
                              uint32_t aif_id,
                              struct agm_tag_config *tag_config);
