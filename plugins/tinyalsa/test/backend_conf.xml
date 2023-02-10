@@ -74,6 +74,9 @@
     <!-- SEP -->
     <device name="TDM-LPAIF_AUD-RX-PRIMARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_AUD-TX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <!-- OCT -->
+    <device name="TDM-LPAIF_WSA2-RX-PRIMARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_WSA2-TX-PRIMARY" rate="48000" ch="8" bits="16" />
     <!-- HS_IF0 -->
     <device name="TDM-LPAIF_SDR-RX-PRIMARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_SDR-TX-PRIMARY" rate="48000" ch="8" bits="16" />
@@ -83,4 +86,10 @@
     <!-- HS_IF2 -->
     <device name="TDM-LPAIF_SDR-RX-TERTIARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_SDR-TX-TERTIARY" rate="48000" ch="8" bits="16" />
+    <!-- HS_IF3 -->
+    <device name="TDM-LPAIF_SDR-RX-QUATERNARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-QUATERNARY" rate="48000" ch="8" bits="16" />
+    <!-- HS_IF4 -->
+    <device name="TDM-LPAIF_SDR-RX-QUINARY" rate="48000" ch="8" bits="16" />
+    <device name="TDM-LPAIF_SDR-TX-QUINARY" rate="48000" ch="8" bits="16" />
 </config>

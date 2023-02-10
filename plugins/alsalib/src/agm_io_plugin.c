@@ -397,6 +397,8 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
         *revents = POLLOUT;
     }
 
+    usleep(1000); //wait for 1msec
+
     eventfd_read(pcm->event_fd, &evfd);
     AGM_LOGD("%s: exit\n", __func__);
     return 0;
