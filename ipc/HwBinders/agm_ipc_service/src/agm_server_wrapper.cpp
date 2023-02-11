@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1351,11 +1352,15 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
 
     bufSize = inBuff_hidl.data()->size;
     buf.addr = (uint8_t *)calloc(1, bufSize);
+    if (!buf.addr) {
+        ALOGE("%s: failed to calloc addr", __func__);
+        goto exit;
+    }
     buf.size = (size_t)bufSize;
     buf.metadata_size = inBuff_hidl.data()->metadata_size;
     buf.metadata = (uint8_t *)calloc(1, buf.metadata_size);
-    if (!buf.addr || !buf.metadata) {
-        ALOGE("%s: failed to calloc", __func__);
+    if (!buf.metadata) {
+        ALOGE("%s: failed to calloc metadata", __func__);
         goto exit;
     }
     buf.timestamp = 0;
@@ -1368,7 +1373,7 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
 
     buf.alloc_info.alloc_size = inBuff_hidl.data()->alloc_info.alloc_size;
     buf.alloc_info.offset = inBuff_hidl.data()->alloc_info.offset;
-    ALOGV("%s:%d sz %d", __func__,__LINE__,bufSize);
+    ALOGV("%s:%d sz %d", __func__, __LINE__, bufSize);
     ret = agm_session_read_with_metadata(hndl, &buf, &captured_size);
     if (ret > 0) {
         outBuff_hidl.resize(sizeof(struct agm_buff));
@@ -1387,6 +1392,8 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
     _hidl_cb(ret, outBuff_hidl, captured_size);
 
 exit:
+    if (buf.metadata)
+        free(buf.metadata);
     if (buf.addr)
         free(buf.addr);
 
