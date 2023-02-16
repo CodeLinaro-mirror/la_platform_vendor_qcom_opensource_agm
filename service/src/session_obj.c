@@ -1749,6 +1749,23 @@ done:
    return ret;
 }
 
+int session_obj_get_available_frame_count(struct session_obj *sess_obj, uint32_t *payload)
+{
+    pthread_mutex_lock(&sess_obj->lock);
+    if (sess_obj->state == SESSION_CLOSED) {
+        AGM_LOGE("session with id %d is closed\n", sess_obj->sess_id);
+        pthread_mutex_unlock(&sess_obj->lock);
+        return -EPERM;
+    }
+
+    int ret = graph_get_available_frame_count(sess_obj->graph, sess_obj->stream_config.dir == RX, payload);
+    if (ret)
+        AGM_LOGE("graph_get_available_frame_count failed with error %d, session id %d\n", ret, sess_obj->sess_id);
+    pthread_mutex_unlock(&sess_obj->lock);
+
+    return ret;
+}
+
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
                                          uint32_t aif_id, void *payload,
                                          size_t *size)
