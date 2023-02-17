@@ -1430,14 +1430,6 @@ int configure_placeholder_enc(struct module_info *mod,
     }
     sess_obj = graph_obj->sess_obj;
 
-    /* configure only in case of compress capture */
-    if (sess_obj->stream_config.sess_mode == AGM_SESSION_COMPRESS &&
-        sess_obj->stream_config.dir == TX) {
-        ret = configure_encoder_output_media_format(mod, graph_obj);
-        if (ret != 0)
-            AGM_LOGE("configure_encoder_output_media_format failed: %d", ret);
-    }
-
     /* 1. Configure placeholder encoder with Real ID */
     ret = get_media_fmt_id_and_size(sess_obj->in_media_config.format,
                                     &payload_size, &real_fmt_id);
@@ -1470,6 +1462,14 @@ int configure_placeholder_enc(struct module_info *mod,
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("set_config command failed with error: %d", ret);
         return ret;
+    }
+
+    /* configure only in case of compress capture */
+    if (sess_obj->stream_config.sess_mode == AGM_SESSION_COMPRESS &&
+        sess_obj->stream_config.dir == TX) {
+        ret = configure_encoder_output_media_format(mod, graph_obj);
+        if (ret != 0)
+            AGM_LOGE("configure_encoder_output_media_format failed: %d", ret);
     }
 
     return ret;
