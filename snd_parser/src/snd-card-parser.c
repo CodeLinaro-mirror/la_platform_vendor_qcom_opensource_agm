@@ -36,8 +36,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#ifdef FEATURE_IPQ_OPENWRT
+#include "agm_list.h"
+#else
 #include <agm/agm_list.h>
+#endif
 
 #define MAX_PATH 256
 #define BUF_SIZE 1024
@@ -490,7 +493,7 @@ void *snd_card_def_get_card(unsigned int card)
             return card_def;
         }
     }
-
+    card_def = NULL;
     /* read XML */
     file = fopen(CARD_DEF_FILE, "r");
     if (!file) {
