@@ -1,6 +1,8 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
 **
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+**
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
 ** met:
@@ -467,6 +469,8 @@ int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct gr
 done:
     if (mixer_str)
         free(mixer_str);
+    if (tag_config)
+        free(tag_config);
     return ret;
 }
 
@@ -546,7 +550,7 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
 
     ret = mixer_ctl_set_enum_by_string(ctl, val);
     free(mixer_str);
-    if (p_device < 0)
+    if (p_device >= 0)
         free(val);
 
     return ret;
@@ -653,6 +657,8 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -693,6 +699,9 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
     ctl_len = strlen(intf_name) + 1 + strlen(control) + 1;
     mixer_str = calloc(1, ctl_len);
     if (!mixer_str) {
+        free(gkv);
+        free(ckv);
+        free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -890,21 +899,14 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
 
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
                   enum stream_type stype, unsigned int rate,
-                  unsigned int channels, unsigned int bits)
+                  unsigned int channels, unsigned int bits, uint32_t miid)
 {
     int ret = 0;
-    uint32_t miid = 0;
     struct apm_module_param_data_t* header = NULL;
     struct param_id_mfc_output_media_fmt_t *mfcConf;
     uint16_t* pcmChannel = NULL;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0, size;
-
-    ret = agm_mixer_get_miid(mixer, device, intf_name, stype, tag, &miid);
-    if (ret) {
-        printf("%s Get MIID from tag data failed\n", __func__);
-        return ret;
-    }
 
     payloadSize = sizeof(struct apm_module_param_data_t) +
                   sizeof(struct param_id_mfc_output_media_fmt_t) +
@@ -934,8 +936,10 @@ int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
     populateChannelMap(pcmChannel, channels);
     size = payloadSize + padBytes;
 
-    return agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+    ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+    free(payloadInfo);
 
+    return ret;
 }
 
 int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
@@ -1004,8 +1008,10 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
     populateChannelMap(pcmChannel, channels);
     size = payloadSize + padBytes;
 
-    return agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+    ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+    free(payloadInfo);
 
+    return ret;
 }
 
 int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
@@ -1108,7 +1114,8 @@ done:
     return ret;
 }
 
-int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase, enum stream_type stype, char *intf_name)
+int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase, enum stream_type stype,
+                char *intf_name, unsigned int dpp_kv, unsigned int isdirRx)
 {
     char *stream = "PCM";
     char *control = "metadata";
@@ -1145,6 +1152,13 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             num_gkv = 3;
     }
 
+    if (usecase == LOOPBACK) {
+        if (dpp_kv)
+            num_gkv = 2;
+        else
+            num_gkv = 1;
+    }
+
     gkv_size = num_gkv * sizeof(struct agm_key_value);
     ckv_size = num_ckv * sizeof(struct agm_key_value);
     prop_size = sizeof(struct prop_data) + (num_props * sizeof(uint32_t));
@@ -1161,6 +1175,8 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -1183,6 +1199,31 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             gkv[index].key = STREAM_CONFIG;
             gkv[index].value = STREAM_CFG_VUI_SVA;
             index++;
+        }
+    } else if (usecase == LOOPBACK) {
+
+        if (isdirRx)
+        {
+            gkv[index].key = STREAMRX;
+        }
+        else
+        {
+            gkv[index].key = STREAMTX;
+        }
+
+        gkv[index].value = val;
+
+        if (dpp_kv && isdirRx)
+        {
+            index++;
+            gkv[index].key = DEVICEPP_RX;
+            gkv[index].value = dpp_kv;
+        }
+        else if (dpp_kv && !isdirRx)
+        {
+            index++;
+            gkv[index].key = DEVICEPP_TX;
+            gkv[index].value = dpp_kv;
         }
     } else {
         if (usecase == PLAYBACK)
@@ -1233,6 +1274,9 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     ctl_len = strlen(stream) + 4 + strlen(control) + 1;
     mixer_str = calloc(1, ctl_len);
     if (!mixer_str) {
+        free(gkv);
+        free(ckv);
+        free(prop);
         free(metadata);
         return -ENOMEM;
     }

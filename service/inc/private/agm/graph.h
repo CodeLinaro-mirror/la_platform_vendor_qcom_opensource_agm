@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -421,4 +422,5 @@ int graph_get_tagged_data(const struct agm_key_vector_gsl *graph_key_vect,
 int32_t graph_enable_acdb_persistence(uint8_t enable_flag);
 
 int graph_set_media_config_datapath(struct graph_obj *gph_obj);
+int graph_set_pcm_encoder_params(struct graph_obj *gph_obj);
 #endif /*GPH_OBJ_H*/
