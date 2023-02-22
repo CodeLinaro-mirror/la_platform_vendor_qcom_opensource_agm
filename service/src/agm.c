@@ -862,7 +862,7 @@ int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info)
 
     if (!buf_info) {
         ret =  -EINVAL;
-        goto fail;
+        return ret;
     }
 
     if (!g_shmem_list) {
