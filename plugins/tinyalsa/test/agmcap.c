@@ -390,7 +390,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
-    size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
+    size = pcm_frames_to_bytes(pcm, config.period_size);
     buffer = (char *)malloc(sizeof(char) * size);
     if (!buffer) {
         printf("Unable to allocate %u bytes\n", size);
