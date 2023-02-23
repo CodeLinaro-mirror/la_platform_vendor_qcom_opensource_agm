@@ -244,6 +244,31 @@ static int agm_io_prepare(snd_pcm_ioplug_t * io)
     return ret;
 }
 
+static enum agm_media_format alsa_to_agm_fmt(int fmt)
+{
+    enum agm_media_format agm_pcm_fmt = AGM_FORMAT_INVALID;
+
+    switch (fmt) {
+    case SND_PCM_FORMAT_S8:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S8;
+        break;
+    case SND_PCM_FORMAT_S16_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S16_LE;
+        break;
+    case SND_PCM_FORMAT_S24_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_LE;
+        break;
+    case SND_PCM_FORMAT_S24_3LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_3LE;
+        break;
+    case SND_PCM_FORMAT_S32_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
+        break;
+    }
+
+    return agm_pcm_fmt;
+}
+
 static int agm_io_hw_params(snd_pcm_ioplug_t * io,
                            snd_pcm_hw_params_t * params)
 {
@@ -264,7 +289,7 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
 
     media_config->rate =  io->rate;
     media_config->channels = io->channels;
-    media_config->format = io->format;
+    media_config->format = alsa_to_agm_fmt(io->format);
 
     buffer_config->count = io->buffer_size / io->period_size;
     pcm->period_size = io->period_size;
