@@ -26,6 +26,13 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+ /*
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 #define LOG_TAG "AGM: API"
 #include <agm/agm_api.h>
 #include <agm/device.h>
@@ -868,11 +875,15 @@ int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info)
         pthread_mutex_init(&g_shmem_list->lock, (const pthread_mutexattr_t *)NULL);
     }
 
-    shmem_node = malloc(sizeof(shmem_link_node_t));
+    shmem_node = calloc(1, sizeof(shmem_link_node_t));
     if (!shmem_node) {
         AGM_LOGE("Failed to allocate shmem_node");
         goto fail;
     }
+
+    shmem_node->shmem.spf_mmap_handle = 0;
+    shmem_node->shmem.spf_addr = 0;
+    shmem_node->shmem.metadata = 0;
 
     ret = gsl_shmem_alloc_ext(buf_info->size,
             GSL_GET_SPF_SS_MASK(AR_AUDIO_DSP), (buf_info->cache) ? GSL_SHMEM_MAP_UNCACHED : GSL_SHMEM_MAP_CACHED, 0, AR_AUDIO_DSP,
@@ -905,9 +916,12 @@ fail:
         free(g_shmem_list);
         g_shmem_list = NULL;
     }
-    buf_info->spf_addr = 0;
-    buf_info->ion_fd = 0;
-    buf_info->spf_mem_handle = 0;
+
+    if (buf_info) {
+        buf_info->spf_addr = 0;
+        buf_info->ion_fd = 0;
+        buf_info->spf_mem_handle = 0;
+    }
     return ret;
 }
 

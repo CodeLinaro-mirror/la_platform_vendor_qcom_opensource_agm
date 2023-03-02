@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -485,7 +486,7 @@ static int configure_tdm_ep(struct module_info *mod,
     if (!payload_copy) {
         AGM_LOGE("Not enough memory for payload_copy");
         ret = -ENOMEM;
-        goto done;
+        goto free_payload;
     }
 
     header = (struct apm_module_param_data_t*)payload;
@@ -511,7 +512,7 @@ static int configure_tdm_ep(struct module_info *mod,
     if (!tag_key_vect.kvp) {
         AGM_LOGE("Not enough memory for KVP");
         ret = -ENOMEM;
-        goto free_payload;
+        goto free_payload_copy;
     }
 
     tag_key_vect.kvp[0].key = CHANNELS;
@@ -562,7 +563,7 @@ static int configure_tdm_ep(struct module_info *mod,
                 if(compare_tdm_custom_config(tdm_config_copy,tdm_config)){
                     ret = 0;
                     AGM_LOGE("config is the same, bypass EALREADY");
-                    goto done;
+                    goto free_kvp;
                 }
             }
         }
@@ -573,6 +574,8 @@ static int configure_tdm_ep(struct module_info *mod,
 
 free_kvp:
     free(tag_key_vect.kvp);
+free_payload_copy:
+    free(payload_copy);
 free_payload:
     free(payload);
 done:
@@ -809,7 +812,7 @@ int configure_hw_ep_media_config(struct module_info *mod,
     if (!payload_copy) {
         AGM_LOGE("No memory to allocate for payload");
         ret = -ENOMEM;
-        goto done;
+        goto free_payload;
     }
 
     header = (struct apm_module_param_data_t*)payload;
@@ -845,7 +848,7 @@ int configure_hw_ep_media_config(struct module_info *mod,
                 if(compare_hw_ep_media_config(hw_ep_media_conf_copy, hw_ep_media_conf)){
                     ret = 0;
                     AGM_LOGE("config is the same, bypass EALREADY");
-                    goto done;
+                    goto free_payload_copy;
                 }
             }
         }
@@ -853,6 +856,10 @@ int configure_hw_ep_media_config(struct module_info *mod,
         AGM_LOGE("custom_config command for module %d failed with error %d",
                       mod->tag, ret);
     }
+
+free_payload_copy:
+    free(payload_copy);
+free_payload:
     free(payload);
 done:
     AGM_LOGD("exit, ret %d", ret);

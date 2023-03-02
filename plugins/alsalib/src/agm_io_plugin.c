@@ -192,6 +192,7 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
     uint8_t *buf = (uint8_t *) areas->addr + (areas->first + areas->step * offset) / 8;
     size_t count;
     int ret = 0;
+    int sess_mode = 0;
 
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
@@ -205,11 +206,17 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
 
     count = size * pcm->frame_size;
 
+    snd_card_def_get_int(pcm->pcm_node, "session_mode", &sess_mode);
+    if (sess_mode == AGM_SESSION_NO_HOST) {
+        AGM_LOGE("%s: no data transfer for hostless session, exit\n", __func__);
+        goto done;
+    }
     if (io->stream == SND_PCM_STREAM_PLAYBACK)
         ret = agm_session_write(handle, buf, &count);
     else
         ret = agm_session_read(handle, buf, &count);
 
+done:
     if (ret == 0) {
         ret = snd_pcm_bytes_to_frames(io->pcm, count);
     }
