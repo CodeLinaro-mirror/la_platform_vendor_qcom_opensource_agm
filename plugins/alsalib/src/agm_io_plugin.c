@@ -292,6 +292,12 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
     media_config->format = alsa_to_agm_fmt(io->format);
 
     buffer_config->count = io->buffer_size / io->period_size;
+    if (io->buffer_size != io->period_size * buffer_config->count)
+    {
+        AGM_LOGE("%s: buffer_size[%d] is not multiple times of period_size[%d]!\n", __func__, io->buffer_size, io->period_size);
+        return -EINVAL;
+    }
+
     pcm->period_size = io->period_size;
     buffer_config->size = io->period_size * pcm->frame_size;
     pcm->hw_pointer = 0;
