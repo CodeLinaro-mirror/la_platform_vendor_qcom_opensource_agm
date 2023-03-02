@@ -1,6 +1,6 @@
 /*
 ** Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -312,7 +312,7 @@ static int agm_pcm_plugin_get_shared_pos(struct pcm_plugin_pos_buf_info *pos_buf
 
 static int agm_pcm_plugin_get_card_status(struct agm_pcm_priv *priv)
 {
-    char buf[10];
+    char buf[12];
     int card_status = -1;
 
     if (priv->fd < 0) {

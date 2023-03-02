@@ -1,6 +1,6 @@
 /*
 ** Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -1089,7 +1089,7 @@ static int wait_for_snd_card_to_online()
     int ret = 0;
     uint32_t retries = MAX_RETRY;
     int fd = -1;
-    char buf[2];
+    char buf[12];
     snd_card_status_t card_status = SND_CARD_STATUS_NONE;
 
     /* wait here till snd card is registered                               */
