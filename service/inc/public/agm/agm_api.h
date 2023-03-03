@@ -722,6 +722,16 @@ int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
                                 void *payload, size_t size);
 
 /**
+ * \brief Get available frame count for session.
+ *
+ * \param[in] session_id - Valid audio session id
+ * \param[in] payload: buffer where available frame count will be copied to
+ *
+ * \return 0 on success, error code otherwise
+ */
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload);
+
+/**
   * \brief Open the session with specified session id.
   *
   * \param[in] session_id - Valid audio session id

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -426,7 +427,8 @@ void ipc_callback (uint32_t session_id,
         evt_param_l.data()->event_payload.resize(evt_param->event_payload_size);
         int8_t *dst = (int8_t *)evt_param_l.data()->event_payload.data();
         int8_t *src = (int8_t *)evt_param->event_payload;
-        memcpy(dst, src, evt_param->event_payload_size);
+        if (evt_param->event_payload_size > 0)
+            memcpy(dst, src, evt_param->event_payload_size);
         auto status = clbk_bdr->event_callback(session_id, evt_param_l,
                                   sr_clbk_dat->get_clnt_data());
         if (!status.isOk()) {
@@ -1133,7 +1135,7 @@ Return<int32_t> AGM::ipc_agm_session_eos(uint64_t hndl){
 Return<void> AGM::ipc_agm_get_session_time(uint64_t hndl,
                                           ipc_agm_get_session_time_cb _hidl_cb){
     ALOGV("%s : handle = %llx \n", __func__, (unsigned long long) hndl);
-    uint64_t ts;
+    uint64_t ts = 0;
     int ret = agm_get_session_time(hndl, &ts);
     _hidl_cb(ret,ts);
     return Void();
@@ -1351,11 +1353,15 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
 
     bufSize = inBuff_hidl.data()->size;
     buf.addr = (uint8_t *)calloc(1, bufSize);
+    if (!buf.addr) {
+        ALOGE("%s: failed to calloc addr", __func__);
+        goto exit;
+    }
     buf.size = (size_t)bufSize;
     buf.metadata_size = inBuff_hidl.data()->metadata_size;
     buf.metadata = (uint8_t *)calloc(1, buf.metadata_size);
-    if (!buf.addr || !buf.metadata) {
-        ALOGE("%s: failed to calloc", __func__);
+    if (!buf.metadata) {
+        ALOGE("%s: failed to calloc metadata", __func__);
         goto exit;
     }
     buf.timestamp = 0;
@@ -1368,7 +1374,7 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
 
     buf.alloc_info.alloc_size = inBuff_hidl.data()->alloc_info.alloc_size;
     buf.alloc_info.offset = inBuff_hidl.data()->alloc_info.offset;
-    ALOGV("%s:%d sz %d", __func__,__LINE__,bufSize);
+    ALOGV("%s:%d sz %d", __func__, __LINE__, bufSize);
     ret = agm_session_read_with_metadata(hndl, &buf, &captured_size);
     if (ret > 0) {
         outBuff_hidl.resize(sizeof(struct agm_buff));
@@ -1387,6 +1393,8 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
     _hidl_cb(ret, outBuff_hidl, captured_size);
 
 exit:
+    if (buf.metadata)
+        free(buf.metadata);
     if (buf.addr)
         free(buf.addr);
 
@@ -1518,6 +1526,17 @@ Return<int32_t> AGM::ipc_agm_shmem_buf_free(uint32_t spf_mem_handle) {
 
     return ret;
 }
+
+Return<void> AGM::ipc_agm_session_get_available_frame_count(uint32_t session_id,
+                                          ipc_agm_session_get_available_frame_count_cb _hidl_cb){
+    ALOGV("%s : session_id = %u\n", __func__, session_id);
+    uint32_t frame_count = 0;
+    int ret = agm_session_get_available_frame_count(session_id, &frame_count);
+
+    _hidl_cb(ret, frame_count);
+    return Void();
+}
+
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace AGMIPC

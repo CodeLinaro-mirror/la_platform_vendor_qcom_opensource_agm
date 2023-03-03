@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1059,6 +1060,25 @@ int graph_get_config(struct graph_obj *graph_obj, void *payload,
     return ret;
 }
 
+int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload)
+{
+    if (!graph_obj) {
+        AGM_LOGE("graph object not set\n");
+        return -EINVAL;
+    }
+
+    pthread_mutex_lock(&graph_obj->lock);
+    int ret = gsl_get_available_frame_count(graph_obj->graph_handle, is_playback, payload);
+    if (ret) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("gsl_get_available_frame_count failed with error %d\n", ret);
+    }
+    pthread_mutex_unlock(&graph_obj->lock);
+
+    return ret;
+}
+
+
 int graph_set_config_with_tag(struct graph_obj *graph_obj,
                               struct agm_key_vector_gsl *gkv,
                               struct agm_tag_config_gsl *tag_config)
@@ -1184,6 +1204,7 @@ int graph_read(struct graph_obj *graph_obj, struct agm_buff *buffer, size_t *siz
     if ((ret != 0) ||
         ((size_read == 0) &&
          (graph_obj->sess_obj->stream_config.sess_mode != AGM_SESSION_NON_TUNNEL))) {
+        *size = 0;
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("size_requested %zu size_read %d error %d\n",
                   *size, size_read, ret);
@@ -1982,6 +2003,25 @@ int graph_set_media_config_datapath(struct graph_obj *graph_obj)
     } else {
         AGM_LOGD("Media configuration on dataptah is not needed for format %d",
                  sess_obj->out_media_config.format);
+    }
+    return ret;
+}
+
+int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct listnode *node = NULL;
+    module_info_t *mod = NULL;
+
+    list_for_each(node, &graph_obj->tagged_mod_list) {
+        mod = node_to_item(node, module_info_t, list);
+        if (mod->tag == STREAM_PCM_ENCODER) {
+            ret = mod->configure(mod, graph_obj);
+            if (ret != 0) {
+                AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+                          mod->miid, mod->mid, mod->tag, ret);
+            }
+        }
     }
     return ret;
 }

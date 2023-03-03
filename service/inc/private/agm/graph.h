@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -311,6 +312,8 @@ int graph_set_config_with_tag(struct graph_obj *gph_obj,
 int graph_get_config(struct graph_obj *graph_obj, void *payload,
                      size_t payload_size);
 
+int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload);
+
 int graph_set_cal(struct graph_obj *gph_obj,
                               struct agm_meta_data_gsl *meta_data);
 
@@ -419,4 +422,5 @@ int graph_get_tagged_data(const struct agm_key_vector_gsl *graph_key_vect,
 int32_t graph_enable_acdb_persistence(uint8_t enable_flag);
 
 int graph_set_media_config_datapath(struct graph_obj *gph_obj);
+int graph_set_pcm_encoder_params(struct graph_obj *gph_obj);
 #endif /*GPH_OBJ_H*/

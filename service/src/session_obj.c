@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1265,6 +1266,10 @@ static int session_close(struct session_obj *sess_obj)
 
     if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         list_for_each_safe(node, next, &sess_obj->aif_pool) {
+            if (!node) {
+                AGM_LOGE("Error:%d could not find node\n", ret);
+                continue;
+            }
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
                 AGM_LOGE("Error:%d could not find aif node\n", ret);
@@ -1748,6 +1753,23 @@ done:
    return ret;
 }
 
+int session_obj_get_available_frame_count(struct session_obj *sess_obj, uint32_t *payload)
+{
+    pthread_mutex_lock(&sess_obj->lock);
+    if (sess_obj->state == SESSION_CLOSED) {
+        AGM_LOGE("session with id %d is closed\n", sess_obj->sess_id);
+        pthread_mutex_unlock(&sess_obj->lock);
+        return -EPERM;
+    }
+
+    int ret = graph_get_available_frame_count(sess_obj->graph, sess_obj->stream_config.dir == RX, payload);
+    if (ret)
+        AGM_LOGE("graph_get_available_frame_count failed with error %d, session id %d\n", ret, sess_obj->sess_id);
+    pthread_mutex_unlock(&sess_obj->lock);
+
+    return ret;
+}
+
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
                                          uint32_t aif_id, void *payload,
                                          size_t *size)
@@ -2122,6 +2144,10 @@ int session_obj_set_config(struct session_obj *sess_obj,
         /*Capture session config*/
         sess_obj->in_media_config = *media_config;
         sess_obj->in_buffer_config = *buffer_config;
+
+        ret = graph_set_pcm_encoder_params(sess_obj->graph);
+        if (ret < 0)
+            AGM_LOGE("Failed to set pcm_encoder_params ret %d",  ret);
     } else {
         /*Playback session config*/
         sess_obj->out_media_config = *media_config;
