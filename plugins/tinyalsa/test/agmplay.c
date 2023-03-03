@@ -3,6 +3,8 @@
 **
 ** Copyright 2011, The Android Open Source Project
 **
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+**
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are met:
 **     * Redistributions of source code must retain the above copyright
@@ -251,7 +253,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     /* set stream metadata mixer control */
-    if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL)) {
+    if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL, 0, 1)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }
