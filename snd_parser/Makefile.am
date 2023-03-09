@@ -19,11 +19,7 @@ AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
 
 lib_LTLIBRARIES  = libsndcardparser.la
 libsndcardparser_la_SOURCES   = src/snd-card-parser.c
-if BUILDSYSTEM_OPENWRT
-libsndcardparser_la_LIBADD = $(GLIB_LIBS) -lpthread
-else
 libsndcardparser_la_LIBADD = $(GLIB_LIBS) -lexpat -lpthread
-endif
 libsndcardparser_la_CFLAGS := $(AM_CFLAGS)
 libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libsndcardparser_la_LDFLAGS   = -avoid-version -shared
