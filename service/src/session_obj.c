@@ -1391,14 +1391,13 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
            AGM_LOGE("Error:%d setting for sess params on sess_id:%d\n",
                    ret, sess_obj->sess_id);
        }
-       free(sess_obj->params);
-       sess_obj->params = NULL;
-       sess_obj->params_size = 0;
    } else {
        AGM_LOGE("session closed, return fail\n");
        ret = -EINVAL;
-       goto done;
    }
+   free(sess_obj->params);
+   sess_obj->params = NULL;
+   sess_obj->params_size = 0;
 
 done:
    pthread_mutex_unlock(&sess_obj->lock);
@@ -1447,10 +1446,10 @@ int session_obj_set_sess_aif_params(struct session_obj *sess_obj,
                      aif_id:%d\n", ret,
                      sess_obj->sess_id, aif_obj->aif_id);
        }
-       free(aif_obj->params);
-       aif_obj->params = NULL;
-       aif_obj->params_size = 0;
    }
+   free(aif_obj->params);
+   aif_obj->params = NULL;
+   aif_obj->params_size = 0;
 
 done:
     pthread_mutex_unlock(&sess_obj->lock);
