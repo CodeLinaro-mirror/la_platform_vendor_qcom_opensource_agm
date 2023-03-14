@@ -1199,6 +1199,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         clbk_data_obj->cb_binder = interface_cast<ICallback>(binder);
         if (clbk_data_obj->cb_func != NULL) {
             list_add_tail(&clbk_data_list, &clbk_data_obj->list);
+            pthread_mutex_unlock(&clbk_data_list_lock);
             rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
                             &ipc_cb, evnt, clbk_data_obj->client_data);
         } else {
@@ -1212,12 +1213,13 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                     free(clbk_data_obj_tmp);
                 }
             }
+            pthread_mutex_unlock(&clbk_data_list_lock);
             rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
                             NULL, evnt, clbk_data_obj->client_data);
             free(clbk_data_obj);
         }
 
-        pthread_mutex_unlock(&clbk_data_list_lock);
+
         reply->writeInt32(rc);
         break ; }
 
