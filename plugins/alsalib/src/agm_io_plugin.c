@@ -330,6 +330,7 @@ static int agm_io_close(snd_pcm_ioplug_t * io)
     ret = agm_session_close(handle);
 
     snd_card_def_put_card(pcm->card_node);
+    close(pcm->event_fd);
     free(pcm->buffer_config);
     free(pcm->media_config);
     free(pcm->session_config);
@@ -496,16 +497,22 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
         return -ENOMEM;
 
     media_config = calloc(1, sizeof(struct agm_media_config));
-    if (!media_config)
-        return -ENOMEM;
+    if (!media_config) {
+        ret = -ENOMEM;
+        goto err_free_priv;
+    }
 
     buffer_config = calloc(1, sizeof(struct agm_buffer_config));
-    if (!buffer_config)
-        return -ENOMEM;
+    if (!buffer_config) {
+        ret = -ENOMEM;
+        goto err_free_media;
+    }
 
     session_config = calloc(1, sizeof(struct agm_session_config));
-    if (!session_config)
-        return -ENOMEM;
+    if (!session_config) {
+        ret = -ENOMEM;
+        goto err_free_buf;
+    }
 
     snd_config_for_each(it, next, conf) {
         snd_config_t *n = snd_config_iterator_entry(it);
@@ -519,7 +526,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
             if (snd_config_get_integer(n, &card) < 0) {
                 AGM_LOGE("Invalid type for %s", id);
                 ret = -EINVAL;
-                goto err_free_priv;
+                goto err_free_session;
             }
             AGM_LOGD("card id is %d\n", card);
             priv->card = card;
@@ -529,7 +536,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
             if (snd_config_get_integer(n, &device) < 0) {
                 AGM_LOGE("Invalid type for %s", id);
                 ret = -EINVAL;
-                goto err_free_priv;
+                goto err_free_session;
             }
             AGM_LOGD("device id is %d\n", device);
             priv->device = device;
@@ -541,7 +548,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (!card_node) {
         AGM_LOGE("card node is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_session;
     }
     priv->card_node = card_node;
 
@@ -549,7 +556,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (!pcm_node) {
         AGM_LOGE("pcm node is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
     priv->pcm_node = pcm_node;
 
@@ -560,7 +567,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("handle is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
     priv->session_id = session_id;
     priv->media_config = media_config;
@@ -580,32 +587,48 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("register event callback failure\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
 
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
     if (ret < 0) {
         AGM_LOGE("IO plugin create failed\n");
-        goto err_free_priv;
+        goto err_free_card;
     }
 
     if ((priv->event_fd = eventfd(0, EFD_NONBLOCK)) == -1) {
         AGM_LOGE("failed to create event_fd\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
 
     ret = agm_hw_constraint(priv);
     if (ret < 0) {
         snd_pcm_ioplug_delete(&priv->io);
-        goto err_free_priv;
+        goto err_close_eventfd;
     }
 
     *pcmp = priv->io.pcm;
     return 0;
+
+err_close_eventfd:
+    close(priv->event_fd);
+    agm_session_register_cb(session_id, NULL, AGM_EVENT_DATA_PATH, (void *)priv);
+err_free_card:
+    snd_card_def_put_card(card_node);
+    agm_session_close(handle);
+err_free_session:
+    free(session_config);
+err_free_buf:
+    free(buffer_config);
+err_free_media:
+    free(media_config);
 err_free_priv:
     free(priv);
-    return ret;
+    if (ret < 0)
+        return ret;
+    else
+        return -ret;
 }
 
 SND_PCM_PLUGIN_SYMBOL(agm);

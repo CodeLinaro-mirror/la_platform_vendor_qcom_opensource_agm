@@ -129,6 +129,7 @@ int32_t BnCallback::onTransact(uint32_t code,
     uint32_t source_module_id;
     uint32_t event_id;
     uint32_t event_payload_size;
+    uint32_t rc;
     void *client_data;
     agm_event_cb cb_func;
     struct agm_event_cb_params *event_params = NULL;
@@ -155,7 +156,9 @@ int32_t BnCallback::onTransact(uint32_t code,
     blob.release();
     client_data = (void *)data.readInt64();
     data.read(&cb_func, sizeof(agm_event_cb *));
-    return event_cb(session_id, event_params, client_data, cb_func);
+    rc = event_cb(session_id, event_params, client_data, cb_func);
+    free(event_params);
+    return rc;
 }
 
 int BnCallback::event_cb(uint32_t session_id,
