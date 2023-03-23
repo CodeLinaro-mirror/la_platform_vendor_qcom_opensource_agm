@@ -25,6 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "vendor.qti.hardware.AGMIPC@1.0-service"
@@ -40,6 +44,15 @@ using android::hardware::joinRpcThreadpool;
 using android::sp;
 
 int main() {
+    struct sched_param param = {0};
+    int sched_policy = SCHED_FIFO;
+
+    // this sets all AGM thread prioirty to 96 = 99 -3
+    param.sched_priority = 3;
+    if (sched_setscheduler(0, sched_policy, &param) != 0) {
+        ALOGE("failed to set AGM priority to RT");
+    }
+
     sp<IAGM> service = new AGM();
     AGM *temp = static_cast<AGM *>(service.get());
     if (temp->is_agm_initialized()) {
