@@ -527,16 +527,22 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
         return -ENOMEM;
 
     media_config = calloc(1, sizeof(struct agm_media_config));
-    if (!media_config)
-        return -ENOMEM;
+    if (!media_config) {
+        ret = -ENOMEM;
+        goto err_free_priv;
+    }
 
     buffer_config = calloc(1, sizeof(struct agm_buffer_config));
-    if (!buffer_config)
-        return -ENOMEM;
+    if (!buffer_config) {
+        ret = -ENOMEM;
+        goto err_free_media;
+    }
 
     session_config = calloc(1, sizeof(struct agm_session_config));
-    if (!session_config)
-        return -ENOMEM;
+    if (!session_config) {
+        ret = -ENOMEM;
+        goto err_free_buf;
+    }
 
     snd_config_for_each(it, next, conf) {
         snd_config_t *n = snd_config_iterator_entry(it);
@@ -634,9 +640,17 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
 
     *pcmp = priv->io.pcm;
     return 0;
+
+err_free_buf:
+    free(buffer_config);
+err_free_media:
+    free(media_config);
 err_free_priv:
     free(priv);
-    return ret;
+    if (ret < 0)
+        return ret;
+    else
+        return -ret;
 }
 
 SND_PCM_PLUGIN_SYMBOL(agm);
