@@ -952,7 +952,8 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
     struct payload_pcm_output_format_cfg_t *mediaFmtPayload;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0, size;
-    uint8_t *pcmChannel;
+    uint8_t *pcmChannel = NULL;
+    uint16_t *temp = NULL;
     int ret = 0;
     uint32_t miid = 0;
 
@@ -1005,11 +1006,29 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
 
     mediaFmtPayload->interleaved = PCM_DEINTERLEAVED_UNPACKED;
 
-    populateChannelMap(pcmChannel, channels);
+
+    /* populateChannelMap will populate the temp buffer with uint16_t
+     * Remove the Most Significan Byte from each element of the array
+     * then copy back to pcmChannel.
+     */
+
+    temp = (uint16_t*) calloc(channels, sizeof(uint16_t));
+    if (!temp) {
+        free(payloadInfo);
+        return -ENOMEM;
+    }
+
+    populateChannelMap(temp, channels);
+
+    for(uint8_t i = 0; i < channels; i++){
+        pcmChannel[i]  = (uint8_t) (temp[i] & 0xFF);
+    }
+
     size = payloadSize + padBytes;
 
     ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
     free(payloadInfo);
+    free(temp);
 
     return ret;
 }
