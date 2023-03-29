@@ -1289,7 +1289,7 @@ static int session_close(struct session_obj *sess_obj)
                     AGM_LOGE("Error:%d stopping device id:%d\n",
                                    ret, aif_obj->aif_id);
                 }
-                aif_obj->state = AIF_CLOSED;
+                aif_obj->state = AIF_OPEN;
             }
         }
     }
