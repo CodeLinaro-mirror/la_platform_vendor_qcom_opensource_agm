@@ -7,7 +7,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 h_sources  = inc/snd-card-def.h
 
 lib_include_HEADERS = $(h_sources)
-lib_includedir = $(includedir)/sndparser/
+lib_includedir = $(includedir)
 
 AM_CFLAGS := -I $(top_srcdir)/inc
 AM_CFLAGS += -Wno-unused-parameter

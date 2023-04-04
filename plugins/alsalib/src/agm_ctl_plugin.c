@@ -1279,6 +1279,22 @@ static void agmctl_close(snd_ctl_ext_t * ext)
     struct agmctl_priv *agmctl = ext->private_data;
 
     snd_card_def_put_card(agmctl->card_node);
+
+    if (agmctl->pcm_mtd_ctl)
+        free(agmctl->pcm_mtd_ctl);
+
+    if (agmctl->pcm_idx)
+        free(agmctl->pcm_idx);
+
+    if (agmctl->controls)
+        free(agmctl->controls);
+
+    if (agmctl->rx_names)
+        free(agmctl->rx_names);
+
+    if (agmctl->rx_pcm_id)
+        free(agmctl->rx_pcm_id);
+
     free(agmctl->aif_list);
     free(agmctl);
 }

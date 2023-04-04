@@ -1,7 +1,10 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
+** Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Copyright 2011, The Android Open Source Project
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are met:
@@ -284,7 +287,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     struct mixer *mixer;
     char *buffer;
     char *intf_name = dev_config->name;
-    unsigned int size;
+    unsigned int size, miid = 0, ret = 0;
     unsigned int bytes_read = 0;
     unsigned int frames = 0;
     struct timespec end;
@@ -362,10 +365,16 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
-    if (configure_mfc(mixer, device, intf_name, TAG_STREAM_MFC,
-                     STREAM_PCM, rate, channels, pcm_format_to_bits(format))) {
-        printf("Failed to configure pspd mfc\n");
-        goto err_close_mixer;
+    ret = agm_mixer_get_miid(mixer, device, intf_name, STREAM_PCM, TAG_STREAM_MFC, &miid);
+    if (ret) {
+        printf("MFC not present for this graph\n");
+    } else {
+        if (configure_mfc(mixer, device, intf_name, TAG_STREAM_MFC,
+                           STREAM_PCM, rate, channels,
+                           pcm_format_to_bits(format), miid)) {
+            printf("Failed to configure pspd mfc\n");
+            goto err_close_mixer;
+        }
     }
 
     /* connect pcm stream to audio intf */
@@ -381,13 +390,13 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         goto err_close_mixer;
     }
 
-    size = pcm_frames_to_bytes(pcm, pcm_get_buffer_size(pcm));
+    size = pcm_frames_to_bytes(pcm, config.period_size);
     buffer = (char *)malloc(sizeof(char) * size);
-    memset(buffer, 0, sizeof(char) * size);
     if (!buffer) {
         printf("Unable to allocate %u bytes\n", size);
         goto err_close_pcm;
     }
+    memset(buffer, 0, sizeof(char) * size);
 
     printf("Capturing sample: %u ch, %u hz, %u bit\n", channels, rate,
            pcm_format_to_bits(format));
