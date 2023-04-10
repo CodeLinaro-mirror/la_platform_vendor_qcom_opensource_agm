@@ -104,6 +104,7 @@ enum {
     PCM_CTL_NAME_BUF_INFO,
     PCM_CTL_NAME_SHMEM_ALLOC,
     PCM_CTL_NAME_SHMEM_FREE,
+    PCM_CTL_NAME_GET_AVAILABLE_FRAME_COUNT,
     /* Add new ones here */
 };
 
@@ -122,7 +123,8 @@ static char *amp_pcm_ctl_name_extn[] = {
     "getParam",
     "getBufInfo",
     "shmemAlloc",
-    "shmemFree"
+    "shmemFree",
+    "getAvailableFrameCount",
     /* Add new ones below, be sure to update enum as well */
 };
 
@@ -512,6 +514,8 @@ static int amp_get_be_info(struct amp_priv *amp_priv)
     return 0;
 
 err_backends_get:
+    if (aif_list)
+        free(aif_list);
     amp_free_be_dev_info(amp_priv);
     return ret;
 }
@@ -552,6 +556,8 @@ static int amp_get_group_be_info(struct amp_priv *amp_priv)
     return 0;
 
 err_backends_get:
+    if (aif_list)
+        free(aif_list);
     amp_free_group_be_dev_info(amp_priv);
     return ret;
 }
@@ -1661,6 +1667,20 @@ static int amp_pcm_write_datapath_params_put(struct mixer_plugin *plugin,
     return ret;
 }
 
+static int amp_pcm_available_frame_count_get(struct mixer_plugin *plugin, struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    int ret = agm_session_get_available_frame_count(ctl->private_value, (uint32_t *)&tlv->tlv[0]);
+    if (ret)
+        AGM_LOGE("agm_session_get_available_frame_count failed with error %d\n", ret);
+
+    return ret;
+}
+
+static int amp_pcm_available_frame_count_put(struct mixer_plugin *plugin __unused, struct snd_control *ctl __unused, struct snd_ctl_tlv *tlv __unused)
+{
+    return 0;
+}
+
 /* 512 max bytes for non-tlv controls, reserving 16 for future use */
 static struct snd_value_bytes pcm_calibration_bytes =
     SND_VALUE_BYTES(512 - 16);
@@ -1686,6 +1706,8 @@ static struct snd_value_tlv_bytes pcm_shmem_free_bytes =
        SND_VALUE_TLV_BYTES(1024, amp_pcm_shmem_free_get, amp_pcm_shmem_free_put);
 static struct snd_value_tlv_bytes pcm_event_bytes =
     SND_VALUE_TLV_BYTES(128 * 1024, amp_pcm_event_get, amp_pcm_event_put);
+static struct snd_value_tlv_bytes pcm_get_available_frame_count_bytes =
+    SND_VALUE_TLV_BYTES(sizeof(uint32_t), amp_pcm_available_frame_count_get, amp_pcm_available_frame_count_put);
 static struct snd_value_bytes pcm_buf_info_bytes =
     SND_VALUE_BYTES(512 - 16);
 static struct snd_value_bytes pcm_write_datapath_params_bytes =
@@ -1845,6 +1867,15 @@ static void amp_create_pcm_shmem_free_ctl(struct amp_priv *amp_priv,
 
     INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_shmem_free_bytes,
             pval, pdata);
+}
+
+static void amp_create_pcm_get_available_frame_count_ctl(struct amp_priv *amp_priv, char *name, int ctl_idx, int pval, void *pdata)
+{
+    struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
+    char *ctl_name = AMP_PRIV_GET_CTL_NAME_PTR(amp_priv, ctl_idx);
+
+    snprintf(ctl_name, AIF_NAME_MAX_LEN + 16, "%s %s", name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_GET_AVAILABLE_FRAME_COUNT]);
+    INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_get_available_frame_count_bytes, pval, pdata);
 }
 
 /* TX only mixer control creations here */
@@ -2080,6 +2111,8 @@ static int amp_form_common_pcm_ctls(struct amp_priv *amp_priv, int *ctl_idx,
         amp_create_pcm_shmem_alloc_ctl(amp_priv, name, (*ctl_idx)++,
                         idx, pcm_adi);
         amp_create_pcm_shmem_free_ctl(amp_priv, name, (*ctl_idx)++,
+                        idx, pcm_adi);
+        amp_create_pcm_get_available_frame_count_ctl(amp_priv, name, (*ctl_idx)++,
                         idx, pcm_adi);
     }
 

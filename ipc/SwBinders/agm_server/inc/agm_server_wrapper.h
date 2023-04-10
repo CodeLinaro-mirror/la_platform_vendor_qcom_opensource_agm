@@ -116,6 +116,7 @@ class AgmService : public BnAgmService
                          enum agm_gapless_silence_type type, uint32_t silence);
         virtual int ipc_agm_session_get_buf_info(uint32_t session_id,
                            struct agm_buf_info *buf_info, uint32_t flag);
+        virtual int ipc_agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload);
         ~AgmService()
         {
             AGM_LOGV("AGMService destructor");

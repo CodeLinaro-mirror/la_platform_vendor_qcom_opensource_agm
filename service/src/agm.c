@@ -443,6 +443,24 @@ done:
     return ret;
 }
 
+
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload)
+{
+    struct session_obj *obj = NULL;
+    int ret = session_obj_get(session_id, &obj);
+    if (ret) {
+        AGM_LOGE("session_obj_get failed with error %d and session id %d\n", ret, session_id);
+        return ret;
+    }
+
+    ret = session_obj_get_available_frame_count(obj, payload);
+    if (ret)
+        AGM_LOGE("session_obj_get_available_frame_count failed with error %d and session id %d\n", ret, session_id);
+
+    return ret;
+
+}
+
 int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
                                struct agm_tag_config *tag_config)
 {
@@ -844,7 +862,7 @@ int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info)
 
     if (!buf_info) {
         ret =  -EINVAL;
-        goto fail;
+        return ret;
     }
 
     if (!g_shmem_list) {
