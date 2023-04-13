@@ -187,7 +187,7 @@ static int agm_io_drain(snd_pcm_ioplug_t * io)
     int ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
-    pthread_mutex_lock(&priv->eos_lock);
+    pthread_mutex_lock(&pcm->eos_lock);
     ret = agm_session_eos(handle);
     if (ret) {
         AGM_LOGE("%s: EOS fail\n", __func__);
@@ -646,7 +646,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("register event callback failure\n");
         ret = -EINVAL;
-        goto err_free_card;
+        goto err_close_session;
     }
 
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
@@ -676,9 +676,10 @@ err_close_eventfd:
     close(priv->event_fd);
 err_free_cb:
     agm_session_register_cb(session_id, NULL, AGM_EVENT_DATA_PATH, (void *)priv);
+err_close_session:
+    agm_session_close(handle);
 err_free_card:
     snd_card_def_put_card(card_node);
-    agm_session_close(handle);
 err_free_session:
     free(session_config);
 err_free_buf:
