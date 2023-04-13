@@ -244,6 +244,31 @@ static int agm_io_prepare(snd_pcm_ioplug_t * io)
     return ret;
 }
 
+static enum agm_media_format alsa_to_agm_fmt(int fmt)
+{
+    enum agm_media_format agm_pcm_fmt = AGM_FORMAT_INVALID;
+
+    switch (fmt) {
+    case SND_PCM_FORMAT_S8:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S8;
+        break;
+    case SND_PCM_FORMAT_S16_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S16_LE;
+        break;
+    case SND_PCM_FORMAT_S24_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_LE;
+        break;
+    case SND_PCM_FORMAT_S24_3LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_3LE;
+        break;
+    case SND_PCM_FORMAT_S32_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
+        break;
+    }
+
+    return agm_pcm_fmt;
+}
+
 static int agm_io_hw_params(snd_pcm_ioplug_t * io,
                            snd_pcm_hw_params_t * params)
 {
@@ -264,9 +289,15 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
 
     media_config->rate =  io->rate;
     media_config->channels = io->channels;
-    media_config->format = io->format;
+    media_config->format = alsa_to_agm_fmt(io->format);
 
     buffer_config->count = io->buffer_size / io->period_size;
+    if (io->buffer_size != io->period_size * buffer_config->count)
+    {
+        AGM_LOGE("%s: buffer_size[%d] is not multiple times of period_size[%d]!\n", __func__, io->buffer_size, io->period_size);
+        return -EINVAL;
+    }
+
     pcm->period_size = io->period_size;
     buffer_config->size = io->period_size * pcm->frame_size;
     pcm->hw_pointer = 0;
@@ -593,13 +624,13 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
     if (ret < 0) {
         AGM_LOGE("IO plugin create failed\n");
-        goto err_free_card;
+        goto err_free_cb;
     }
 
     if ((priv->event_fd = eventfd(0, EFD_NONBLOCK)) == -1) {
         AGM_LOGE("failed to create event_fd\n");
         ret = -EINVAL;
-        goto err_free_card;
+        goto err_free_cb;
     }
 
     ret = agm_hw_constraint(priv);
@@ -613,6 +644,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
 
 err_close_eventfd:
     close(priv->event_fd);
+err_free_cb:
     agm_session_register_cb(session_id, NULL, AGM_EVENT_DATA_PATH, (void *)priv);
 err_free_card:
     snd_card_def_put_card(card_node);

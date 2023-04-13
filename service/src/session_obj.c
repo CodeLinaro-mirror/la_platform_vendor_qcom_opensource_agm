@@ -532,7 +532,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                       audio interface id:%d \n",
                        sess_obj->sess_id, aif_obj->aif_id);
         ret = -ENOMEM;
-        return ret;
+        goto done;
     }
 
     pthread_mutex_lock(&hwep_lock);
@@ -549,7 +549,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                           sess_obj->sess_id, aif_obj->aif_id);
             ret = -ENOMEM;
             pthread_mutex_unlock(&hwep_lock);
-            return ret;
+            goto done;
         }
 
         temp.gkv = merged_metadata->gkv;
@@ -577,10 +577,17 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
             ret, aif_obj->aif_id);
     }
     pthread_mutex_unlock(&hwep_lock);
-    if (merged_meta_sess_aif)
-        metadata_free(merged_meta_sess_aif);
 
-    metadata_free(merged_metadata);
+done:
+    if (merged_meta_sess_aif) {
+        metadata_free(merged_meta_sess_aif);
+        free(merged_meta_sess_aif);
+    }
+
+    if (merged_metadata) {
+        metadata_free(merged_metadata);
+        free(merged_metadata);
+    }
     return ret;
 }
 
@@ -1266,6 +1273,10 @@ static int session_close(struct session_obj *sess_obj)
 
     if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         list_for_each_safe(node, next, &sess_obj->aif_pool) {
+            if (!node) {
+                AGM_LOGE("Error:%d could not find node\n", ret);
+                continue;
+            }
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
                 AGM_LOGE("Error:%d could not find aif node\n", ret);
@@ -2143,6 +2154,9 @@ int session_obj_set_config(struct session_obj *sess_obj,
         ret = graph_set_pcm_encoder_params(sess_obj->graph);
         if (ret < 0)
             AGM_LOGE("Failed to set pcm_encoder_params ret %d",  ret);
+        ret = graph_set_stream_mfc_config(sess_obj->graph);
+        if (ret < 0)
+            AGM_LOGE("Failed to set stream mfc config ret %d", ret);
     } else {
         /*Playback session config*/
         sess_obj->out_media_config = *media_config;

@@ -1,8 +1,6 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
 **
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
-**
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
 ** met:
@@ -28,6 +26,11 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
+
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 
 #include <errno.h>
 #include <expat.h>
@@ -952,7 +955,8 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
     struct payload_pcm_output_format_cfg_t *mediaFmtPayload;
     uint8_t* payloadInfo = NULL;
     size_t payloadSize = 0, padBytes = 0, size;
-    uint8_t *pcmChannel;
+    uint8_t *pcmChannel = NULL;
+    uint16_t *temp = NULL;
     int ret = 0;
     uint32_t miid = 0;
 
@@ -1005,11 +1009,29 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
 
     mediaFmtPayload->interleaved = PCM_DEINTERLEAVED_UNPACKED;
 
-    populateChannelMap(pcmChannel, channels);
+
+    /* populateChannelMap will populate the temp buffer with uint16_t
+     * Remove the Most Significan Byte from each element of the array
+     * then copy back to pcmChannel.
+     */
+
+    temp = (uint16_t*) calloc(channels, sizeof(uint16_t));
+    if (!temp) {
+        free(payloadInfo);
+        return -ENOMEM;
+    }
+
+    populateChannelMap(temp, channels);
+
+    for(uint8_t i = 0; i < channels; i++){
+        pcmChannel[i]  = (uint8_t) (temp[i] & 0xFF);
+    }
+
     size = payloadSize + padBytes;
 
     ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
     free(payloadInfo);
+    free(temp);
 
     return ret;
 }
