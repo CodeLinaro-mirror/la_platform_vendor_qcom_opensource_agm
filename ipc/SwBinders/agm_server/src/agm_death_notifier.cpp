@@ -92,6 +92,9 @@ void agm_register_client(sp<IBinder> binder)
     android::sp<IAGMClient> client_binder =
                                   android::interface_cast<IAGMClient>(binder);
     Client_death_notifier = new client_death_notifier();
+    if (IInterface::asBinder(client_binder) == NULL) {
+        return;
+    }
     IInterface::asBinder(client_binder)->linkToDeath(Client_death_notifier);
     AGM_LOGD("%s: Client registered and death notifier linked to AGM\n",
                                                               __func__);
@@ -185,7 +188,9 @@ void agm_unregister_client(sp<IBinder> binder)
         handle = node_to_item(node, client_info, list);
         if (handle->pid == IPCThreadState::self()->getCallingPid()) {
             if (handle->Client_death_notifier != NULL) {
-                IInterface::asBinder(client_binder)->unlinkToDeath(handle->Client_death_notifier);
+                if (IInterface::asBinder(client_binder) != NULL) {
+                    IInterface::asBinder(client_binder)->unlinkToDeath(handle->Client_death_notifier);
+                }
                 handle->Client_death_notifier.clear();
                 AGM_LOGV("%s: unlink to death %d\n", __func__, handle->pid);
             }
