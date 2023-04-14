@@ -40,6 +40,7 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 
 #include "agmmixer.h"
 
