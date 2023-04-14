@@ -329,6 +329,15 @@ int graph_init()
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl_init failed error %d \n", ret);
     }
+#ifdef ACDB_DELTA_FILE_PATH_WRITABLE
+    delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH_WRITABLE);
+    if ((strlen(delta_file_path) + 1) > sizeof(delta_file.fileName)) {
+       AGM_LOGE("path is big than what gsl handles");
+       ret = -EINVAL;
+       goto err;
+    }
+    gsl_set_temp_path_to_acdb(strlen(delta_file_path) + 1, delta_file_path);
+#endif
 
 err:
     return ret;

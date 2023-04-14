@@ -20,6 +20,7 @@ LOCAL_CFLAGS        += -D_GNU_SOURCE -DACDB_PATH=\"/vendor/etc/acdbdata\"
 
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/vendor/etc/acdbdata/delta"
+LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbdata/delta"
 else
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
 endif
