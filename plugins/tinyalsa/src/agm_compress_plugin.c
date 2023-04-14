@@ -25,6 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following
+** license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 #define LOG_TAG "PLUGIN: compress"
 
@@ -369,6 +375,21 @@ int agm_session_update_codec_config(struct agm_compress_priv *priv,
     case SND_AUDIOCODEC_MP3:
         media_cfg->format = AGM_FORMAT_MP3;
         break;
+    case SND_AUDIOCODEC_AMR:
+        media_cfg->rate =  8000;
+        media_cfg->channels = 1;
+        media_cfg->format = AGM_FORMAT_AMR_NB;
+        break;
+    case SND_AUDIOCODEC_AMRWB:
+        media_cfg->rate =  16000;
+        media_cfg->channels = 1;
+        media_cfg->format = AGM_FORMAT_AMR_WB;
+        break;
+    case SND_AUDIOCODEC_AMRWBPLUS:
+        media_cfg->rate =  16000;
+        media_cfg->channels = 1;
+        media_cfg->format = AGM_FORMAT_AMR_WB_PLUS;
+        break;
     case SND_AUDIOCODEC_AAC:
         media_cfg->format = AGM_FORMAT_AAC;
         if (params->codec.format == SND_AUDIOSTREAMFORMAT_MP4LATM)
@@ -548,6 +569,20 @@ static int agm_compress_start(struct compress_plugin *plugin)
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
+
+    /**
+     * Unlike playback, for capture case, call
+     * agm_session_prepare it in start.
+     * For playback it is called in write.
+     * */
+    if (!priv->prepared) {
+        ret = agm_session_prepare(handle);
+        if (ret) {
+            errno = ret;
+            return ret;
+        }
+        priv->prepared = true;
+    }
 
     ret = agm_session_start(handle);
     if (ret)
