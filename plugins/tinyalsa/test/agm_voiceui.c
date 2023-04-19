@@ -1,6 +1,8 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
 **
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+**
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
 ** met:
@@ -282,12 +284,12 @@ void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_in
     }
 
     /* set stream metadata mixer control */
-    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, NULL)) {
+    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, NULL, 0, 0)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }
 
-    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, intf_name)) {
+    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, intf_name, 0, 0)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }

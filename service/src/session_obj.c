@@ -532,7 +532,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                       audio interface id:%d \n",
                        sess_obj->sess_id, aif_obj->aif_id);
         ret = -ENOMEM;
-        return ret;
+        goto done;
     }
 
     pthread_mutex_lock(&hwep_lock);
@@ -549,7 +549,7 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                           sess_obj->sess_id, aif_obj->aif_id);
             ret = -ENOMEM;
             pthread_mutex_unlock(&hwep_lock);
-            return ret;
+            goto done;
         }
 
         temp.gkv = merged_metadata->gkv;
@@ -577,10 +577,17 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
             ret, aif_obj->aif_id);
     }
     pthread_mutex_unlock(&hwep_lock);
-    if (merged_meta_sess_aif)
-        metadata_free(merged_meta_sess_aif);
 
-    metadata_free(merged_metadata);
+done:
+    if (merged_meta_sess_aif) {
+        metadata_free(merged_meta_sess_aif);
+        free(merged_meta_sess_aif);
+    }
+
+    if (merged_metadata) {
+        metadata_free(merged_metadata);
+        free(merged_metadata);
+    }
     return ret;
 }
 
@@ -1384,14 +1391,13 @@ int session_obj_set_sess_params(struct session_obj *sess_obj,
            AGM_LOGE("Error:%d setting for sess params on sess_id:%d\n",
                    ret, sess_obj->sess_id);
        }
-       free(sess_obj->params);
-       sess_obj->params = NULL;
-       sess_obj->params_size = 0;
    } else {
        AGM_LOGE("session closed, return fail\n");
        ret = -EINVAL;
-       goto done;
    }
+   free(sess_obj->params);
+   sess_obj->params = NULL;
+   sess_obj->params_size = 0;
 
 done:
    pthread_mutex_unlock(&sess_obj->lock);
@@ -1440,10 +1446,10 @@ int session_obj_set_sess_aif_params(struct session_obj *sess_obj,
                      aif_id:%d\n", ret,
                      sess_obj->sess_id, aif_obj->aif_id);
        }
-       free(aif_obj->params);
-       aif_obj->params = NULL;
-       aif_obj->params_size = 0;
    }
+   free(aif_obj->params);
+   aif_obj->params = NULL;
+   aif_obj->params_size = 0;
 
 done:
     pthread_mutex_unlock(&sess_obj->lock);
@@ -2148,6 +2154,9 @@ int session_obj_set_config(struct session_obj *sess_obj,
         ret = graph_set_pcm_encoder_params(sess_obj->graph);
         if (ret < 0)
             AGM_LOGE("Failed to set pcm_encoder_params ret %d",  ret);
+        ret = graph_set_stream_mfc_config(sess_obj->graph);
+        if (ret < 0)
+            AGM_LOGE("Failed to set stream mfc config ret %d", ret);
     } else {
         /*Playback session config*/
         sess_obj->out_media_config = *media_config;

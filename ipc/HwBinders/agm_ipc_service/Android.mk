@@ -34,7 +34,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE               := vendor.qti.hardware.AGMIPC@1.0-service
 LOCAL_INIT_RC              := vendor.qti.hardware.AGMIPC@1.0-service.rc
 LOCAL_VENDOR_MODULE        := true
-ifneq (,$(filter $(PRODUCT_NAME), msmnile_gvmq msmnile_au))
+
+ifeq ($(TARGET_GVMGH_SPECIFIC), false)
 LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service-v2.rc
 LOCAL_VINTF_FRAGMENTS := vendor.qti.hardware.AGMIPC@1.0-service-v2.xml
 else
@@ -60,7 +61,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 include $(BUILD_EXECUTABLE)
 
-ifneq (,$(filter $(PRODUCT_NAME), msmnile_gvmq msmnile_au))
+ifeq ($(TARGET_GVMGH_SPECIFIC), false)
 include $(CLEAR_VARS)
 LOCAL_MODULE       := init.qti.AGMIPC.sh
 LOCAL_MODULE_TAGS  := optional

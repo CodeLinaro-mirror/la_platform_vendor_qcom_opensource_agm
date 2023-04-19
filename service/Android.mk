@@ -27,7 +27,7 @@ endif
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
-ifneq (,$(filter $(PRODUCT_NAME), msmnile_gvmq msmnile_gvmgh))
+ifeq ($(ENABLE_HYP),true)
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
 else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl

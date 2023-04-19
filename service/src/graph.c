@@ -571,8 +571,6 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     mod->mid = gsl_tag_entry->module_entry[0].module_id;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, NULL);
-                    /*Remove the module from the node_sess list*/
-                    list_remove(node_list);
                     goto tag_list;
                 }
             }
@@ -616,8 +614,6 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     mod->gkv = gkv;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, dev_obj);
-                    /*Remove the module from node_hw list*/
-                    list_remove(node_list);
                     goto tag_list;
                 }
             }
@@ -668,6 +664,21 @@ free_graph_obj:
     pthread_mutex_destroy(&graph_obj->lock);
     free(graph_obj);
 done:
+    // free memory allocated in node sess/hw
+    list_for_each_safe(node, temp_node, &node_sess) {
+        list_remove(node);
+        mod_list = node_to_item(node, module_info_link_list_t, tagged_list);
+        if (mod_list)
+            free(mod_list);
+    }
+
+    list_for_each_safe(node, temp_node, &node_hw) {
+        list_remove(node);
+        mod_list = node_to_item(node, module_info_link_list_t, tagged_list);
+        if (mod_list)
+            free(mod_list);
+    }
+
     AGM_LOGD("exit, ret %d", ret);
     if (tag_module_info)
         free(tag_module_info);
@@ -1619,6 +1630,7 @@ int graph_register_for_events(struct graph_obj *gph_obj,
        ret = ar_err_get_lnx_err_code(ret);
        AGM_LOGE("event registration failed with error %d\n", ret);
     }
+    free(reg_ev_payload);
     pthread_mutex_unlock(&gph_obj->lock);
 
     gph_obj->buf_info.timestamp = 0;
@@ -2024,4 +2036,25 @@ int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
         }
     }
     return ret;
+}
+
+int graph_set_stream_mfc_config(struct graph_obj *graph_obj)
+{
+      int ret = 0;
+      struct listnode *node = NULL;
+      module_info_t *mod = NULL;
+      struct session_obj *sess_obj = graph_obj->sess_obj;
+
+      list_for_each(node, &graph_obj->tagged_mod_list) {
+      mod = node_to_item(node, module_info_t, list);
+      if (mod->tag == MODULE_STREAM_MFC) {
+          ret = mod->configure(mod, graph_obj);
+          if (ret != 0) {
+          AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+               mod->miid, mod->mid, mod->tag, ret);
+          }
+      }
+      }
+
+      return ret;
 }
