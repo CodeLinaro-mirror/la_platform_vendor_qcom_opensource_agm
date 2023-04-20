@@ -55,6 +55,42 @@
  * the Free Software Foundation, Inc.,
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
+/*
+** Changes from Qualcomm Innovation Center are provided under the following license:
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+**
+** Redistribution and use in source and binary forms, with or without
+** modification, are permitted (subject to the limitations in the
+** disclaimer below) provided that the following conditions are met:
+**
+**    * Redistributions of source code must retain the above copyright
+**      notice, this list of conditions and the following disclaimer.
+**
+**    * Redistributions in binary form must reproduce the above
+**      copyright notice, this list of conditions and the following
+**      disclaimer in the documentation and/or other materials provided
+**      with the distribution.
+**
+**    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
+**      contributors may be used to endorse or promote products derived
+**      from this software without specific prior written permission.
+**
+** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
+** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**/
+
 #include <stdint.h>
 #include <linux/types.h>
 #include <fcntl.h>
@@ -282,6 +318,8 @@ static void capture_samples(char *name, unsigned int card, unsigned int device,
 		fprintf(finfo, "%s: entry, reading %u bytes\n", __func__, length);
         if (!name) {
                 file = STDOUT_FILENO;
+		printf("Invalid or NULL filname\n");
+		goto exit;
         } else {
 	        file = open(name, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 	        if (file == -1) {
@@ -443,6 +481,8 @@ file_exit:
 		fprintf(finfo, "%s: exit failure\n", __func__);
 
 	exit(EXIT_FAILURE);
+exit:
+   return;
 }
 
 static void sig_handler(int signum __attribute__ ((unused)))
@@ -463,7 +503,7 @@ int main(int argc, char **argv)
 	unsigned int card = 0, device = 0, frag = 0, length = 0;
 	unsigned int rate = DEFAULT_RATE, channels = DEFAULT_CHANNELS;
 	unsigned int format = DEFAULT_FORMAT;
-	unsigned int audio_intf;
+	unsigned int audio_intf = 0;
 
 	if (signal(SIGINT, sig_handler) == SIG_ERR) {
 		fprintf(stderr, "Error registering signal handler\n");
@@ -524,6 +564,10 @@ int main(int argc, char **argv)
 	if (optind >= argc) {
 		file = NULL;
 		finfo = fopen("/dev/null", "w");
+		if (finfo == NULL) {
+			printf("\n The file could not be opened");
+			exit(EXIT_FAILURE);
+		}
 		streamed = true;
 	} else {
 		file = argv[optind];
