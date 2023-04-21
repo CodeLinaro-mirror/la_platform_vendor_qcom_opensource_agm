@@ -32,6 +32,7 @@ ifeq ($(ENABLE_HYP),true)
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
 else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
 endif
 
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
