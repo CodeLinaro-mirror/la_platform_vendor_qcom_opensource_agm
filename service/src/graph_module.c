@@ -25,6 +25,12 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following
+ * license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "AGM: graph_module"
@@ -849,6 +855,18 @@ static int get_media_fmt_id_and_size(enum agm_media_format fmt_id,
         format_size = 0;
         *real_fmt_id = MEDIA_FMT_MP3;
         break;
+    case AGM_FORMAT_AMR_NB:
+        format_size = 0;
+        *real_fmt_id = MEDIA_FMT_AMRNB;
+        break;
+    case AGM_FORMAT_AMR_WB:
+        format_size = 0;
+        *real_fmt_id = MEDIA_FMT_AMRWB;
+        break;
+    case AGM_FORMAT_AMR_WB_PLUS:
+        format_size = 0;
+        *real_fmt_id = MEDIA_FMT_AMRWBPLUS;
+        break;
     case AGM_FORMAT_AAC:
         format_size = sizeof(struct payload_media_fmt_aac_t);
         *real_fmt_id = MEDIA_FMT_AAC;
@@ -1008,6 +1026,27 @@ int  set_compressed_media_format(enum agm_media_format fmt_id,
                  fmt_pl->sample_rate, fmt_pl->bits_per_sample);
         break;
     }
+    case AGM_FORMAT_AMR_WB_PLUS:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED ;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRWBPLUS;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
+    case AGM_FORMAT_AMR_WB:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED ;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRWB_FS ;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
+    case AGM_FORMAT_AMR_NB:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED ;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRNB_FS;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
     default:
         return -EINVAL;
     }
@@ -1138,6 +1177,7 @@ int configure_compress_shared_mem_ep(struct module_info *mod,
         /* If ret is non-zero then shared memory module would be
          * configured by client so return from here.
          */
+        ret = 0;
         goto free_payload;
     }
 
