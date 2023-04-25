@@ -27,6 +27,11 @@
 ** DAMAGE.
 **/
 
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #include <errno.h>
 #include <tinyalsa/asoundlib.h>
 #include <stdbool.h>
@@ -251,7 +256,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     /* set stream metadata mixer control */
-    if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL)) {
+    if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL, 0, 1)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }

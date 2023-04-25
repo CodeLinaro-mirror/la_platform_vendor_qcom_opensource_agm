@@ -1119,3 +1119,21 @@ int agm_shmem_buf_free(uint32_t spf_mem_handle)
     }
       return ret;
 }
+
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *frame_count)
+{
+    ALOGV("%s: session_id = %x\n", __func__, session_id);
+    int ret = -EINVAL;
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        auto status = agm_client->ipc_agm_session_get_available_frame_count(session_id,
+                                             [&](int _ret, uint32_t fc)
+                                             { ret = _ret;
+                                               *frame_count = fc;
+                                             });
+        if (!status.isOk()) {
+            ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
+        }
+    }
+    return ret;
+}
