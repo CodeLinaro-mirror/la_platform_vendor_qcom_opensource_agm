@@ -27,6 +27,40 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/*
+** Changes from Qualcomm Innovation Center are provided under the following license:
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+**
+** Redistribution and use in source and binary forms, with or without
+** modification, are permitted (subject to the limitations in the
+** disclaimer below) provided that the following conditions are met:
+**
+**    * Redistributions of source code must retain the above copyright
+**      notice, this list of conditions and the following disclaimer.
+**
+**    * Redistributions in binary form must reproduce the above
+**      copyright notice, this list of conditions and the following
+**      disclaimer in the documentation and/or other materials provided
+**      with the distribution.
+**
+**    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
+**      contributors may be used to endorse or promote products derived
+**      from this software without specific prior written permission.
+**
+** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
+** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**/
 #include <tinyalsa/asoundlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -116,44 +150,44 @@ int main(int argc, char **argv)
             if (*argv)
                 p_device = atoi(*argv);
         }
-	 if (strcmp(*argv, "-C") == 0) {
+	 if (*argv && strcmp(*argv, "-C") == 0) {
             argv++;
             if (*argv)
                 c_device = atoi(*argv);
         }
-        if (strcmp(*argv, "-p") == 0) {
+        if (*argv && strcmp(*argv, "-p") == 0) {
             argv++;
             if (*argv)
                 period_size = atoi(*argv);
         }
-        if (strcmp(*argv, "-n") == 0) {
+        if (*argv && strcmp(*argv, "-n") == 0) {
             argv++;
             if (*argv)
                 period_count = atoi(*argv);
         }
-	if (strcmp(*argv, "-c") == 0) {
+	if (*argv && strcmp(*argv, "-c") == 0) {
             argv++;
             if (*argv)
                 num_channels = atoi(*argv);
         }
-	if (strcmp(*argv, "-r") == 0) {
+	if (*argv && strcmp(*argv, "-r") == 0) {
             argv++;
             if (*argv)
                 sample_rate = atoi(*argv);
         }
 
-	if (strcmp(*argv, "-T") == 0) {
+	if (*argv && strcmp(*argv, "-T") == 0) {
             argv++;
             if (*argv)
                 play_cap_time = atoi(*argv);
         }
 
-        if (strcmp(*argv, "-D") == 0) {
+        if (*argv && strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
                 card = atoi(*argv);
         }
-        if (strcmp(*argv, "-i") == 0) {
+        if (*argv && strcmp(*argv, "-i") == 0) {
             argv++;
             if (*argv)
                 c_audio_intf = atoi(*argv);
@@ -162,7 +196,7 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-o") == 0) {
+        if (*argv && strcmp(*argv, "-o") == 0) {
             argv++;
             if (*argv)
                 p_audio_intf = atoi(*argv);
@@ -286,7 +320,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
     if (!p_pcm || !pcm_is_ready(p_pcm)) {
         printf("Unable to open playback PCM device (%s)\n",
                 pcm_get_error(p_pcm));
-        goto err_close_c_pcm;
+        goto err_close_p_pcm;
     }
 
     if (pcm_start(p_pcm) < 0) {
@@ -298,7 +332,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
     if (!c_pcm || !pcm_is_ready(c_pcm)) {
         printf("Unable to open playback PCM device (%s)\n",
                 pcm_get_error(c_pcm));
-        goto err_disconnect;
+        goto err_close_c_pcm;
     }
 
     if (pcm_start(c_pcm) < 0) {
@@ -320,10 +354,10 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
         }
     }
     connect_play_pcm_to_cap_pcm(mixer, -1, c_device);
-err_close_p_pcm:
-    pcm_close(p_pcm);
 err_close_c_pcm:
     pcm_close(c_pcm);
+err_close_p_pcm:
+    pcm_close(p_pcm);
 err_disconnect:
     connect_agm_audio_intf_to_stream(mixer, p_device, p_intf_name, STREAM_PCM, false);
     connect_agm_audio_intf_to_stream(mixer, c_device, c_intf_name, STREAM_PCM, false);

@@ -29,7 +29,7 @@
 
 /*
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -209,16 +209,28 @@ static void on_emit_signal_callback(GDBusConnection *conn,
     event_params_l = (struct agm_event_cb_params*) calloc(1,
                      (sizeof(struct agm_event_cb_params) +
                      event_params.event_payload_size));
+    if (event_params_l == NULL) {
+        AGM_LOGE("Failed to allocate memory for event_params_1\n");
+        goto exit;
+    }
+
     array_v = g_variant_iter_next_value(&arg_i);
-    value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
-    memcpy(&event_params_l->event_payload[0], value, n_elements);
-    g_variant_unref(array_v);
+    if (array_v) {
+        value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
+        if (value) {
+            memcpy(&event_params_l->event_payload[0], value, n_elements);
+        }
+        g_variant_unref(array_v);
+    }
 
     event_params_l->source_module_id = event_params.source_module_id;
     event_params_l->event_id = event_params.event_id;
     event_params_l->event_payload_size = event_params.event_payload_size;
 
     cb_data->cb(cb_data->session_id, event_params_l, cb_data->client_data);
+
+exit:
+    return;
 }
 
 static void on_emit_ses_signal_callback(GDBusConnection *conn,
@@ -248,6 +260,7 @@ static void on_emit_ses_signal_callback(GDBusConnection *conn,
                         g_hash_table_lookup(mdata->ses_hash_table,
                                        GINT_TO_POINTER(session_id))) == NULL) {
         AGM_LOGE("%s: Invalid session id received\n", __func__);
+        goto exit;
     }
 
     AGM_LOGD("Waking up session threads read/write = %d thread sts:%u, sid:%d\n",
@@ -255,21 +268,28 @@ static void on_emit_ses_signal_callback(GDBusConnection *conn,
 
     if(!dir){
         array_v = g_variant_iter_next_value(&arg_i);
-        value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
-        AGM_LOGD("%s:n_elements %d, element_size %d, %p\n", __func__,
-            n_elements, element_size, ses_data->buf);
-        if (n_elements <= ses_data->buf_size) {
-            memcpy(ses_data->buf, value, n_elements);
-            ses_data->buf_size = n_elements;
-        } else  {
-            AGM_LOGE("Insufficient bytes size to copy bytes read\n");
+        if (array_v) {
+            value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
+            if (value) {
+                AGM_LOGD("%s:n_elements %d, element_size %d, %p\n", __func__,
+                    n_elements, element_size, ses_data->buf);
+                if (n_elements <= ses_data->buf_size) {
+                    memcpy(ses_data->buf, value, n_elements);
+                    ses_data->buf_size = n_elements;
+                } else  {
+                    AGM_LOGE("Insufficient bytes size to copy bytes read\n");
+                }
+            }
+            g_variant_unref(array_v);
         }
-        g_variant_unref(array_v);
     }
 
     g_mutex_lock(&ses_data->mutex);
     g_cond_signal(&ses_data->cond);
     g_mutex_unlock(&ses_data->mutex);
+
+exit:
+    return;
 }
 
 static void free_callbacks(agm_client_session_data *ses_data) {
@@ -499,6 +519,11 @@ static int agm_session_deregister_cb(uint32_t session_id,
     }
 
     cb_data = (agm_callback_data *)malloc(sizeof(agm_callback_data));
+    if (cb_data == NULL) {
+        AGM_LOGE("Failed to allocate memory for cb_data\n");
+        return -ENOMEM;
+    }
+
     cb_data->client_data = client_data;
     cb_data->session_id = session_id;
     cb_data->cb = NULL;
@@ -615,6 +640,11 @@ int agm_session_register_cb(uint32_t session_id,
     }
 
     cb_data = (agm_callback_data *)malloc(sizeof(agm_callback_data));
+    if (cb_data == NULL) {
+        AGM_LOGE("Failed to allocate memory for cb_data\n");
+        return -ENOMEM;
+    }
+
     cb_data->client_data = client_data;
     cb_data->session_id = session_id;
     cb_data->cb = cb;
@@ -888,9 +918,13 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id,
     g_variant_iter_init(&arg_i, result);
     g_variant_iter_next(&arg_i, "u", size);
     array_v = g_variant_iter_next_value(&arg_i);
-    value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
-    memcpy(payload, value, n_elements);
-    g_variant_unref(array_v);
+    if (array_v) {
+        value = g_variant_get_fixed_array(array_v, &n_elements, element_size);
+        if (value) {
+            memcpy(payload, value, n_elements);
+        }
+        g_variant_unref(array_v);
+    }
     g_variant_unref(result);
     return rc;
 }
@@ -1021,7 +1055,7 @@ int agm_session_get_params(uint32_t session_id, void* payload, size_t size) {
 
     val_arr = g_variant_get_child_value(result, 0);
     value = g_variant_get_fixed_array(val_arr, &n_elements, element_size);
-    if (n_elements <= size) {
+    if (n_elements <= size && value) {
         memcpy(payload, value, n_elements);
     } else  {
         AGM_LOGE("Insufficient bytes size to copy bytes read\n");
@@ -1152,16 +1186,20 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
 
     g_variant_iter_init(&arg_i, result);
     array_v = g_variant_iter_next_value(&arg_i);
-    g_variant_iter_init(&array_i, array_v);
-    for (i = 0; i < *num_aif_info; i++) {
-        struct_v = g_variant_iter_next_value(&array_i);
-        g_variant_iter_init(&struct_i, struct_v);
-        g_variant_iter_next(&struct_i, "u", &aif_list[i].dir);
-        g_variant_iter_next(&struct_i, "s", &name);
-        strlcpy(aif_list[i].aif_name, name, (strlen(name) +1));
-        g_variant_unref(struct_v);
+    if (array_v) {
+        g_variant_iter_init(&array_i, array_v);
+        for (i = 0; i < *num_aif_info; i++) {
+            struct_v = g_variant_iter_next_value(&array_i);
+            if (struct_v) {
+                g_variant_iter_init(&struct_i, struct_v);
+                g_variant_iter_next(&struct_i, "u", &aif_list[i].dir);
+                g_variant_iter_next(&struct_i, "s", &name);
+                strlcpy(aif_list[i].aif_name, name, (strlen(name) +1));
+                g_variant_unref(struct_v);
+            }
+        }
+        g_variant_unref(array_v);
     }
-    g_variant_unref(array_v);
     g_variant_unref(result);
 
     return rc;
@@ -1182,7 +1220,7 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
     if(!buf_info) {
         AGM_LOGE("%s: buf_info is NULL\n", __func__);
-	return -EINVAL;
+        return -EINVAL;
     }
 
     value_1 = g_variant_new_uint32(session_id);
@@ -1213,12 +1251,50 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
     g_variant_iter_init(&arg_i, result);
     struct_v = g_variant_iter_next_value(&arg_i);
-    g_variant_iter_init(&struct_i, struct_v);
+    if (struct_v) {
+        g_variant_iter_init(&struct_i, struct_v);
+    }
+
     g_variant_iter_next(&struct_i, "i", &buf_info->data_buf_fd);
     g_variant_iter_next(&struct_i, "i", &buf_info->data_buf_size);
     g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_fd);
     g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_size);
     g_variant_unref(result);
+    return rc;
+}
+
+int agm_set_gapless_session_metadata(uint64_t handle,
+                         enum agm_gapless_silence_type type,
+                         uint32_t silence)
+{
+    GVariant *argument = NULL;
+    GVariant *result = NULL;
+    GError *error = NULL;
+    agm_client_session_data *ses_data = (agm_client_session_data *) handle;
+    int rc = 0;
+
+    g_assert(ses_data != NULL);
+    g_assert(ses_data->proxy != NULL);
+
+    AGM_LOGD("%s\n", __func__);
+
+    argument = g_variant_new("(@u@u)", g_variant_new_uint32(type), g_variant_new_uint32(silence));
+
+    result = g_dbus_proxy_call_sync(ses_data->proxy,
+                                    "AgmSetGaplessSessionMetadata",
+                                    argument,
+                                    G_DBUS_CALL_FLAGS_NONE,
+                                    -1,
+                                    NULL,
+                                    &error);
+
+    if (result == NULL) {
+        AGM_LOGE("%s: Error invoking AgmSetGaplessSessionMetadata: %s\n", __func__,
+                  error->message);
+        g_error_free(error);
+        return -EINVAL;
+    }
+
     return rc;
 }
 
@@ -1770,11 +1846,14 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
         return -EINVAL;
     }
 
-    start_time = g_get_monotonic_time();
-    end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
-    g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
-    if (g_get_monotonic_time() >= end_time){
-        AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+    if (ses_data->session_id != 105)
+    {
+        start_time = g_get_monotonic_time();
+        end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
+        g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+        if (g_get_monotonic_time() >= end_time){
+            AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+        }
     }
 
     g_mutex_unlock(&ses_data->mutex);
@@ -2118,7 +2197,6 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
         AGM_LOGE("Could not create thread %s, error %s\n", thread_name,
                   error->message);
         g_error_free(error);
-        g_free(ses_data);
         goto exit;
     }
 
@@ -2157,4 +2235,6 @@ exit:
 }
 
 int agm_deinit() {
+    AGM_LOGD("%s\n", __func__);
+    return 0;
 }

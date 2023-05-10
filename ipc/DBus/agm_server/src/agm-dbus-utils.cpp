@@ -29,7 +29,7 @@
 
 /*
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -528,6 +528,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
     if ((object = (agm_dbus_object *)
                    g_hash_table_lookup(conn->objects, dbus_obj_path)) == NULL) {
         object = (agm_dbus_object *)malloc(sizeof(agm_dbus_object));
+        if (object == NULL) {
+            AGM_LOGE("Failed to allocate memory for object\n");
+            return -ENOMEM;
+        }
+
         object->obj_path = dbus_obj_path;
         object->interfaces = g_hash_table_new_full(g_str_hash,
                                                    g_str_equal,
@@ -535,6 +540,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
                                                    agm_free_interface);
 
         interface = (agm_dbus_interface *)malloc(sizeof(agm_dbus_interface));
+        if (interface == NULL) {
+            AGM_LOGE("Failed to allocate memory for interface\n");
+            return -ENOMEM;
+        }
+
         interface->name = interface_info->name;
         interface->methods = g_hash_table_new_full(g_str_hash,
                                                    g_str_equal,
@@ -543,6 +553,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
 
         for (i = 0; i < interface_info->method_count; i++) {
              method = (agm_dbus_method *)malloc(sizeof(agm_dbus_method));
+             if (method == NULL) {
+                 AGM_LOGE("Failed to allocate memory for method\n");
+                 return -ENOMEM;
+             }
+
              method->method_name = interface_info->methods[i].method_name;
              method->method_signature =
                                     interface_info->methods[i].method_signature;
@@ -558,6 +573,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
                                                    agm_free_signal);
         for (i = 0; i < interface_info->signal_count; i++) {
              signal = (agm_dbus_signal *)malloc(sizeof(agm_dbus_signal));
+             if (signal == NULL) {
+                 AGM_LOGE("Failed to allocate memory for signal\n");
+                 return -ENOMEM;
+             }
+
              signal->method_name = interface_info->signals[i].method_name;
              signal->method_signature =
                                     interface_info->signals[i].method_signature;
@@ -587,6 +607,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
                                                interface_info->name)) == NULL) {
             interface = (agm_dbus_interface *)
                                     malloc(sizeof(agm_dbus_interface));
+            if (interface == NULL) {
+                AGM_LOGE("Failed to allocate memory for interface\n");
+                return -ENOMEM;
+            }
+
             interface->name = interface_info->name;
             interface->signals = NULL;
             interface->methods = NULL;
@@ -598,6 +623,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
 
                 for (i = 0; i < interface_info->method_count; i++) {
                     method = (agm_dbus_method *)malloc(sizeof(agm_dbus_method));
+                    if (method == NULL) {
+                        AGM_LOGE("Failed to allocate memory for method\n");
+                        return -ENOMEM;
+                    }
+
                     method->method_name =
                                     interface_info->methods[i].method_name;
                     method->method_signature =
@@ -616,6 +646,11 @@ int agm_dbus_add_interface(agm_dbus_connection *conn,
                                                            agm_free_signal);
                 for (i = 0; i < interface_info->signal_count; i++) {
                     signal = (agm_dbus_signal *)malloc(sizeof(agm_dbus_signal));
+                    if (signal == NULL) {
+                        AGM_LOGE("Failed to allocate memory for signal\n");
+                        return -ENOMEM;
+                    }
+
                     signal->method_name =
                                     interface_info->signals[i].method_name;
                     signal->method_signature =
@@ -656,6 +691,11 @@ agm_dbus_connection *agm_dbus_new_connection() {
     agm_dbus_connection *conn = NULL;
 
     conn = (agm_dbus_connection *)malloc(sizeof(agm_dbus_connection));
+    if (conn == NULL) {
+        AGM_LOGE("Failed to allocate memory for conn\n");
+        return (agm_dbus_connection*)(-ENOMEM);
+    }
+
     conn->objects = NULL;
 
     dbus_error_init(&err);
