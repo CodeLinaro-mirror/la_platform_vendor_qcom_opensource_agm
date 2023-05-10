@@ -88,6 +88,7 @@ typedef struct {
     GDBusProxy *proxy;
     char *obj_path;
     uint32_t session_id;
+    enum agm_data_mode data_mode;
     GThread *thread_loop;
     GMainLoop *loop;
     GList *callbacks;
@@ -1771,6 +1772,8 @@ int agm_session_set_config(uint64_t handle,
 
     AGM_LOGD("%s\n", __func__);
 
+    ses_data->data_mode = session_config->data_mode;
+
     g_variant_builder_init(&builder_1, G_VARIANT_TYPE("(uuu)"));
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->rate);
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->channels);
@@ -1846,7 +1849,7 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
         return -EINVAL;
     }
 
-    if (ses_data->session_id != 105)
+    if (ses_data->data_mode != AGM_DATA_NON_BLOCKING)
     {
         start_time = g_get_monotonic_time();
         end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
