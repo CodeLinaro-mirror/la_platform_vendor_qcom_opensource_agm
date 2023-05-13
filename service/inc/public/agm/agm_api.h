@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef _AGM_INTF_H_
@@ -491,6 +496,14 @@ struct agm_event_cb_params {
 
 /**< payload associated with the event if any */
     uint8_t event_payload[];
+};
+
+/**
+ * hw resources configuration type
+ */
+enum agm_hw_config_type {
+    AGM_HW_CONFIQ_REQ = 0, /**< hw resources config request*/
+    AGM_HW_CONFIQ_REL      /**< hw resources config release*/
 };
 
 /**
@@ -1141,6 +1154,19 @@ int agm_aif_group_set_media_config(uint32_t aif_group_id,
  * \return 0 on success, error code otherwise
  */
 int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff);
+
+/**
+ * \brief Config HW resources using profided config
+ *
+ * \param[in] type: - HW Config request or release
+ * \param[in] cfg: buffer where config data is stored
+ * \param[in] cfg_len: cfg buffer length
+ * \param[out] out_len: output buffer length
+ * \param[out] outbuff: output buffer with requested config
+ *
+ * \return 0 on success, error code otherwise
+ */
+int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg, uint32_t cfg_len, uint8_t *outbuff, uint32_t *out_len);
 
 #ifdef __cplusplus
 }  /* extern "C" */
