@@ -25,6 +25,11 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_client_wrapper"
@@ -495,4 +500,23 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     }
     ALOGE("%s: agm service is not running\n", __func__);
     return -EAGAIN;
+}
+
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload)
+{
+    if (!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_session_get_available_frame_count(session_id, payload);
+    }
+
+    AGM_LOGE("%s: agm service is not running\n", __func__);
+    return -EAGAIN;
+}
+
+int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg,
+                        uint32_t cfg_len, uint8_t *outbuff,
+                        uint32_t *out_len)
+{
+    ALOGE("%s: agm_hw_rsc_config is not supported by SwBinder\n", __func__);
+    return -ENOTSUP;
 }

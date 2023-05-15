@@ -4,9 +4,7 @@ EXTRA_DIST = $(pkgconfig_DATA)
 
 AM_CFLAGS := -Wno-unused-parameter -Wno-unused-result
 AM_CFLAGS += -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/
-AM_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
-AM_CFLAGS += @MMHEADERS_CFLAGS@
-
+AM_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 AM_CFLAGS += -DBACKEND_CONF_FILE=\"/etc/backend_conf.xml\"
 
 lib_LTLIBRARIES      = libagmmixer.la

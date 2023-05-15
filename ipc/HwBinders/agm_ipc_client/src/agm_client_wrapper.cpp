@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "agm_client_wrapper"
 
@@ -1119,3 +1124,64 @@ int agm_shmem_buf_free(uint32_t spf_mem_handle)
     }
       return ret;
 }
+
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *frame_count)
+{
+    ALOGV("%s: session_id = %x\n", __func__, session_id);
+    int ret = -EINVAL;
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        auto status = agm_client->ipc_agm_session_get_available_frame_count(session_id,
+                                             [&](int _ret, uint32_t fc)
+                                             { ret = _ret;
+                                               *frame_count = fc;
+                                             });
+        if (!status.isOk()) {
+            ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
+        }
+    }
+    return ret;
+}
+
+int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg,
+                    uint32_t cfg_len, uint8_t *outbuff,
+                    uint32_t *out_len)
+{
+    int ret = -EINVAL;
+    hidl_vec<uint8_t> cfg_hidl;
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        if (agm_client){
+            cfg_hidl.resize(cfg_len);
+            memcpy(cfg_hidl.data(), cfg, cfg_len);
+            auto status = agm_client->ipc_agm_hw_rsc_config((AgmHwConfigType)type,
+                            cfg_hidl, cfg_len, *out_len,
+                [&](int32_t ret_, hidl_vec<uint8_t>ret_outbuff_hidl,
+                    uint32_t out_len_)
+                {
+                    ret = ret_;
+                    if (*out_len >= out_len_){
+                        *out_len = out_len_;
+                        if (!ret){
+                            if (out_len_){
+                                memcpy(outbuff, ret_outbuff_hidl.data(), out_len_);
+                            }
+                        }
+                    } else {
+                        ret = -EINVAL;
+                        ALOGE("%s:Not enough outbuff provided (%d,%d)",__func__,*out_len,
+                                out_len_);
+                    }
+                });
+            if (!status.isOk()) {
+                ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
+            }
+        } else {
+            ALOGE("%s: AGM client NULL!%d\n", __func__);
+        }
+    } else {
+        ALOGE("%s: AGM server died%d\n", __func__);
+    }
+    return ret;
+}
+

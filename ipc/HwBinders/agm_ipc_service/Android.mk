@@ -10,7 +10,7 @@ LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_c
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
-
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/ar_osal
 LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     libutils \
@@ -25,6 +25,7 @@ ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
+LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -34,7 +35,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE               := vendor.qti.hardware.AGMIPC@1.0-service
 LOCAL_INIT_RC              := vendor.qti.hardware.AGMIPC@1.0-service.rc
 LOCAL_VENDOR_MODULE        := true
-ifneq (,$(filter $(PRODUCT_NAME), msmnile_gvmq msmnile_au))
+
+ifeq ($(TARGET_GVMGH_SPECIFIC), false)
 LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service-v2.rc
 LOCAL_VINTF_FRAGMENTS := vendor.qti.hardware.AGMIPC@1.0-service-v2.xml
 else
@@ -60,7 +62,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 include $(BUILD_EXECUTABLE)
 
-ifneq (,$(filter $(PRODUCT_NAME), msmnile_gvmq msmnile_au))
+ifeq ($(TARGET_GVMGH_SPECIFIC), false)
 include $(CLEAR_VARS)
 LOCAL_MODULE       := init.qti.AGMIPC.sh
 LOCAL_MODULE_TAGS  := optional

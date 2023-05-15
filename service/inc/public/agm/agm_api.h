@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef _AGM_INTF_H_
@@ -494,6 +499,14 @@ struct agm_event_cb_params {
 };
 
 /**
+ * hw resources configuration type
+ */
+enum agm_hw_config_type {
+    AGM_HW_CONFIQ_REQ = 0, /**< hw resources config request*/
+    AGM_HW_CONFIQ_REL      /**< hw resources config release*/
+};
+
+/**
  * \brief Callback function signature for events to client
  *
  * \param[in] session_id - Valid audio session id
@@ -720,6 +733,16 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
 
 int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
                                 void *payload, size_t size);
+
+/**
+ * \brief Get available frame count for session.
+ *
+ * \param[in] session_id - Valid audio session id
+ * \param[in] payload: buffer where available frame count will be copied to
+ *
+ * \return 0 on success, error code otherwise
+ */
+int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload);
 
 /**
   * \brief Open the session with specified session id.
@@ -1131,6 +1154,19 @@ int agm_aif_group_set_media_config(uint32_t aif_group_id,
  * \return 0 on success, error code otherwise
  */
 int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff);
+
+/**
+ * \brief Config HW resources using profided config
+ *
+ * \param[in] type: - HW Config request or release
+ * \param[in] cfg: buffer where config data is stored
+ * \param[in] cfg_len: cfg buffer length
+ * \param[out] out_len: output buffer length
+ * \param[out] outbuff: output buffer with requested config
+ *
+ * \return 0 on success, error code otherwise
+ */
+int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg, uint32_t cfg_len, uint8_t *outbuff, uint32_t *out_len);
 
 #ifdef __cplusplus
 }  /* extern "C" */

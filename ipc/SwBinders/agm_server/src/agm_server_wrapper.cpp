@@ -293,3 +293,8 @@ int AgmService::ipc_agm_session_get_buf_info(uint32_t session_id,
     ALOGV("%s called\n", __func__);
     return agm_session_get_buf_info(session_id, buf_info, flag);
 };
+
+int AgmService::ipc_agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload) {
+    ALOGV("%s called\n", __func__);
+    return agm_session_get_available_frame_count(session_id, payload);
+};
