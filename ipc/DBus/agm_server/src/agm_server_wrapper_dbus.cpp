@@ -2365,6 +2365,7 @@ static void ipc_agm_session_write(DBusConnection *conn,
         memcpy(ses_data->buf, value, n_elements);
         if (agm_session_write(ses_data->handle, ses_data->buf, (size_t *) &ses_data->buf_size)) {
             AGM_LOGE("%s:agm_session_write failed\n", __func__);
+            buf_size = ses_data->buf_size;
         }
     }
 
