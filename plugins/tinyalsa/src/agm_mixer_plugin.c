@@ -25,6 +25,11 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 /* agm_mixer.c all names (variable/functions) should have
@@ -105,6 +110,8 @@ enum {
     PCM_CTL_NAME_SHMEM_ALLOC,
     PCM_CTL_NAME_SHMEM_FREE,
     PCM_CTL_NAME_GET_AVAILABLE_FRAME_COUNT,
+    PCM_CTL_NAME_HW_RSC_REQ,
+    PCM_CTL_NAME_HW_RSC_REL,
     /* Add new ones here */
 };
 
@@ -125,6 +132,8 @@ static char *amp_pcm_ctl_name_extn[] = {
     "shmemAlloc",
     "shmemFree",
     "getAvailableFrameCount",
+    "hwRscReq",
+    "hwRscRel",
     /* Add new ones below, be sure to update enum as well */
 };
 
@@ -1681,6 +1690,134 @@ static int amp_pcm_available_frame_count_put(struct mixer_plugin *plugin __unuse
     return 0;
 }
 
+static int amp_pcm_hw_rsc_req_get(struct mixer_plugin *plugin __unused,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    struct amp_dev_info *pcm_adi = ctl->private_data;
+
+    void *payload = NULL;
+    int ret = 0;
+    size_t tlv_size;
+    if (tlv == NULL)
+        return -EINVAL;
+
+    payload = &tlv->tlv[0];
+    if (payload == NULL)
+        return -EINVAL;
+
+    tlv_size = tlv->length;
+    if (tlv_size == 0)
+        return -EINVAL;
+
+    if (!pcm_adi->get_param_payload) {
+        AGM_LOGE("%s: put() for HwRscReq not called\n", __func__);
+        return -EINVAL;
+    }
+
+    ret = agm_hw_rsc_config(AGM_HW_CONFIQ_REQ, pcm_adi->get_param_payload,
+        pcm_adi->get_param_payload_size, payload, &tlv_size);
+    if (ret == -EALREADY)
+        ret = 0;
+
+    if (ret)
+        AGM_LOGE("%s: failed err %d for %s\n", __func__, ret, ctl->name);
+
+    free(pcm_adi->get_param_payload);
+    pcm_adi->get_param_payload = NULL;
+    pcm_adi->get_param_payload_size = 0;
+    return ret;
+
+}
+
+static int amp_pcm_hw_rsc_req_put(struct mixer_plugin *plugin __unused,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    struct amp_dev_info *pcm_adi = ctl->private_data;
+    void *payload = NULL;
+
+    if (tlv == NULL)
+        return -EINVAL;
+    AGM_LOGV("%s: enter, size %d\n", __func__, tlv->length);
+
+    if (pcm_adi->get_param_payload) {
+        free(pcm_adi->get_param_payload);
+        pcm_adi->get_param_payload = NULL;
+    }
+    payload = &tlv->tlv[0];
+    if (payload == NULL)
+        return -EINVAL;
+    pcm_adi->get_param_payload_size = tlv->length;
+    if (pcm_adi->get_param_payload_size == 0)
+        return -EINVAL;
+    pcm_adi->get_param_payload = calloc(1, pcm_adi->get_param_payload_size);
+    if (!pcm_adi->get_param_payload)
+        return -ENOMEM;
+
+    memcpy(pcm_adi->get_param_payload, payload, pcm_adi->get_param_payload_size);
+
+    return 0;
+}
+
+static int amp_pcm_hw_rsc_rel_get(struct mixer_plugin *plugin __unused,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    struct amp_dev_info *pcm_adi = ctl->private_data;
+    void *payload;
+    int  ret = 0;
+    size_t tlv_size;
+
+    if (tlv == NULL)
+        return -EINVAL;
+
+    payload = &tlv->tlv[0];
+    if (payload == NULL)
+        return -EINVAL;
+
+    tlv_size = tlv->length;
+    if (tlv_size == 0)
+        return -EINVAL;
+    ret = agm_hw_rsc_config(AGM_HW_CONFIQ_REL, pcm_adi->get_param_payload,
+        pcm_adi->get_param_payload_size, payload, &tlv_size);
+    if (pcm_adi->get_param_payload) {
+        free(pcm_adi->get_param_payload);
+        pcm_adi->get_param_payload = NULL;
+        pcm_adi->get_param_payload_size = 0;
+    }
+    return ret;
+
+}
+
+static int amp_pcm_hw_rsc_rel_put(struct mixer_plugin *plugin __unused,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    struct amp_dev_info *pcm_adi = ctl->private_data;
+    void *payload;
+    int ret = 0;
+    size_t tlv_size;
+
+    AGM_LOGV("%s: enter\n", __func__);
+    if (tlv == NULL)
+        return -EINVAL;
+
+    payload = &tlv->tlv[0];
+    tlv_size = tlv->length;
+    if (payload == NULL)
+        return -EINVAL;
+
+    pcm_adi->get_param_payload_size = tlv_size;
+    if (pcm_adi->get_param_payload_size == 0) {
+        AGM_LOGE("%s: invalid array size %d\n", __func__, pcm_adi->get_param_payload_size);
+        return -EINVAL;
+    }
+
+    pcm_adi->get_param_payload = calloc(1, pcm_adi->get_param_payload_size);
+    if (!pcm_adi->get_param_payload)
+        return -ENOMEM;
+
+    memcpy(pcm_adi->get_param_payload, payload, pcm_adi->get_param_payload_size);
+    return 0;
+}
+
 /* 512 max bytes for non-tlv controls, reserving 16 for future use */
 static struct snd_value_bytes pcm_calibration_bytes =
     SND_VALUE_BYTES(512 - 16);
@@ -1704,6 +1841,10 @@ static struct snd_value_tlv_bytes pcm_shmem_alloc_bytes =
        SND_VALUE_TLV_BYTES(1024, amp_pcm_shmem_alloc_get, amp_pcm_shmem_alloc_put);
 static struct snd_value_tlv_bytes pcm_shmem_free_bytes =
        SND_VALUE_TLV_BYTES(1024, amp_pcm_shmem_free_get, amp_pcm_shmem_free_put);
+static struct snd_value_tlv_bytes pcm_hw_rsc_req_bytes =
+       SND_VALUE_TLV_BYTES(1024, amp_pcm_hw_rsc_req_get, amp_pcm_hw_rsc_req_put);
+static struct snd_value_tlv_bytes pcm_hw_rsc_rel_bytes =
+       SND_VALUE_TLV_BYTES(1024, amp_pcm_hw_rsc_rel_get, amp_pcm_hw_rsc_rel_put);
 static struct snd_value_tlv_bytes pcm_event_bytes =
     SND_VALUE_TLV_BYTES(128 * 1024, amp_pcm_event_get, amp_pcm_event_put);
 static struct snd_value_tlv_bytes pcm_get_available_frame_count_bytes =
@@ -1876,6 +2017,32 @@ static void amp_create_pcm_get_available_frame_count_ctl(struct amp_priv *amp_pr
 
     snprintf(ctl_name, AIF_NAME_MAX_LEN + 16, "%s %s", name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_GET_AVAILABLE_FRAME_COUNT]);
     INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_get_available_frame_count_bytes, pval, pdata);
+}
+
+static void amp_create_pcm_hw_rsc_req_ctl(struct amp_priv *amp_priv,
+     char *name, int ctl_idx, int pval, void *pdata)
+{
+    struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
+    char *ctl_name = AMP_PRIV_GET_CTL_NAME_PTR(amp_priv, ctl_idx);
+
+    snprintf(ctl_name, AIF_NAME_MAX_LEN + 16, "%s %s",
+            name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_HW_RSC_REQ]);
+
+    INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_hw_rsc_req_bytes,
+            pval, pdata);
+}
+
+static void amp_create_pcm_hw_rsc_rel_ctl(struct amp_priv *amp_priv,
+     char *name, int ctl_idx, int pval, void *pdata)
+{
+    struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
+    char *ctl_name = AMP_PRIV_GET_CTL_NAME_PTR(amp_priv, ctl_idx);
+
+    snprintf(ctl_name, AIF_NAME_MAX_LEN + 16, "%s %s",
+            name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_HW_RSC_REL]);
+
+    INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_hw_rsc_rel_bytes,
+            pval, pdata);
 }
 
 /* TX only mixer control creations here */
@@ -2113,6 +2280,10 @@ static int amp_form_common_pcm_ctls(struct amp_priv *amp_priv, int *ctl_idx,
         amp_create_pcm_shmem_free_ctl(amp_priv, name, (*ctl_idx)++,
                         idx, pcm_adi);
         amp_create_pcm_get_available_frame_count_ctl(amp_priv, name, (*ctl_idx)++,
+                        idx, pcm_adi);
+        amp_create_pcm_hw_rsc_req_ctl(amp_priv, name, (*ctl_idx)++,
+                        idx, pcm_adi);
+        amp_create_pcm_hw_rsc_rel_ctl(amp_priv, name, (*ctl_idx)++,
                         idx, pcm_adi);
     }
 
