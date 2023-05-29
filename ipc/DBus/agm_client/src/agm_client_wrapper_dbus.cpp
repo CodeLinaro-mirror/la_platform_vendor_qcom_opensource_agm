@@ -361,17 +361,34 @@ static int subscribe_callback_event(agm_client_session_data *ses_data,
     g_assert(cb_data != NULL);
 
     if (subscribe) {
-        cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
-                                          mdata->conn,
-                                          NULL,
-                                          AGM_SESSION_IFACE,
-                                          "AgmEventCb",
-                                          ses_data->obj_path,
-                                          NULL,
-                                          G_DBUS_SIGNAL_FLAGS_NONE,
-                                          on_emit_signal_callback,
-                                          cb_data,
-                                          NULL);
+        if (cb_data->evt_type == AGM_EVENT_DATA_PATH)
+        {
+            cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
+                                              mdata->conn,
+                                              NULL,
+                                              AGM_SESSION_IFACE,
+                                              "AgmSesEventCb",
+                                              ses_data->obj_path,
+                                              NULL,
+                                              G_DBUS_SIGNAL_FLAGS_NONE,
+                                              on_emit_signal_callback,
+                                              cb_data,
+                                              NULL);
+        }
+        else
+        {
+            cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
+                                              mdata->conn,
+                                              NULL,
+                                              AGM_SESSION_IFACE,
+                                              "AgmEventCb",
+                                              ses_data->obj_path,
+                                              NULL,
+                                              G_DBUS_SIGNAL_FLAGS_NONE,
+                                              on_emit_signal_callback,
+                                              cb_data,
+                                              NULL);
+        }
 
         ses_data->callbacks = g_list_prepend(ses_data->callbacks, cb_data);
     } else {
