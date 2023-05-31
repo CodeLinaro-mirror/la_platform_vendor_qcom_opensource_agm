@@ -27,6 +27,12 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear.
+*/
+
 #define LOG_TAG "AGM: device"
 
 #include <errno.h>
@@ -355,6 +361,7 @@ int device_open(struct device_obj *dev_obj)
     config.stop_threshold = INT_MAX;
 
     pcm_flags = (obj->hw_ep_info.dir == AUDIO_OUTPUT) ? PCM_OUT : PCM_IN;
+#ifndef BYPASS_ALSA_HW
     pcm = pcm_open(obj->card_id, obj->pcm_id, pcm_flags,
                 &config);
     if (!pcm || !pcm_is_ready(pcm)) {
@@ -365,6 +372,7 @@ int device_open(struct device_obj *dev_obj)
         ret = -EIO;
         goto done;
     }
+#endif
     update_sysfs_fd(obj->pcm_id, DEVICE_ENABLE);
     obj->pcm = pcm;
     obj->state = DEV_OPENED;
@@ -404,10 +412,13 @@ int device_prepare(struct device_obj *dev_obj)
         pthread_mutex_unlock(&obj->lock);
         return ret;
     }
+
 #ifdef DEVICE_USES_ALSALIB
     ret = snd_pcm_prepare(obj->pcm);
 #else
+#ifndef BYPASS_ALSA_HW
     ret = pcm_prepare(obj->pcm);
+#endif
 #endif
     if (ret) {
         AGM_LOGE("PCM device %u prepare failed, ret = %d\n",
@@ -493,10 +504,13 @@ int device_stop(struct device_obj *dev_obj)
 
     obj->refcnt.start--;
     if (obj->refcnt.start == 0) {
+
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_drop(obj->pcm);
 #else
+#ifndef BYPASS_ALSA_HW
         ret = pcm_stop(obj->pcm);
+#endif
 #endif
         if (ret) {
             AGM_LOGE("PCM device %u stop failed, ret = %d\n",
@@ -540,10 +554,13 @@ int device_close(struct device_obj *dev_obj)
 
     if (--obj->refcnt.open == 0) {
         update_sysfs_fd(obj->pcm_id, DEVICE_DISABLE);
+
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_close(obj->pcm);
 #else
+#ifndef BYPASS_ALSA_HW
         ret = pcm_close(obj->pcm);
+#endif
 #endif
         if (ret) {
             AGM_LOGE("PCM device %u close failed, ret = %d\n",
