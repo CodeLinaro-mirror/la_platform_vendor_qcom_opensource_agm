@@ -40,6 +40,10 @@ LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
 LOCAL_CFLAGS        += -DBACKEND_CONF_FILE=\"/vendor/etc/backend_conf.xml\"
 LOCAL_SRC_FILES     := agmplay.c
 
+ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
+LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+endif
+
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
     libacdb_headers
@@ -50,7 +54,7 @@ ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
 LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
+LOCAL_SHARED_LIBRARIES += libtinyalsa libcutils
 endif
 
 LOCAL_SHARED_LIBRARIES += \

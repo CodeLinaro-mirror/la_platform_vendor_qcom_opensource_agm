@@ -42,6 +42,9 @@ LOCAL_VINTF_FRAGMENTS := vendor.qti.hardware.AGMIPC@1.0-service-v2.xml
 else
 LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service.rc
 endif
+ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
+LOCAL_CFLAGS  += -DPLATFORM_MSMNILE_AU
+endif
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
