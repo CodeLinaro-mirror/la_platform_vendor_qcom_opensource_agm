@@ -996,7 +996,6 @@ int graph_write(struct graph_obj *graph_obj, void *buffer, size_t *size)
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl_write for size %zu failed with error %d\n", *size, ret);
-        goto done;
     }
     *size = (size_t)size_written;
 done:
