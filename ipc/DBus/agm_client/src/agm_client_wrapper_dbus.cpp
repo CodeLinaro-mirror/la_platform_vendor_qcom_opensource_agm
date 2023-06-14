@@ -88,6 +88,7 @@ typedef struct {
     GDBusProxy *proxy;
     char *obj_path;
     uint32_t session_id;
+    enum agm_data_mode data_mode;
     GThread *thread_loop;
     GMainLoop *loop;
     GList *callbacks;
@@ -1220,7 +1221,7 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
     if(!buf_info) {
         AGM_LOGE("%s: buf_info is NULL\n", __func__);
-	return -EINVAL;
+        return -EINVAL;
     }
 
     value_1 = g_variant_new_uint32(session_id);
@@ -1260,6 +1261,41 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_fd);
     g_variant_iter_next(&struct_i, "i", &buf_info->pos_buf_size);
     g_variant_unref(result);
+    return rc;
+}
+
+int agm_set_gapless_session_metadata(uint64_t handle,
+                         enum agm_gapless_silence_type type,
+                         uint32_t silence)
+{
+    GVariant *argument = NULL;
+    GVariant *result = NULL;
+    GError *error = NULL;
+    agm_client_session_data *ses_data = (agm_client_session_data *) handle;
+    int rc = 0;
+
+    g_assert(ses_data != NULL);
+    g_assert(ses_data->proxy != NULL);
+
+    AGM_LOGD("%s\n", __func__);
+
+    argument = g_variant_new("(@u@u)", g_variant_new_uint32(type), g_variant_new_uint32(silence));
+
+    result = g_dbus_proxy_call_sync(ses_data->proxy,
+                                    "AgmSetGaplessSessionMetadata",
+                                    argument,
+                                    G_DBUS_CALL_FLAGS_NONE,
+                                    -1,
+                                    NULL,
+                                    &error);
+
+    if (result == NULL) {
+        AGM_LOGE("%s: Error invoking AgmSetGaplessSessionMetadata: %s\n", __func__,
+                  error->message);
+        g_error_free(error);
+        return -EINVAL;
+    }
+
     return rc;
 }
 
@@ -1736,6 +1772,8 @@ int agm_session_set_config(uint64_t handle,
 
     AGM_LOGD("%s\n", __func__);
 
+    ses_data->data_mode = session_config->data_mode;
+
     g_variant_builder_init(&builder_1, G_VARIANT_TYPE("(uuu)"));
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->rate);
     g_variant_builder_add(&builder_1, "u", (guint32)media_config->channels);
@@ -1811,11 +1849,14 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
         return -EINVAL;
     }
 
-    start_time = g_get_monotonic_time();
-    end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
-    g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
-    if (g_get_monotonic_time() >= end_time){
-        AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+    if (ses_data->data_mode != AGM_DATA_NON_BLOCKING)
+    {
+        start_time = g_get_monotonic_time();
+        end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
+        g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+        if (g_get_monotonic_time() >= end_time){
+            AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+        }
     }
 
     g_mutex_unlock(&ses_data->mutex);
