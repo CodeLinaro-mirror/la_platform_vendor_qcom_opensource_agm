@@ -26,6 +26,14 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
+
+/*
+** Changes from Qualcomm Innovation Center are provided under the following license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**/
+
 #define LOG_TAG "PLUGIN: AGMIO"
 #include <stdio.h>
 #include <sys/poll.h>
@@ -42,6 +50,7 @@
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
 
 enum {
+    AGM_IO_STATE_XRUN = -1,
     AGM_IO_STATE_OPEN = 1,
     AGM_IO_STATE_SETUP,
     AGM_IO_STATE_PREPARED,
@@ -67,6 +76,9 @@ struct agmio_priv {
     snd_pcm_uframes_t hw_pointer;
     snd_pcm_uframes_t boundary;
     int event_fd;
+    pthread_cond_t eos_cond;
+    pthread_mutex_t eos_lock;
+    bool eos;
 /* add private variables here */
 };
 
@@ -102,6 +114,12 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
         eventfd_write(priv->event_fd, 1);
     } else if (event_params->event_id == AGM_EVENT_EOS_RENDERED) {
         AGM_LOGD("%s: EOS event received \n", __func__);
+        pthread_mutex_lock(&priv->eos_lock);
+        if (priv->eos) {
+            pthread_cond_signal(&priv->eos_cond);
+            priv->eos = false;
+        }
+        pthread_mutex_unlock(&priv->eos_lock);
     } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
         AGM_LOGD("%s: Early EOS event received \n", __func__);
     } else {
@@ -157,6 +175,11 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
     uint64_t handle;
     int ret;
 
+    pthread_mutex_lock(&pcm->eos_lock);
+    if (pcm->eos) {
+          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
+    }
+    pthread_mutex_unlock(&pcm->eos_lock);
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
@@ -168,6 +191,20 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
 
 static int agm_io_drain(snd_pcm_ioplug_t * io)
 {
+    struct agmio_priv *pcm = io->private_data;
+    uint64_t handle;
+    int ret = agm_get_session_handle(pcm, &handle);
+    if (ret)
+        return ret;
+    pthread_mutex_lock(&pcm->eos_lock);
+    ret = agm_session_eos(handle);
+    if (ret) {
+        AGM_LOGE("%s: EOS fail\n", __func__);
+        pthread_mutex_unlock(&pcm->eos_lock);
+        return ret;
+    }
+    pcm->eos = true;
+    pthread_mutex_unlock(&pcm->eos_lock);
     AGM_LOGD("%s: exit\n", __func__);
     return 0;
 }
@@ -177,9 +214,20 @@ static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t * io)
     struct agmio_priv *pcm = io->private_data;
     snd_pcm_sframes_t new_hw_ptr;
 
+    if(pcm->state == AGM_IO_STATE_XRUN)
+        return -EPIPE;
+
     new_hw_ptr = pcm->hw_pointer;
 
     return new_hw_ptr;
+}
+
+static void agm_io_xrun(snd_pcm_ioplug_t * io)
+{
+    struct agmio_priv *pcm = io->private_data;
+
+    agm_io_stop(io);
+    pcm->state = AGM_IO_STATE_XRUN;
 }
 
 static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
@@ -213,8 +261,14 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
     }
     if (io->stream == SND_PCM_STREAM_PLAYBACK)
         ret = agm_session_write(handle, buf, &count);
-    else
+    else {
         ret = agm_session_read(handle, buf, &count);
+        if (io->appl_ptr != 0 && count != 0 && count < size * pcm->frame_size) {
+            AGM_LOGE("XRUN happen! reqested size %d, actual filled size %d", size * pcm->frame_size, count);
+            agm_io_xrun(io);
+            ret = -EPIPE;
+        }
+    }
 
 done:
     if (ret == 0) {
@@ -239,9 +293,38 @@ static int agm_io_prepare(snd_pcm_ioplug_t * io)
         return ret;
 
     ret = agm_session_prepare(handle);
+    if (ret)
+        return ret;
+    pcm->hw_pointer = 0;
+    pcm->state = AGM_IO_STATE_PREPARED;
 
     AGM_LOGD("%s: exit\n", __func__);
     return ret;
+}
+
+static enum agm_media_format alsa_to_agm_fmt(int fmt)
+{
+    enum agm_media_format agm_pcm_fmt = AGM_FORMAT_INVALID;
+
+    switch (fmt) {
+    case SND_PCM_FORMAT_S8:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S8;
+        break;
+    case SND_PCM_FORMAT_S16_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S16_LE;
+        break;
+    case SND_PCM_FORMAT_S24_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_LE;
+        break;
+    case SND_PCM_FORMAT_S24_3LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S24_3LE;
+        break;
+    case SND_PCM_FORMAT_S32_LE:
+        agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
+        break;
+    }
+
+    return agm_pcm_fmt;
 }
 
 static int agm_io_hw_params(snd_pcm_ioplug_t * io,
@@ -264,12 +347,17 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
 
     media_config->rate =  io->rate;
     media_config->channels = io->channels;
-    media_config->format = io->format;
+    media_config->format = alsa_to_agm_fmt(io->format);
 
     buffer_config->count = io->buffer_size / io->period_size;
+    if (io->buffer_size != io->period_size * buffer_config->count)
+    {
+        AGM_LOGE("%s: buffer_size[%d] is not multiple times of period_size[%d]!\n", __func__, io->buffer_size, io->period_size);
+        return -EINVAL;
+    }
+
     pcm->period_size = io->period_size;
     buffer_config->size = io->period_size * pcm->frame_size;
-    pcm->hw_pointer = 0;
 
     snd_card_def_get_int(pcm->pcm_node, "session_mode", &sess_mode);
 
@@ -330,6 +418,7 @@ static int agm_io_close(snd_pcm_ioplug_t * io)
     ret = agm_session_close(handle);
 
     snd_card_def_put_card(pcm->card_node);
+    close(pcm->event_fd);
     free(pcm->buffer_config);
     free(pcm->media_config);
     free(pcm->session_config);
@@ -496,16 +585,22 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
         return -ENOMEM;
 
     media_config = calloc(1, sizeof(struct agm_media_config));
-    if (!media_config)
-        return -ENOMEM;
+    if (!media_config) {
+        ret = -ENOMEM;
+        goto err_free_priv;
+    }
 
     buffer_config = calloc(1, sizeof(struct agm_buffer_config));
-    if (!buffer_config)
-        return -ENOMEM;
+    if (!buffer_config) {
+        ret = -ENOMEM;
+        goto err_free_media;
+    }
 
     session_config = calloc(1, sizeof(struct agm_session_config));
-    if (!session_config)
-        return -ENOMEM;
+    if (!session_config) {
+        ret = -ENOMEM;
+        goto err_free_buf;
+    }
 
     snd_config_for_each(it, next, conf) {
         snd_config_t *n = snd_config_iterator_entry(it);
@@ -519,7 +614,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
             if (snd_config_get_integer(n, &card) < 0) {
                 AGM_LOGE("Invalid type for %s", id);
                 ret = -EINVAL;
-                goto err_free_priv;
+                goto err_free_session;
             }
             AGM_LOGD("card id is %d\n", card);
             priv->card = card;
@@ -529,7 +624,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
             if (snd_config_get_integer(n, &device) < 0) {
                 AGM_LOGE("Invalid type for %s", id);
                 ret = -EINVAL;
-                goto err_free_priv;
+                goto err_free_session;
             }
             AGM_LOGD("device id is %d\n", device);
             priv->device = device;
@@ -541,7 +636,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (!card_node) {
         AGM_LOGE("card node is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_session;
     }
     priv->card_node = card_node;
 
@@ -549,7 +644,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (!pcm_node) {
         AGM_LOGE("pcm node is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
     priv->pcm_node = pcm_node;
 
@@ -560,7 +655,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("handle is NULL\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_card;
     }
     priv->session_id = session_id;
     priv->media_config = media_config;
@@ -580,32 +675,52 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("register event callback failure\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_close_session;
     }
 
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
     if (ret < 0) {
         AGM_LOGE("IO plugin create failed\n");
-        goto err_free_priv;
+        goto err_free_cb;
     }
 
     if ((priv->event_fd = eventfd(0, EFD_NONBLOCK)) == -1) {
         AGM_LOGE("failed to create event_fd\n");
         ret = -EINVAL;
-        goto err_free_priv;
+        goto err_free_cb;
     }
 
     ret = agm_hw_constraint(priv);
     if (ret < 0) {
         snd_pcm_ioplug_delete(&priv->io);
-        goto err_free_priv;
+        goto err_close_eventfd;
     }
 
     *pcmp = priv->io.pcm;
+
+    pthread_mutex_init(&priv->eos_lock, (const pthread_mutexattr_t *) NULL);
     return 0;
+
+err_close_eventfd:
+    close(priv->event_fd);
+err_free_cb:
+    agm_session_register_cb(session_id, NULL, AGM_EVENT_DATA_PATH, (void *)priv);
+err_close_session:
+    agm_session_close(handle);
+err_free_card:
+    snd_card_def_put_card(card_node);
+err_free_session:
+    free(session_config);
+err_free_buf:
+    free(buffer_config);
+err_free_media:
+    free(media_config);
 err_free_priv:
     free(priv);
-    return ret;
+    if (ret < 0)
+        return ret;
+    else
+        return -ret;
 }
 
 SND_PCM_PLUGIN_SYMBOL(agm);

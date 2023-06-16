@@ -423,4 +423,5 @@ int32_t graph_enable_acdb_persistence(uint8_t enable_flag);
 
 int graph_set_media_config_datapath(struct graph_obj *gph_obj);
 int graph_set_pcm_encoder_params(struct graph_obj *gph_obj);
+int graph_set_stream_mfc_config(struct graph_obj *gph_obj);
 #endif /*GPH_OBJ_H*/

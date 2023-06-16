@@ -26,6 +26,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "agm_server_wrapper"
@@ -35,13 +40,15 @@
 #include <pthread.h>
 #include "gsl_intf.h"
 #include <hwbinder/IPCThreadState.h>
-
+#ifdef AGM_HW_RSC_CFG_EN
+#include "gsl_hw_rsc_intf.h"
+#endif
 #define MAX_CACHE_SIZE 64
 #define NUM_GKV(x)                     (*((uint32_t *) x))
 
 using AgmCallbackData = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::clbk_data;
 using AgmServerCallback = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::SrvrClbk;
-
+using AgmHwConfigType = ::vendor::qti::hardware::AGMIPC::V1_0::AgmHwConfigType;
 static list_declare(client_list);
 static pthread_mutex_t client_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -54,7 +61,7 @@ typedef struct {
    pthread_mutex_t handle_lock;
    uint64_t handle;
    std::vector<std::pair<int, int>> shared_mem_fd_list;
-   std::vector<int> aif_id_list;
+   std::vector<uint32_t> aif_id_list;
 } agm_client_session_handle;
 
 typedef struct {
@@ -239,7 +246,7 @@ static void add_session_to_list_l(uint32_t session_id)
     }
 }
 
-static void add_session_aif_to_list_l(uint32_t session_id, uint64_t aif_id)
+static void add_session_aif_to_list_l(uint32_t session_id, uint32_t aif_id)
 {
     agm_client_session_handle *session_handle = NULL;
 
@@ -257,7 +264,7 @@ static void add_session_aif_to_list_l(uint32_t session_id, uint64_t aif_id)
     session_handle->aif_id_list.push_back(aif_id);
 }
 
-static void remove_session_aif_from_list_l(uint32_t session_id, uint64_t aif_id)
+static void remove_session_aif_from_list_l(uint32_t session_id, uint32_t aif_id)
 {
     agm_client_session_handle *session_handle = NULL;
 
@@ -1536,7 +1543,54 @@ Return<void> AGM::ipc_agm_session_get_available_frame_count(uint32_t session_id,
     _hidl_cb(ret, frame_count);
     return Void();
 }
+#ifdef AGM_HW_RSC_CFG_EN
+Return<void>  AGM::ipc_agm_hw_rsc_config(AgmHwConfigType type,
+                                const hidl_vec<uint8_t>& cfg,
+                                uint32_t cfg_len, uint32_t out_len,
+                                ipc_agm_hw_rsc_config_cb _hidl_cb)
+{
+    int32_t ret = -EINVAL;
+    void *payload = nullptr;
+    void *outbuff = nullptr;
+    uint32_t out_len_l = out_len;
+    payload = calloc(1, cfg_len);
+    outbuff = calloc(1, out_len);
+    hidl_vec<uint8_t> outbuff_hidl;
+    outbuff_hidl.resize(out_len);
+    if (payload == nullptr || outbuff == nullptr) {
+        ALOGE("%s: Cannot allocate memory\n", __func__);
+        _hidl_cb(-ENOMEM, outbuff_hidl, out_len);
+        return Void();
+    }
+    memcpy(payload, cfg.data(), cfg_len);
+    if (type == AgmHwConfigType::REQ){
+        ret = gsl_request_hw_rsc_custom_config((uint8_t *)payload,
+                cfg_len, outbuff, &out_len_l);
+    } else if ( type == AgmHwConfigType::REL) {
+        ret = gsl_release_hw_rsc_custom_config((uint8_t *)payload,
+                cfg_len, outbuff, &out_len_l);
+    }
+    if (out_len_l)
+        memcpy(outbuff_hidl.data(), outbuff, out_len_l);
 
+    _hidl_cb(ret, outbuff_hidl, out_len_l);
+exit:
+    if (payload)
+        free(payload);
+    if (outbuff)
+        free(outbuff);
+
+    return Void();
+}
+#else
+Return<void>  AGM::ipc_agm_hw_rsc_config(AgmHwConfigType type,
+                                const hidl_vec<uint8_t>& cfg,
+                                uint32_t cfg_len, uint32_t out_len,
+                                ipc_agm_hw_rsc_config_cb _hidl_cb)
+{
+    return Void();
+}
+#endif
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace AGMIPC

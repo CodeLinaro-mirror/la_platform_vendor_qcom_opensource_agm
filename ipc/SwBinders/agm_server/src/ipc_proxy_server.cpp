@@ -414,6 +414,7 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
             memset(buff, 0x0, *count);
             memcpy(buff, blob.data(), *count);
         fail_read:
+            blob.release();
             return rc;
         }
 
@@ -858,6 +859,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
     fail_ses_set_meta:
         if (bn_payload)
             free(bn_payload);
+        blob.release();
         reply->writeInt32(rc);
         break;
     }
@@ -885,6 +887,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
     fail_ses_aud_set_meta:
         if (bn_payload)
             free(bn_payload);
+        blob.release();
         reply->writeInt32(rc);
         break;
     }
@@ -927,6 +930,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
     fail_audio_set_meta:
         if (bn_payload)
             free(bn_payload);
+        blob.release();
         reply->writeInt32(rc);
         break;
     }
@@ -1169,6 +1173,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                                 blob.data(), blob_size);
          blob.release();
          rc = ipc_agm_session_register_for_events(session_id, evt_reg_cfg);
+         free(evt_reg_cfg);
          reply->writeInt32(rc);
          break; }
 
@@ -1198,6 +1203,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         clbk_data_obj->cb_binder = interface_cast<ICallback>(binder);
         if (clbk_data_obj->cb_func != NULL) {
             list_add_tail(&clbk_data_list, &clbk_data_obj->list);
+            pthread_mutex_unlock(&clbk_data_list_lock);
             rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
                             &ipc_cb, evnt, clbk_data_obj->client_data);
         } else {
@@ -1211,12 +1217,13 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                     free(clbk_data_obj_tmp);
                 }
             }
+            pthread_mutex_unlock(&clbk_data_list_lock);
             rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
                             NULL, evnt, clbk_data_obj->client_data);
             free(clbk_data_obj);
         }
 
-        pthread_mutex_unlock(&clbk_data_list_lock);
+
         reply->writeInt32(rc);
         break ; }
 
@@ -1266,14 +1273,15 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         bn_payload = calloc(count, sizeof(uint8_t));
         if (!bn_payload) {
             AGM_LOGE("calloc failed\n");
-            reply->writeInt32(-ENOMEM);
-            return -ENOMEM;
+            rc = -ENOMEM;
+            goto session_aif_set_param_failed;
         }
 
         memcpy(bn_payload, blob.data(), count);
         rc = ipc_agm_session_aif_set_params(pcm_idx, be_idx, bn_payload, count);
-        blob.release();
         free(bn_payload);
+    session_aif_set_param_failed:
+        blob.release();
         reply->writeInt32(rc);
         break; }
 
@@ -1290,14 +1298,15 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         bn_payload = calloc(count, sizeof(uint8_t));
         if (!bn_payload) {
             AGM_LOGE("calloc failed\n");
-            reply->writeInt32(-ENOMEM);
-            return -ENOMEM;
+            rc = -ENOMEM;
+            goto aif_set_params_failed;
         }
 
         memcpy(bn_payload, blob.data(), count);
         rc = ipc_agm_aif_set_params(be_idx, bn_payload, count);
-        blob.release();
         free(bn_payload);
+    aif_set_params_failed:
+        blob.release();
         reply->writeInt32(rc);
         break; }
 
@@ -1323,6 +1332,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
 
         free(bn_payload);
     session_set_param_fail:
+        blob.release();
         reply->writeInt32(rc);
         break; }
 
@@ -1353,6 +1363,8 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         rc = ipc_agm_set_params_with_tag (pcm_idx, be_idx, atc);
     set_param_with_tag_fail:
         reply->writeInt32(rc);
+        if (atc)
+            free(atc);
         break; }
 
     case SET_PARAMS_WITH_TAG_TO_ACDB: {
@@ -1376,6 +1388,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         rc = ipc_agm_set_params_with_tag_to_acdb(pcm_idx, be_idx, bn_payload, count);
         free(bn_payload);
     session_set_param_with_tag_to_acdb_fail:
+        blob.release();
         reply->writeInt32(rc);
         break; }
 

@@ -26,6 +26,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
 
@@ -38,6 +43,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include "gsl_intf.h"
+#ifdef AGM_HW_RSC_CFG_EN
+#include "gsl_hw_rsc_intf.h"
+#endif
 #include <agm/graph.h>
 #include <agm/graph_module.h>
 #include <agm/metadata.h>
@@ -329,7 +337,22 @@ int graph_init()
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl_init failed error %d \n", ret);
     }
-
+#ifdef ACDB_DELTA_FILE_PATH_WRITABLE
+    delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH_WRITABLE);
+    if ((strlen(delta_file_path) + 1) > sizeof(delta_file.fileName)) {
+       AGM_LOGE("path is big than what gsl handles");
+       ret = -EINVAL;
+       goto err;
+    }
+    gsl_set_temp_path_to_acdb(strlen(delta_file_path) + 1, delta_file_path);
+#endif
+#ifdef AGM_HW_RSC_CFG_EN
+    ret = gsl_hw_rsc_init();
+    if (ret) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("gsl hw rsc init failed %d", ret);
+    }
+#endif
 err:
     return ret;
 }
@@ -571,8 +594,6 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     mod->mid = gsl_tag_entry->module_entry[0].module_id;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, NULL);
-                    /*Remove the module from the node_sess list*/
-                    list_remove(node_list);
                     goto tag_list;
                 }
             }
@@ -616,8 +637,6 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     mod->gkv = gkv;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, dev_obj);
-                    /*Remove the module from node_hw list*/
-                    list_remove(node_list);
                     goto tag_list;
                 }
             }
@@ -668,6 +687,21 @@ free_graph_obj:
     pthread_mutex_destroy(&graph_obj->lock);
     free(graph_obj);
 done:
+    // free memory allocated in node sess/hw
+    list_for_each_safe(node, temp_node, &node_sess) {
+        list_remove(node);
+        mod_list = node_to_item(node, module_info_link_list_t, tagged_list);
+        if (mod_list)
+            free(mod_list);
+    }
+
+    list_for_each_safe(node, temp_node, &node_hw) {
+        list_remove(node);
+        mod_list = node_to_item(node, module_info_link_list_t, tagged_list);
+        if (mod_list)
+            free(mod_list);
+    }
+
     AGM_LOGD("exit, ret %d", ret);
     if (tag_module_info)
         free(tag_module_info);
@@ -1619,6 +1653,7 @@ int graph_register_for_events(struct graph_obj *gph_obj,
        ret = ar_err_get_lnx_err_code(ret);
        AGM_LOGE("event registration failed with error %d\n", ret);
     }
+    free(reg_ev_payload);
     pthread_mutex_unlock(&gph_obj->lock);
 
     gph_obj->buf_info.timestamp = 0;
@@ -2024,4 +2059,25 @@ int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
         }
     }
     return ret;
+}
+
+int graph_set_stream_mfc_config(struct graph_obj *graph_obj)
+{
+      int ret = 0;
+      struct listnode *node = NULL;
+      module_info_t *mod = NULL;
+      struct session_obj *sess_obj = graph_obj->sess_obj;
+
+      list_for_each(node, &graph_obj->tagged_mod_list) {
+      mod = node_to_item(node, module_info_t, list);
+      if (mod->tag == MODULE_STREAM_MFC) {
+          ret = mod->configure(mod, graph_obj);
+          if (ret != 0) {
+          AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+               mod->miid, mod->mid, mod->tag, ret);
+          }
+      }
+      }
+
+      return ret;
 }

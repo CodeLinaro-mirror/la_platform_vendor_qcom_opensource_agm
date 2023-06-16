@@ -53,6 +53,11 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #include <stdint.h>
 #include <linux/types.h>
 #include <fcntl.h>
@@ -309,7 +314,8 @@ void play_samples(char *name, unsigned int card, unsigned int device,
 	FILE *file;
 	char *buffer;
 	int size, num_read, wrote;
-	unsigned int channels = 0, rate = 0, bits = 0;
+	unsigned int channels = 0, rate = 0, bits = 0, miid = 0;
+	unsigned ret = 0;
 	char *intf_name = dev_config->name;
 
 	if (verbose)
@@ -394,7 +400,7 @@ void play_samples(char *name, unsigned int card, unsigned int device,
 	}
 
 	/* set audio interface metadata mixer control */
-	if (set_agm_stream_metadata(mixer, device, COMPRESSED_OFFLOAD_PLAYBACK, PLAYBACK, STREAM_COMPRESS, NULL)) {
+	if (set_agm_stream_metadata(mixer, device, COMPRESSED_OFFLOAD_PLAYBACK, PLAYBACK, STREAM_COMPRESS, NULL, 0, 1)) {
 		printf("Failed to set stream metadata\n");
 		goto MIXER_EXIT;
 	}
@@ -407,11 +413,16 @@ void play_samples(char *name, unsigned int card, unsigned int device,
 		goto MIXER_EXIT;
 	}
 
-	if (configure_mfc(mixer, device, intf_name, PER_STREAM_PER_DEVICE_MFC,
-			STREAM_COMPRESS, dev_config->rate, dev_config->ch,
-			dev_config->bits)) {
-		printf("Failed to configure pspd mfc\n");
-		goto MIXER_EXIT;
+	ret = agm_mixer_get_miid(mixer, device, intf_name, STREAM_COMPRESS, PER_STREAM_PER_DEVICE_MFC, &miid);
+	if (ret) {
+		printf("MFC not present for this graph\n");
+	} else {
+		if (configure_mfc(mixer, device, intf_name, PER_STREAM_PER_DEVICE_MFC,
+							STREAM_COMPRESS, dev_config->rate, dev_config->ch,
+							dev_config->bits, miid)) {
+			printf("Failed to configure pspd mfc\n");
+			goto MIXER_EXIT;
+		}
 	}
 
 	compress = compress_open(card, device, COMPRESS_IN, &config);

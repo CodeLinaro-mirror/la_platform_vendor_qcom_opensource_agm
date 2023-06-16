@@ -27,6 +27,11 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #include <errno.h>
 #include <tinyalsa/asoundlib.h>
 #include <sound/asound.h>
@@ -282,12 +287,12 @@ void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_in
     }
 
     /* set stream metadata mixer control */
-    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, NULL)) {
+    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, NULL, 0, 0)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }
 
-    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, intf_name)) {
+    if (set_agm_stream_metadata(mixer, device, VOICE_UI, CAPTURE, STREAM_PCM, intf_name, 0, 0)) {
         printf("Failed to set pcm metadata\n");
         goto err_close_mixer;
     }

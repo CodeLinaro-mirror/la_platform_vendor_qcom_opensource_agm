@@ -51,7 +51,171 @@
 /*qfactor should be set to 23 only for 24_3LE and 24_LE formats*/
 #define GET_Q_FACTOR(format, bit_width) (bit_width - 1)
 
+/* FIXME: mfc module API is missed in spf header now, so hardcode here */
+#define PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT            0x08001024
+/* Payload of the PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT parameter in the
+ Media Format Converter Module. Following this will be the variable payload for channel_map. */
+struct param_id_mfc_output_media_fmt_t
+{
+   int32_t sampling_rate;
+   int16_t bit_width;
+   int16_t num_channels;
+   uint16_t channel_type[0];
+};
+
 static void get_default_channel_map(uint8_t *channel_map, int channels)
+{
+    switch (channels) {
+    case CHANNEL_1:
+         channel_map[0] = PCM_CHANNEL_C;
+         break;
+    case CHANNEL_2:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         break;
+    case CHANNEL_3:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         break;
+    case CHANNEL_4:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         break;
+    case CHANNEL_5:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         break;
+    case CHANNEL_6:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         break;
+    case CHANNEL_7:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         break;
+    case CHANNEL_8:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         break;
+    case CHANNEL_10:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         break;
+    case CHANNEL_12:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         break;
+    case CHANNEL_14:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         break;
+   case CHANNEL_16:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         break;
+    case CHANNEL_32:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         channel_map[16] = PCM_CHANNEL_LFE2;
+         channel_map[17] = PCM_CHANNEL_SL;
+         channel_map[18] = PCM_CHANNEL_SR;
+         channel_map[19] = PCM_CHANNEL_TFL;
+         channel_map[20] = PCM_CHANNEL_TFR;
+         channel_map[21] = PCM_CHANNEL_TC;
+         channel_map[22] = PCM_CHANNEL_TBL;
+         channel_map[23] = PCM_CHANNEL_TBR;
+         channel_map[24] = PCM_CHANNEL_TSL;
+         channel_map[25] = PCM_CHANNEL_TSR;
+         channel_map[26] = PCM_CHANNEL_TBC;
+         channel_map[27] = PCM_CHANNEL_BFC;
+         channel_map[28] = PCM_CHANNEL_BFL;
+         channel_map[29] = PCM_CHANNEL_BFR;
+         channel_map[30] = PCM_CHANNEL_LW;
+         channel_map[31] = PCM_CHANNEL_RW;
+         break;
+    }
+}
+
+static void get_default_channel_map_v2(uint16_t *channel_map, int channels)
 {
     switch (channels) {
     case CHANNEL_1:
@@ -556,13 +720,13 @@ static int configure_tdm_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         if (ret == AR_EALREADY) {
-            AGM_LOGE("Getting AR_EALREADY, check if Custom_config is the same");
+            AGM_LOGD("Getting AR_EALREADY, check if Custom_config is the same");
             memcpy(tdm_config_copy, tdm_config, sizeof(param_id_tdm_intf_cfg_t));
             gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_sz);
             if (gsl_ret == 0){
                 if(compare_tdm_custom_config(tdm_config_copy,tdm_config)){
                     ret = 0;
-                    AGM_LOGE("config is the same, bypass EALREADY");
+                    AGM_LOGD("config is the same, bypass EALREADY");
                     goto free_kvp;
                 }
             }
@@ -840,14 +1004,14 @@ int configure_hw_ep_media_config(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         if (ret == AR_EALREADY) {
-            AGM_LOGE("Getting AR_EALREADY, check if Custom_config is the same");
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
             memcpy(hw_ep_media_conf_copy, hw_ep_media_conf, sizeof(param_id_hw_ep_mf_t));
-            AGM_LOGE("payload after set: %d", payload);
+            AGM_LOGI("payload after set: %d", payload);
             gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_size);
             if (gsl_ret == 0){
                 if(compare_hw_ep_media_config(hw_ep_media_conf_copy, hw_ep_media_conf)){
                     ret = 0;
-                    AGM_LOGE("config is the same, bypass EALREADY");
+                    AGM_LOGI("config is the same, bypass EALREADY");
                     goto free_payload_copy;
                 }
             }
@@ -1388,7 +1552,7 @@ int configure_placeholder_dec(struct module_info *mod,
 
     size_t payload_size = 0, real_fmt_id = 0;
     tkv.kvp =  NULL;
-    AGM_LOGE("enter");
+    AGM_LOGI("enter");
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object");
         goto done;
@@ -1437,7 +1601,7 @@ int configure_placeholder_dec(struct module_info *mod,
 done:
     if (tkv.kvp)
         free(tkv.kvp);
-    AGM_LOGE("exit, ret %d", ret);
+    AGM_LOGI("exit, ret %d", ret);
     return ret;
 }
 
@@ -1877,6 +2041,8 @@ int configure_spr(struct module_info *spr_mod,
         }
     }
 done:
+    if (payload)
+        free(payload);
     return ret;
 }
 
@@ -1922,9 +2088,66 @@ int configure_gapless(struct module_info *gapless_mod,
     }
 
 done:
+    if (reg_ev_payload)
+        free(reg_ev_payload);
     return ret;
 }
 
+
+int configure_stream_mfc(struct module_info *mod,
+                            struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct session_obj *sess_obj = graph_obj->sess_obj;
+    struct apm_module_param_data_t *header;
+    struct param_id_mfc_output_media_fmt_t *mfc_cfg;
+    uint8_t *payload = NULL;
+    size_t payload_size = 0;
+    uint16_t *channel_map = NULL;
+
+    payload_size = sizeof(struct apm_module_param_data_t) +
+                    sizeof(struct param_id_mfc_output_media_fmt_t) +
+                    sizeof(uint16_t)*sess_obj->in_media_config.channels;
+
+    /*ensure that the payloadszie is byte multiple atleast*/
+    ALIGN_PAYLOAD(payload_size, 8);
+
+    payload = calloc(1,(size_t)payload_size);
+    if (!payload) {
+        AGM_LOGE("Not enough memory for payload");
+        ret = -ENOMEM;
+        goto done;
+    }
+
+    header = (struct apm_module_param_data_t*)payload;
+
+    mfc_cfg = (struct param_id_mfc_output_media_fmt_t *)(payload
+                       + sizeof(struct apm_module_param_data_t));
+    channel_map = (uint16_t*)(payload + sizeof(struct apm_module_param_data_t) +
+                                sizeof(struct param_id_mfc_output_media_fmt_t));
+
+    header->module_instance_id = mod->miid;
+    header->param_id = PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT;
+    header->error_code = 0x0;
+    header->param_size = payload_size - sizeof(struct apm_module_param_data_t);
+
+    mfc_cfg->sampling_rate = sess_obj->in_media_config.rate;
+    mfc_cfg->bit_width = get_pcm_bit_width(sess_obj->in_media_config.format);
+    mfc_cfg->num_channels = sess_obj->in_media_config.channels;
+    get_default_channel_map_v2(channel_map, sess_obj->in_media_config.channels);
+
+    ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
+    if (ret != 0) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("custom_config command for module 0x%x with tag 0x%x failed with error %d",
+                      mod->miid, mod->tag, ret);
+    }
+    free(payload);
+
+done:
+    AGM_LOGD("exit, ret %d", ret);
+    return ret;
+}
 
 module_info_t stream_module_list[] = {
     {
@@ -1976,6 +2199,11 @@ module_info_t stream_module_list[] = {
         .module = MODULE_RD_SHARED_MEM,
         .tag = RD_SHMEM_ENDPOINT,
         .configure = configure_rd_shared_mem_ep,
+    },
+    {
+        .module = MODULE_STREAM_MFC,
+        .tag = STREAM_MFC,
+        .configure = configure_stream_mfc,
     },
 };
 
