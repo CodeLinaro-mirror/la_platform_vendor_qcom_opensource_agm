@@ -96,6 +96,8 @@ typedef struct {
 typedef struct {
     /* Session id */
     uint32_t session_id;
+    /* data mode */
+    enum agm_data_mode data_mode;
     /* Session handle */
     uint64_t handle;
     /* Dbus path for session specific APIs */
@@ -2262,6 +2264,7 @@ static void ipc_agm_session_set_config(DBusConnection *conn,
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
     memcpy(&session_config, value, n_elements);
 
+    ses_data->data_mode = session_config.data_mode;
     if (agm_session_set_config(ses_data->handle,
                                &session_config,
                                &media_config,
@@ -2344,7 +2347,7 @@ static void ipc_agm_session_write(DBusConnection *conn,
     dbus_message_iter_recurse(&arg_i, &array_i);
     dbus_message_iter_get_fixed_array(&array_i, addr_value, &n_elements);
 
-    if (ses_data->session_id != 105)
+    if (ses_data->data_mode != AGM_DATA_NON_BLOCKING)
     {
         pthread_mutex_lock(&ses_data->lock);
         ses_data->buf_size = buf_size;
