@@ -31,6 +31,9 @@
 #include <vendor/qti/hardware/AGMIPC/1.0/IAGM.h>
 #include <hidl/LegacySupport.h>
 #include "inc/agm_server_wrapper.h"
+#ifdef PLATFORM_MSMNILE_AU
+#include <cutils/properties.h>
+#endif
 
 using vendor::qti::hardware::AGMIPC::V1_0::IAGM;
 using vendor::qti::hardware::AGMIPC::V1_0::implementation::AGM;
@@ -39,13 +42,37 @@ using android::hardware::configureRpcThreadpool;
 using android::hardware::joinRpcThreadpool;
 using android::sp;
 
+#ifdef PLATFORM_MSMNILE_AU
+static void place_marker(char const *name)
+{
+   int fd=open("/sys/kernel/boot_kpi/kpi_values", O_WRONLY);
+   if (fd > 0)
+   {
+       /* Only allow marker text shorter than MARKER_STRING_WIDTH */
+       char earlyapp[100] = {0};
+       strlcpy(earlyapp, name, sizeof(earlyapp));
+       write(fd, earlyapp, strlen(earlyapp));
+       close(fd);
+   }
+}
+#endif
+
 int main() {
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - AGM Service Starting...");
+#endif
     sp<IAGM> service = new AGM();
     AGM *temp = static_cast<AGM *>(service.get());
     if (temp->is_agm_initialized()) {
         configureRpcThreadpool(16, true /*callerWillJoin*/);
-        if(android::OK !=  service->registerAsService())
+        if(android::OK !=  service->registerAsService()) {
+            ALOGE("%s:AGM service cannot be registered!", __func__);
            return 1;
+        }
+#ifdef PLATFORM_MSMNILE_AU
+        property_set("vendor.audio.feature.agm.enable", "running");
+        place_marker("M - AGM Service Created...");
+#endif
         joinRpcThreadpool();
     }
     return 1;
