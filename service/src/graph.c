@@ -28,7 +28,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -223,7 +223,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_NON_BLOCKING)
             buf_config.attributes = GSL_DATA_MODE_NON_BLOCKING;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGI("Unsupported buffer mode : %d, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
         buf_config.shmem_ep_tag = RD_SHMEM_ENDPOINT;
@@ -293,7 +293,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_PUSH_PULL)
             buf_config.attributes = GSL_DATA_MODE_PUSH_PULL;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGI("Unsupported buffer mode : %d, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
 
