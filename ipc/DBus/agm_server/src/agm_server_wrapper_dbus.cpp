@@ -479,7 +479,7 @@ static DBusHandlerResult disconnection_filter_cb(DBusConnection *conn,
 }
 
 void agm_free_session(gpointer c_data) {
-    agm_session_data *data = (agm_session_data *)data;
+    agm_session_data *data = (agm_session_data *)c_data;
 
     if(data == NULL)
         return;
