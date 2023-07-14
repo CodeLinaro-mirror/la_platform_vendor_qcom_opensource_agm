@@ -39,9 +39,5 @@ fi
 
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
-# Checks for libraries
-PKG_CHECK_MODULES([MMHEADERS], [mm-audio-headers])
-AC_SUBST([MMHEADERS_CFLAGS])
-
 AC_CONFIG_FILES([ Makefile agmtest.pc ])
 AC_OUTPUT
