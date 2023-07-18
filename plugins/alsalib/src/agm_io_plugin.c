@@ -67,6 +67,9 @@ struct agmio_priv {
     snd_pcm_uframes_t hw_pointer;
     snd_pcm_uframes_t boundary;
     int event_fd;
+    pthread_cond_t eos_cond;
+    pthread_mutex_t eos_lock;
+    bool eos;
 /* add private variables here */
 };
 
@@ -102,6 +105,12 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
         eventfd_write(priv->event_fd, 1);
     } else if (event_params->event_id == AGM_EVENT_EOS_RENDERED) {
         AGM_LOGD("%s: EOS event received \n", __func__);
+        pthread_mutex_lock(&priv->eos_lock);
+        if (priv->eos) {
+            pthread_cond_signal(&priv->eos_cond);
+            priv->eos = false;
+        }
+        pthread_mutex_unlock(&priv->eos_lock);
     } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
         AGM_LOGD("%s: Early EOS event received \n", __func__);
     } else {
@@ -157,6 +166,11 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
     uint64_t handle;
     int ret;
 
+    pthread_mutex_lock(&pcm->eos_lock);
+    if (pcm->eos) {
+          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
+    }
+    pthread_mutex_unlock(&pcm->eos_lock);
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
@@ -168,6 +182,20 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
 
 static int agm_io_drain(snd_pcm_ioplug_t * io)
 {
+    struct agmio_priv *pcm = io->private_data;
+    uint64_t handle;
+    int ret = agm_get_session_handle(pcm, &handle);
+    if (ret)
+        return ret;
+    pthread_mutex_lock(&pcm->eos_lock);
+    ret = agm_session_eos(handle);
+    if (ret) {
+        AGM_LOGE("%s: EOS fail\n", __func__);
+        pthread_mutex_unlock(&pcm->eos_lock);
+        return ret;
+    }
+    pcm->eos = true;
+    pthread_mutex_unlock(&pcm->eos_lock);
     AGM_LOGD("%s: exit\n", __func__);
     return 0;
 }
@@ -618,7 +646,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     if (ret) {
         AGM_LOGE("register event callback failure\n");
         ret = -EINVAL;
-        goto err_free_card;
+        goto err_close_session;
     }
 
     ret = snd_pcm_ioplug_create(&priv->io, name, stream, mode);
@@ -640,15 +668,18 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     }
 
     *pcmp = priv->io.pcm;
+
+    pthread_mutex_init(&priv->eos_lock, (const pthread_mutexattr_t *) NULL);
     return 0;
 
 err_close_eventfd:
     close(priv->event_fd);
 err_free_cb:
     agm_session_register_cb(session_id, NULL, AGM_EVENT_DATA_PATH, (void *)priv);
+err_close_session:
+    agm_session_close(handle);
 err_free_card:
     snd_card_def_put_card(card_node);
-    agm_session_close(handle);
 err_free_session:
     free(session_config);
 err_free_buf:

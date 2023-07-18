@@ -2,8 +2,6 @@
  * Copyright (c) 2019, The Linux Foundation. All rights reserved.
  * This code is used under the BSD license.
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
- *
  * BSD LICENSE
  *
  * Copyright (c) 2019, The Linux Foundation. All rights reserved.
@@ -57,6 +55,12 @@
  * the Free Software Foundation, Inc.,
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  */
+
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
+
 #include <stdint.h>
 #include <linux/types.h>
 #include <fcntl.h>

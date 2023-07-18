@@ -3,8 +3,6 @@
 **
 ** Copyright 2011, The Android Open Source Project
 **
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
-**
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are met:
 **     * Redistributions of source code must retain the above copyright
@@ -28,6 +26,11 @@
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
 **/
+
+/* Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 
 #include <errno.h>
 #include <tinyalsa/asoundlib.h>

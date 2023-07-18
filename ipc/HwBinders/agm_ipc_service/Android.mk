@@ -10,7 +10,7 @@ LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_c
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
-
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/ar_osal
 LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     libutils \
@@ -25,6 +25,7 @@ ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
+LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
 endif
 
 include $(BUILD_SHARED_LIBRARY)
