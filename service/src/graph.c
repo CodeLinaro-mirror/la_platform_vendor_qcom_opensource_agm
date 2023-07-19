@@ -26,6 +26,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
 
@@ -38,6 +43,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include "gsl_intf.h"
+#ifdef AGM_HW_RSC_CFG_EN
+#include "gsl_hw_rsc_intf.h"
+#endif
 #include <agm/graph.h>
 #include <agm/graph_module.h>
 #include <agm/metadata.h>
@@ -329,7 +337,22 @@ int graph_init()
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl_init failed error %d \n", ret);
     }
-
+#ifdef ACDB_DELTA_FILE_PATH_WRITABLE
+    delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH_WRITABLE);
+    if ((strlen(delta_file_path) + 1) > sizeof(delta_file.fileName)) {
+       AGM_LOGE("path is big than what gsl handles");
+       ret = -EINVAL;
+       goto err;
+    }
+    gsl_set_temp_path_to_acdb(strlen(delta_file_path) + 1, delta_file_path);
+#endif
+#ifdef AGM_HW_RSC_CFG_EN
+    ret = gsl_hw_rsc_init();
+    if (ret) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("gsl hw rsc init failed %d", ret);
+    }
+#endif
 err:
     return ret;
 }

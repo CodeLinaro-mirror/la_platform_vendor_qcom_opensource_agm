@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef ANDROID_SYSTEM_AGMIPC_V1_0_AGM_H
 #define ANDROID_SYSTEM_AGMIPC_V1_0_AGM_H
@@ -216,6 +221,10 @@ struct AGM : public IAGM {
     Return<void> ipc_agm_session_get_available_frame_count(uint32_t session_id,
                                 ipc_agm_session_get_available_frame_count_cb _hidl_cb) override;
 
+    Return<void> ipc_agm_hw_rsc_config(AgmHwConfigType type,
+                                const hidl_vec<uint8_t>& cfg,
+                                uint32_t cfg_len, uint32_t out_len,
+                                ipc_agm_hw_rsc_config_cb _hidl_cb) override;
     int is_agm_initialized() { return agm_initialized;}
 
 private:
