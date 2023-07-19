@@ -97,6 +97,7 @@ typedef struct {
     guint sub_id;
     GMutex mutex;
     GCond cond;
+    bool signal;
     void *buf;
     uint32_t buf_size;
 } agm_client_session_data;
@@ -286,6 +287,7 @@ static void on_emit_ses_signal_callback(GDBusConnection *conn,
     }
 
     g_mutex_lock(&ses_data->mutex);
+    ses_data->signal = true;
     g_cond_signal(&ses_data->cond);
     g_mutex_unlock(&ses_data->mutex);
 
@@ -361,17 +363,34 @@ static int subscribe_callback_event(agm_client_session_data *ses_data,
     g_assert(cb_data != NULL);
 
     if (subscribe) {
-        cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
-                                          mdata->conn,
-                                          NULL,
-                                          AGM_SESSION_IFACE,
-                                          "AgmEventCb",
-                                          ses_data->obj_path,
-                                          NULL,
-                                          G_DBUS_SIGNAL_FLAGS_NONE,
-                                          on_emit_signal_callback,
-                                          cb_data,
-                                          NULL);
+        if (cb_data->evt_type == AGM_EVENT_DATA_PATH)
+        {
+            cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
+                                              mdata->conn,
+                                              NULL,
+                                              AGM_SESSION_IFACE,
+                                              "AgmSesEventCb",
+                                              ses_data->obj_path,
+                                              NULL,
+                                              G_DBUS_SIGNAL_FLAGS_NONE,
+                                              on_emit_signal_callback,
+                                              cb_data,
+                                              NULL);
+        }
+        else
+        {
+            cb_data->sub_id_callback_event = g_dbus_connection_signal_subscribe(
+                                              mdata->conn,
+                                              NULL,
+                                              AGM_SESSION_IFACE,
+                                              "AgmEventCb",
+                                              ses_data->obj_path,
+                                              NULL,
+                                              G_DBUS_SIGNAL_FLAGS_NONE,
+                                              on_emit_signal_callback,
+                                              cb_data,
+                                              NULL);
+        }
 
         ses_data->callbacks = g_list_prepend(ses_data->callbacks, cb_data);
     } else {
@@ -1853,10 +1872,15 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
     {
         start_time = g_get_monotonic_time();
         end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
-        g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
-        if (g_get_monotonic_time() >= end_time){
-            AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+        while (!(ses_data->signal))
+        {
+            g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+            if (g_get_monotonic_time() >= end_time){
+                AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+                break;
+            }
         }
+        ses_data->signal = false;
     }
 
     g_mutex_unlock(&ses_data->mutex);
@@ -1874,7 +1898,6 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
     gsize n_elements;
     gsize element_size = sizeof(guchar);
     gint64 start_time, end_time;
-
     g_assert(ses_data != NULL);
     g_assert(ses_data->proxy != NULL);
     AGM_LOGD("%s\n", __func__);
@@ -1901,10 +1924,16 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
 
     start_time = g_get_monotonic_time();
     end_time = start_time + (AGM_DBUS_ASYNC_CALL_TIMEOUT_MS * G_TIME_SPAN_MILLISECOND);
-    g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
-    if (g_get_monotonic_time() >= end_time){
-        AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+    while (!(ses_data->signal))
+    {
+        g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
+        if (g_get_monotonic_time() >= end_time){
+            AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
+            break;
+        }
     }
+
+    ses_data->signal = false;
     *byte_count = ses_data->buf_size;
 
     g_mutex_unlock(&ses_data->mutex);
@@ -2087,6 +2116,8 @@ int agm_session_close(uint64_t handle) {
     }
 
     subscribe_ses_callback_event(ses_data, false);
+
+    ses_data->signal = true;
     g_cond_clear(&ses_data->cond);
     g_mutex_clear(&ses_data->mutex);
 
@@ -2192,6 +2223,7 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
 
     g_mutex_init(&ses_data->mutex);
     g_cond_init(&ses_data->cond);
+    ses_data->signal = false;
     snprintf(thread_name, sizeof(thread_name), "ses_loop_%d", session_id);
     AGM_LOGD("create thread %s\n", thread_name);
     ses_data->ses_thread_loop = g_thread_try_new(thread_name, ses_signal_threadloop, ses_data, &error);
