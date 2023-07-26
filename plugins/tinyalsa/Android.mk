@@ -103,6 +103,12 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblog
 
+ifeq ($(ENABLE_HYP), true)
+ifeq ($(TARGET_GVMGH_SPECIFIC), false)
+LOCAL_CFLAGS += -DSND_COMPRESS_DEC_HDR
+endif
+endif
+
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
