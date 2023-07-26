@@ -720,13 +720,13 @@ static int configure_tdm_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         if (ret == AR_EALREADY) {
-            AGM_LOGD("Getting AR_EALREADY, check if Custom_config is the same");
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
             memcpy(tdm_config_copy, tdm_config, sizeof(param_id_tdm_intf_cfg_t));
             gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_sz);
             if (gsl_ret == 0){
                 if(compare_tdm_custom_config(tdm_config_copy,tdm_config)){
                     ret = 0;
-                    AGM_LOGD("config is the same, bypass EALREADY");
+                    AGM_LOGI("config is the same, bypass EALREADY");
                     goto free_kvp;
                 }
             }
@@ -1552,7 +1552,7 @@ int configure_placeholder_dec(struct module_info *mod,
 
     size_t payload_size = 0, real_fmt_id = 0;
     tkv.kvp =  NULL;
-    AGM_LOGI("enter");
+    AGM_LOGD("enter");
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object");
         goto done;
@@ -1601,7 +1601,7 @@ int configure_placeholder_dec(struct module_info *mod,
 done:
     if (tkv.kvp)
         free(tkv.kvp);
-    AGM_LOGI("exit, ret %d", ret);
+    AGM_LOGD("exit, ret %d", ret);
     return ret;
 }
 
