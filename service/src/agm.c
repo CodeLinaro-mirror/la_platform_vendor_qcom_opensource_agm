@@ -961,15 +961,18 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
+        memset(buf_info, 0, sizeof(struct agm_buf_info));
         AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
                  ret, session_id);
         goto done;
     }
 
     ret = session_obj_get_sess_buf_info(obj, buf_info, flag);
-    if (ret)
+    if (ret) {
+        memset(buf_info, 0, sizeof(struct agm_buf_info));
         AGM_LOGE("Error:%d getting buf_info for session id=%d, flag = %d\n",
                  ret, session_id, flag);
+    }
 
 done:
     return ret;

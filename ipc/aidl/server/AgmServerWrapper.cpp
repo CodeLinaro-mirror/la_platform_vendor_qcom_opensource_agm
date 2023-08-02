@@ -397,6 +397,7 @@ AgmServerWrapper::AgmServerWrapper() {
                                                                     MmapBufInfo *_aidl_return) {
     struct agm_buf_info agmLegacyBufferInfo;
 
+    memset(&agmLegacyBufferInfo, 0, sizeof(struct agm_buf_info));
     int ret = agm_session_get_buf_info(in_sessionId, &agmLegacyBufferInfo, in_flag);
     if (!ret) {
         LegacyToAidl::convertMmapBufferInfoToAidl(&agmLegacyBufferInfo, _aidl_return, in_flag);
