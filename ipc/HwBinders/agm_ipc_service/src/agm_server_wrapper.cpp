@@ -421,7 +421,7 @@ void ipc_callback (uint32_t session_id,
         }
 
         // allocated during read_with_metadata()
-        if (rw_done_payload->buff.metadata)
+        if (rw_done_payload->buff.metadata && rw_done_payload->buff.metadata_size > 0)
             free(rw_done_payload->buff.metadata);
         if (allocHidlHandle)
             native_handle_delete(allocHidlHandle);
