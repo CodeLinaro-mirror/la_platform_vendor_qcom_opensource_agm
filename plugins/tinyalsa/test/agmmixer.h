@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -109,4 +109,5 @@ int get_device_media_config(char* filename, char *intf_name, struct device_confi
 int get_group_device_info(char* filename, char *intf_name, struct group_config *config);
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
                        unsigned int channels, unsigned int bits, uint32_t miid);
+int set_agm_dp_audio_config_metadata(char *intf_name, struct mixer *mixer, uint32_t miid, unsigned int channels);
 #endif
