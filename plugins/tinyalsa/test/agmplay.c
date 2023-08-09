@@ -1,6 +1,5 @@
 /*
 ** Copyright (c) 2019, 2021, The Linux Foundation. All rights reserved.
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Copyright 2011, The Android Open Source Project
 **
@@ -27,6 +26,13 @@
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
 **/
+
+/*
+* Changes from Qualcomm Innovation Center are provided under the following license:
+
+* Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+*/
 
 #include <errno.h>
 #include <tinyalsa/asoundlib.h>
@@ -369,6 +375,13 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
             if (set_agm_group_device_config(mixer, intf_name[index], &grp_config[index])) {
                 printf("Failed to set grp device config\n");
                 goto err_close_mixer;
+            }
+        } else if(strstr(intf_name[index], "DISPLAY_PORT-RX")) {
+            ret = agm_mixer_get_miid(mixer, device, intf_name[index], STREAM_PCM, DEVICE_HW_ENDPOINT_RX, &miid);
+            if (ret) {
+                printf("Get %s Device EP module failed\n", intf_name[index]);
+            } else {
+                set_agm_dp_audio_config_metadata(intf_name[index], mixer, miid, dev_config[index].ch);
             }
         }
     }
