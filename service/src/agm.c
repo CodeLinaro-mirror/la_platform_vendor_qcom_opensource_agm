@@ -102,10 +102,28 @@ static void *ats_init_thread(void *obj __unused)
     return NULL;
 }
 
+#ifdef PLATFORM_MSMNILE_AU
+static void place_marker(char const *name)
+{
+   int fd=open("/sys/kernel/boot_kpi/kpi_values", O_WRONLY);
+   if (fd > 0)
+   {
+       /* Only allow marker text shorter than MARKER_STRING_WIDTH */
+       char earlyapp[50] = {0};
+       strlcpy(earlyapp, name, sizeof(earlyapp));
+       write(fd, earlyapp, strlen(earlyapp));
+       close(fd);
+   }
+}
+#endif
+
 int agm_init()
 {
     int ret = 0;
 
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - AGM init");
+#endif
     if (agm_initialized)
         goto exit;
 
@@ -133,6 +151,10 @@ int agm_init()
         goto exit;
     }
     agm_initialized = 1;
+
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - AGM init Done");
+#endif
 
 exit:
     return ret;

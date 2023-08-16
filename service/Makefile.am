@@ -29,7 +29,7 @@ agm_sources = ${top_srcdir}/src/graph.c \
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
 
-libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_DELTA_FILE_PATH=\"/data/audio/delta\"
+libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_DELTA_FILE_PATH="/data"
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -fcommon
 libagm_la_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libagm_la_LDFLAGS = -module -shared -avoid-version
