@@ -498,7 +498,8 @@ void agm_free_session(gpointer c_data) {
 }
 
 static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
-                                           uint32_t session_id) {
+                                           uint32_t session_id,
+                                           bool     *is_allocated) {
     agm_session_data *ses_data = NULL;
     stringstream ss;
     size_t obj_length = 0;
@@ -508,7 +509,12 @@ static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
     if (mdata == NULL)
         return NULL;
 
-      if ((ses_data = (agm_session_data *)
+    if (is_allocated == NULL)
+        return NULL;
+
+    *is_allocated = false;
+
+    if ((ses_data = (agm_session_data *)
                         g_hash_table_lookup(mdata->sessions,
                                        GUINT_TO_POINTER(session_id))) == NULL) {
         ses_data = (agm_session_data *)malloc(sizeof(agm_session_data));
@@ -516,6 +522,7 @@ static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
             AGM_LOGE("Failed to allocate memory for ses_data\n");
             return (agm_session_data *)(-ENOMEM);
         }
+        *is_allocated = true;
 
         ses_data->session_id = session_id;
         ss << ses_data->session_id;
@@ -679,6 +686,7 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
     uint64_t client_data;
     GList *node = NULL;
     agm_callback_data *cb_data = NULL;
+    bool is_allocated = false;
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
@@ -705,7 +713,7 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
     dbus_message_iter_next(&arg_i);
     dbus_message_iter_get_basic(&arg_i, &client_data);
 
-    ses_data = get_session_data(mdata, session_id);
+    ses_data = get_session_data(mdata, session_id, &is_allocated);
     if (ses_data == NULL) {
         AGM_LOGE("Invalid ses_data\n");
         goto exit;
@@ -717,7 +725,9 @@ static void ipc_agm_session_deregister_cb(DBusConnection *conn,
         AGM_LOGE("agm_session_register_cb failed.");
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
             "Failed to de-register callback. agm_session_register_cb failed.");
-        agm_free_session(ses_data);
+
+        if (is_allocated ==  true)
+            agm_free_session(ses_data);
         return;
     }
 
@@ -762,6 +772,7 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
     agm_module_dbus_data *mdata = (agm_module_dbus_data *)userdata;
     uint64_t client_data;
     agm_callback_data *cb_data = NULL;
+    bool is_allocated = false;
 
     if (userdata == NULL) {
         AGM_LOGE("Invalid userdata");
@@ -788,7 +799,7 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
     dbus_message_iter_next(&arg_i);
     dbus_message_iter_get_basic(&arg_i, &client_data);
 
-    ses_data = get_session_data(mdata, session_id);
+    ses_data = get_session_data(mdata, session_id, &is_allocated);
     if (ses_data == NULL) {
         AGM_LOGE("Invalid ses_data\n");
         goto exit;
@@ -801,7 +812,8 @@ static void ipc_agm_session_register_cb(DBusConnection *conn,
         AGM_LOGE("agm_session_register_cb failed.");
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "agm_session_register_cb failed.");
-        agm_free_session(ses_data);
+        if (is_allocated ==  true)
+            agm_free_session(ses_data);
         return;
     }
 
@@ -2642,6 +2654,7 @@ static void ipc_agm_session_open(DBusConnection *conn,
     gchar thread_name[32] = "";
     int32_t ret;
     agm_session_data *ses_data = NULL;
+    bool is_allocated = false;
 
     AGM_LOGD("%s :Enter ", __func__);
 
@@ -2666,14 +2679,15 @@ static void ipc_agm_session_open(DBusConnection *conn,
     dbus_message_iter_get_basic(&arg_i, &session_id);
     dbus_message_iter_next(&arg_i);
     dbus_message_iter_get_basic(&arg_i, &sess_mode);
-    ses_data = get_session_data(mdata, session_id);
+    ses_data = get_session_data(mdata, session_id, &is_allocated);
     if (ses_data == NULL) {
         AGM_LOGE("Invalid ses_data\n");
         goto exit;
     }
 
     if (agm_session_open(session_id, (enum agm_session_mode) sess_mode, &ses_data->handle)) {
-        agm_free_session(ses_data);
+        if (is_allocated ==  true)
+            agm_free_session(ses_data);
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "agm_session_open failed.");
         return;

@@ -1919,6 +1919,7 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
         AGM_LOGE("%s: Error invoking AgmSessionRead: %s\n", __func__,
                   error->message);
         g_error_free(error);
+        g_mutex_unlock(&ses_data->mutex);
         return -EINVAL;
     }
 
