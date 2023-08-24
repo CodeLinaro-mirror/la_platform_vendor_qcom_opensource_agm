@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1171,6 +1172,7 @@ static int session_close(struct session_obj *sess_obj)
     }
     sess_obj->graph = NULL;
     sess_obj->ec_ref_state = false;
+    sess_obj->loopback_state = false;
 
     if (sess_mode != AGM_SESSION_NON_TUNNEL) {
         list_for_each(node, &sess_obj->aif_pool) {
@@ -1802,6 +1804,8 @@ int session_obj_open(uint32_t session_id,
 
     struct session_obj *sess_obj = NULL;
     int ret = 0;
+    struct listnode *node;
+    struct aif *aif_obj = NULL;
 
     ret = session_obj_get(session_id, &sess_obj);
     if (ret) {
@@ -1858,7 +1862,9 @@ int session_obj_open(uint32_t session_id,
             ret = session_set_ec_ref(sess_obj, sess_obj->ec_ref_aif_id,
                                                sess_obj->ec_ref_state);
             if (ret) {
-                goto done;
+                sess_obj->ec_ref_state = false;
+                sess_obj->ec_ref_aif_id = 0;
+                goto unwind;
             }
         }
     }
@@ -1867,12 +1873,34 @@ int session_obj_open(uint32_t session_id,
         ret = session_set_loopback(sess_obj, sess_obj->loopback_sess_id,
                                               sess_obj->loopback_state);
         if (ret) {
-            goto done;
+            sess_obj->loopback_state = false;
+            sess_obj->loopback_sess_id = 0;
+            goto unwind;
         }
     }
 
     sess_obj->state = SESSION_OPENED;
     *session = sess_obj;
+    goto done;
+
+unwind:
+    list_for_each(node, &sess_obj->aif_pool) {
+        aif_obj = node_to_item(node, struct aif, node);
+        if (aif_obj && aif_obj->state == AIF_OPENED) {
+            /*TODO: fix the 3rd argument to provide correct count*/
+            ret = session_disconnect_aif(sess_obj, aif_obj, 1);
+            if (ret) {
+                AGM_LOGE("Error:%d Failed to disconnect device\n",
+                                                     ret);
+            }
+            aif_obj->state = AIF_OPEN;
+        }
+    }
+    ret = graph_close(sess_obj->graph);
+    if (ret) {
+        AGM_LOGE("Error:%d Failed to close graph\n", ret);
+    }
+    sess_obj->graph = NULL;
 
 done:
     pthread_mutex_unlock(&sess_obj->lock);
@@ -1989,10 +2017,8 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue read in state:%d\n",
                            sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     ret = graph_read(sess_obj->graph, buff, count);
     if (ret) {
@@ -2000,6 +2026,7 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
@@ -2012,10 +2039,8 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue write in state:%d\n",
                             sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     ret = graph_write(sess_obj->graph, buff, count);
     if (ret) {
@@ -2023,6 +2048,7 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
