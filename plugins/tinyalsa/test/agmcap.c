@@ -26,6 +26,10 @@
 ** LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following license:
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #include <tinyalsa/asoundlib.h>
@@ -80,7 +84,7 @@ static void sigint_handler(int sig)
 static void usage(void)
 {
     printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
-           " [-c channels] [-r rate] [-b bits] [-p period_size]\n"
+           " [-c channels] [-r rate] [-b bits] [-a bits_packed] [-p period_size]\n"
            " [-n n_periods] [-T capture time] [-i intf_name] [-dkv device_kv]\n"
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
            " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph\n"
@@ -108,7 +112,7 @@ int main(int argc, char **argv)
     unsigned int devicepp_kv = 0;
     unsigned int stream_kv = 0;
     unsigned int instance_kv = INSTANCE_1;
-
+    bool bits_packed = false;
 
     if (argc < 2) {
         usage();
@@ -140,6 +144,9 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 bits = atoi(*argv);
+        } else if (strcmp(*argv, "-a") == 0) {
+            argv++;
+            bits_packed = true;
         } else if (strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
@@ -197,7 +204,10 @@ int main(int argc, char **argv)
         format = PCM_FORMAT_S32_LE;
         break;
     case 24:
-        format = PCM_FORMAT_S24_LE;
+        if (bits_packed)
+            format = PCM_FORMAT_S24_3LE;
+        else
+            format = PCM_FORMAT_S24_LE;
         break;
     case 16:
         format = PCM_FORMAT_S16_LE;
