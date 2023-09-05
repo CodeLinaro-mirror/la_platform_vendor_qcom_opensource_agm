@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019 The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "vendor.qti.hardware.AGMIPC@1.0-service"
@@ -35,6 +40,10 @@
 #include <cutils/properties.h>
 #endif
 #include <system/thread_defs.h>
+
+#ifdef AR_EARLY_CHIME
+#include <agm_conn_server.h>
+#endif
 
 using vendor::qti::hardware::AGMIPC::V1_0::IAGM;
 using vendor::qti::hardware::AGMIPC::V1_0::implementation::AGM;
@@ -63,6 +72,9 @@ int main() {
     place_marker("M - AGM Service Starting...");
 #endif
     sp<IAGM> service = new AGM();
+#ifdef AR_EARLY_CHIME
+    init_service_socket();
+#endif
     AGM *temp = static_cast<AGM *>(service.get());
     setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_URGENT_AUDIO);
     if (temp->is_agm_initialized()) {
@@ -74,6 +86,9 @@ int main() {
 #ifdef PLATFORM_MSMNILE_AU
         property_set("vendor.audio.feature.agm.enable", "running");
         place_marker("M - AGM Service Created...");
+#endif
+#ifdef AR_EARLY_CHIME
+        deinit_service_socket();
 #endif
         joinRpcThreadpool();
     }
