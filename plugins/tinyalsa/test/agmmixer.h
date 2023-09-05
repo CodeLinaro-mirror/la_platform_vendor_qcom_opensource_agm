@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -57,6 +57,11 @@ struct device_config {
     enum pcm_format format;
 };
 
+struct usbAudioConfig {
+    uint32_t usb_token;
+    uint32_t svc_interval;
+};
+
 struct group_config {
     char name[80];
     unsigned int rate;
@@ -76,6 +81,8 @@ typedef enum {
 int convert_char_to_hex(char *char_num);
 int get_pcm_bit_width(enum pcm_format fmt_id);
 int set_agm_device_media_config(struct mixer *mixer, char *intf_name, struct device_config *config);
+int set_agm_device_custom_payload(struct mixer *mixer, char *intf_name, void *payload, size_t size);
+void get_agm_usb_audio_config_payload(uint8_t** payload, size_t* size, uint32_t miid, struct usbAudioConfig *data);
 int set_agm_group_device_config(struct mixer *mixer, char *intf_name, struct group_config *config);
 int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct group_config *config, char *intf_name, unsigned int channels);
 int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsigned int c_device);
