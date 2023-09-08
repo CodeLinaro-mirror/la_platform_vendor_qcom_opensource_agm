@@ -31,6 +31,6 @@ libagmproxy_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -
 bin_PROGRAMS := agm_server
 agm_server_SOURCES  := ${top_srcdir}/src/agm_server_daemon.cpp
 
-agmserver_la_CPPFLAGS := $(AM_CPPFLAGS)
+agm_server_la_CPPFLAGS := $(AM_CPPFLAGS)
 agm_server_LDADD    := libagmproxy.la -laudio_log_utils
-agmserver_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils
+agm_server_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils
