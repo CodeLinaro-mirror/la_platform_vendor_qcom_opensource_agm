@@ -295,23 +295,6 @@ exit:
     return;
 }
 
-static void free_callbacks(agm_client_session_data *ses_data) {
-    GList *node;
-    agm_callback_data *cb_data;
-    g_assert(mdata != NULL);
-
-    for (node = ses_data->callbacks; node != NULL; node = node->next) {
-        if (node->data != NULL) {
-            cb_data = (agm_callback_data *)node->data;
-            g_dbus_connection_signal_unsubscribe(mdata->conn,
-                                              cb_data->sub_id_callback_event);
-            free(node->data);
-            node->data = NULL;
-        }
-    }
-
-    g_list_free(ses_data->callbacks);
-}
 
 static int subscribe_ses_callback_event(agm_client_session_data *ses_data,
                                     bool subscribe) {
@@ -2106,8 +2089,6 @@ int agm_session_close(uint64_t handle) {
         g_error_free(error);
         return -EINVAL;
     }
-
-    free_callbacks(ses_data);
 
     if (ses_data->thread_loop) {
         AGM_LOGE("%s:Quitting loop", __func__);
