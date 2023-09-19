@@ -2017,10 +2017,8 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue read in state:%d\n",
                            sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     ret = graph_read(sess_obj->graph, buff, count);
     if (ret) {
@@ -2028,6 +2026,7 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
@@ -2040,10 +2039,8 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue write in state:%d\n",
                             sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     ret = graph_write(sess_obj->graph, buff, count);
     if (ret) {
@@ -2051,6 +2048,7 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
