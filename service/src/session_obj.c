@@ -43,6 +43,30 @@
 #include <log_utils.h>
 #endif
 
+#ifdef AGM_USE_CUTILS
+#include <cutils/trace.h>
+#include <cutils/properties.h>
+static uint32_t TRACE_TAG = ATRACE_TAG_NEVER;
+char tracestr[100] = "agm: ";
+#define agm_trace_begin(str)  \
+        strlcat(tracestr, str, sizeof(tracestr));\
+        atrace_begin(TRACE_TAG, tracestr);\
+        strlcpy(tracestr, "agm: ", sizeof(tracestr));
+
+#define agm_trace_end() \
+        atrace_end(TRACE_TAG);
+
+#define check_and_enable_traces() \
+    char val[PROPERTY_VALUE_MAX] = {0}; \
+    if (property_get("vendor.audio.agm.enable.traces", val, "") && !strncmp(val, "true", 4)) { \
+        TRACE_TAG = ATRACE_TAG_AUDIO | ATRACE_TAG_HAL; \
+    }
+#else
+#define agm_trace_begin(str)
+#define agm_trace_end()
+#define check_and_enable_traces()
+#endif
+
 #define GSL_EVENT_SRC_MODULE_ID_GSL 0x2001 // DO NOT CHANGE
 
 //forward declarations
@@ -558,8 +582,9 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
         temp.gkv = merged_metadata->gkv;
         temp.ckv = merged_metadata->ckv;
         temp.sg_props = merged_meta_sess_aif->sg_props;
-
+        agm_trace_begin("graph_stop");
         ret = graph_stop(graph, &temp);
+        agm_trace_end();
         if (ret) {
             AGM_LOGE("Error:%d graph stop failed session_id: %d, \
                       audio interface id:%d \n",
@@ -573,10 +598,14 @@ static int session_disconnect_aif(struct session_obj *sess_obj,
                       ret, sess_obj->sess_id, aif_obj->aif_id);
         }
     }
+    agm_trace_begin("device_stop");
     if (sess_obj->state == SESSION_STARTED)
         device_stop(aif_obj->dev_obj);
+    agm_trace_end();
 
+    agm_trace_begin("device_close");
     ret = device_close(aif_obj->dev_obj);
+    agm_trace_end();
     if (ret) {
         AGM_LOGE("Error:%d closing device object with id:%d \n",
             ret, aif_obj->aif_id);
@@ -717,8 +746,11 @@ static int session_connect_aif(struct session_obj *sess_obj,
         ret = -ENOMEM;
         goto done;
     }
+    agm_trace_begin("session_connect_aif");
 
+    agm_trace_begin("device_open");
     ret = device_open(aif_obj->dev_obj);
+    agm_trace_end();
     if (ret) {
         AGM_LOGE("Error:%d opening device object with id:%d \n",
             ret, aif_obj->aif_id);
@@ -728,8 +760,10 @@ static int session_connect_aif(struct session_obj *sess_obj,
     //step 2.b
     if (opened_count == 0) {
         if (sess_obj->state == SESSION_CLOSED) {
+            agm_trace_begin("graph_open");
             ret = graph_open(merged_metadata, sess_obj, aif_obj->dev_obj,
                                                        &sess_obj->graph);
+            agm_trace_end();
             graph = sess_obj->graph;
             if (ret) {
                 AGM_LOGE("Error:%d graph open failed session_id: %d, \
@@ -747,7 +781,9 @@ static int session_connect_aif(struct session_obj *sess_obj,
                 goto graph_cleanup;
             }
         } else {
+            agm_trace_begin("graph_change");
             ret = graph_change(graph, merged_metadata, aif_obj->dev_obj);
+            agm_trace_end();
             if (ret) {
                 AGM_LOGE("Error:%d graph change failed session_id: %d, \
                          audio interface id:%d \n",
@@ -756,7 +792,9 @@ static int session_connect_aif(struct session_obj *sess_obj,
             }
         }
     } else {
+            agm_trace_begin("graph_add");
             ret = graph_add(graph, merged_metadata, aif_obj->dev_obj);
+            agm_trace_end();
             if (ret) {
                 AGM_LOGE("Error:%d graph add failed session_id: %d, \
                           audio interface id:%d \n",
@@ -826,7 +864,7 @@ done:
         metadata_free(merged_metadata);
         free(merged_metadata);
     }
-
+    agm_trace_end();
     return ret;
 }
 
@@ -991,7 +1029,9 @@ static int session_prepare(struct session_obj *sess_obj)
 
         if ((sess_obj->state != SESSION_STARTED)) {
             pthread_mutex_lock(&hwep_lock);
+            agm_trace_begin("graph_prepare");
             ret = graph_prepare(sess_obj->graph);
+            agm_trace_end();
             pthread_mutex_unlock(&hwep_lock);
             if (ret) {
                 AGM_LOGE("Error:%d preparing graph\n", ret);
@@ -1001,7 +1041,9 @@ static int session_prepare(struct session_obj *sess_obj)
             }
         }
     } else if(sess_obj->state != SESSION_STARTED) {
+        agm_trace_begin("graph_prepare");
         ret = graph_prepare(sess_obj->graph);
+        agm_trace_end();
         if (ret) {
              AGM_LOGE("Error:%d preparing graph\n", ret);
              goto done;
@@ -1097,7 +1139,9 @@ static int session_start(struct session_obj *sess_obj)
                 (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY)) {
                 AGM_LOGD("configuring device early - for SLIMBUS/Connectivity Proxy EPs\n");
                 if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
+                    agm_trace_begin("device_prepare");
                     ret = device_prepare(aif_obj->dev_obj);
+                    agm_trace_end();
                     if (ret) {
                         AGM_LOGE("Error:%d preparing device\n", ret);
                         goto device_stop;
@@ -1107,7 +1151,9 @@ static int session_start(struct session_obj *sess_obj)
 
                 if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_PREPARED ||
                                                      aif_obj->state == AIF_STOPPED ) {
+                    agm_trace_begin("device_start");
                     ret = device_start(aif_obj->dev_obj);
+                    agm_trace_end();
                     if (ret) {
                         AGM_LOGE("Error:%d starting device id:%d\n",
                                        ret, aif_obj->aif_id);
@@ -1117,8 +1163,9 @@ static int session_start(struct session_obj *sess_obj)
                 }
             }
         }
-
+        agm_trace_begin("graph_start");
         ret = graph_start(sess_obj->graph);
+        agm_trace_end();
         if (ret) {
             AGM_LOGE("Error:%d starting graph\n", ret);
             goto device_stop;
@@ -1139,7 +1186,9 @@ static int session_start(struct session_obj *sess_obj)
             }
 
             if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
+                agm_trace_begin("device_prepare");
                 ret = device_prepare(aif_obj->dev_obj);
+                agm_trace_end();
                 if (ret) {
                     AGM_LOGE("Error:%d preparing device\n", ret);
                     pthread_mutex_unlock(&hwep_lock);
@@ -1150,7 +1199,9 @@ static int session_start(struct session_obj *sess_obj)
 
             if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_PREPARED ||
                                                  aif_obj->state == AIF_STOPPED ) {
+                agm_trace_begin( "device_start");
                 ret = device_start(aif_obj->dev_obj);
+                agm_trace_end();
                 if (ret) {
                     AGM_LOGE("Error:%d starting device id:%d\n",
                                    ret, aif_obj->aif_id);
@@ -1210,7 +1261,9 @@ static int session_stop(struct session_obj *sess_obj)
     if (sess_mode != AGM_SESSION_NON_TUNNEL  && sess_mode != AGM_SESSION_NO_CONFIG) {
         pthread_mutex_lock(&hwep_lock);
         if (dir == RX) {
+            agm_trace_begin("graph_stop");
             ret = graph_stop(sess_obj->graph, NULL);
+            agm_trace_end();
             if (ret) {
                 AGM_LOGE("Error:%d stopping graph\n", ret);
                 pthread_mutex_unlock(&hwep_lock);
@@ -1226,7 +1279,9 @@ static int session_stop(struct session_obj *sess_obj)
             }
 
             if (aif_obj->state == AIF_STARTED) {
+                agm_trace_begin("device_stop");
                 ret = device_stop(aif_obj->dev_obj);
+                agm_trace_end();
                 if (ret) {
                     AGM_LOGE("Error:%d stopping device id:%d\n",
                                    ret, aif_obj->aif_id);
@@ -1236,14 +1291,18 @@ static int session_stop(struct session_obj *sess_obj)
         }
 
         if (dir == TX) {
+            agm_trace_begin("graph_stop");
             ret = graph_stop(sess_obj->graph, NULL);
             if (ret) {
                 AGM_LOGE("Error:%d stopping graph\n", ret);
             }
+            agm_trace_end();
         }
         pthread_mutex_unlock(&hwep_lock);
     } else {
+            agm_trace_begin("graph_stop");
             ret = graph_stop(sess_obj->graph, NULL);
+            agm_trace_end();
             if (ret) {
                 AGM_LOGE("Error:%d stopping graph\n", ret);
             }
@@ -1348,6 +1407,7 @@ int session_obj_init()
         goto graph_deinit;
     }
     pthread_mutex_init(&hwep_lock, (const pthread_mutexattr_t *) NULL);
+    check_and_enable_traces();
     goto done;
 
 graph_deinit:
@@ -2212,20 +2272,22 @@ int session_obj_prepare(struct session_obj *sess_obj)
 {
     int ret = 0;
 
+    agm_trace_begin("session_prepare");
     pthread_mutex_lock(&sess_obj->lock);
     ret = session_prepare(sess_obj);
     pthread_mutex_unlock(&sess_obj->lock);
-
+    agm_trace_end();
     return ret;
 }
 
 int session_obj_start(struct session_obj *sess_obj)
 {
     int ret = 0;
-
+    agm_trace_begin( "session_start");
     pthread_mutex_lock(&sess_obj->lock);
     ret = session_start(sess_obj);
     pthread_mutex_unlock(&sess_obj->lock);
+    agm_trace_end();
 
     return ret;
 }
@@ -2707,4 +2769,3 @@ int session_obj_set_non_tunnel_mode_config(struct session_obj *sess_obj,
     pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
-
