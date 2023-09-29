@@ -170,6 +170,16 @@ struct LegacyToAidl {
     static AgmSessionWmaDec convertWmaStandardCompressDecoderToAidl(
             struct agm_session_wma_dec *legacyDecoder);
 
+
+    /**
+    * @brief convertOpusCompressDecoderToAidl converts legacy agm_session_config to AIDL
+    * based AgmSessionOpusDec type.
+    * @param legacyDecoder  agm_session_config in legacy types
+    * @return AgmSessionOpusDec AIDL object
+    */
+    static AgmSessionOpusDec convertOpusCompressDecoderToAidl(
+            struct agm_session_opus_dec *legacyDecoder);
+
     /**
     * @brief convertAacCompressEncoderToAidl converts legacy agm_session_aac_enc to AIDL
     * based AgmSessionAacEnc type.

@@ -98,6 +98,7 @@ static bool needsCodecSpecificInfo(agm_media_format format) {
         case AGM_FORMAT_APE:
         case AGM_FORMAT_WMAPRO:
         case AGM_FORMAT_WMASTD:
+        case AGM_FORMAT_OPUS:
             return true;
         default:
             return false;

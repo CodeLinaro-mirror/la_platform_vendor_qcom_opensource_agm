@@ -106,6 +106,24 @@ AgmSessionWmaDec LegacyToAidl::convertWmaStandardCompressDecoderToAidl(
     return std::move(aidlDecoder);
 }
 
+AgmSessionOpusDec LegacyToAidl::convertOpusCompressDecoderToAidl(
+        struct agm_session_opus_dec *legacyDecoder) {
+    AgmSessionOpusDec aidlDecoder;
+    aidlDecoder.bitStreamFormat = legacyDecoder->bitstream_format;
+    aidlDecoder.type = legacyDecoder->payload_type;
+    aidlDecoder.version = legacyDecoder->version;
+    aidlDecoder.channels = legacyDecoder->num_channels;
+    aidlDecoder.preSkip = legacyDecoder->pre_skip;
+    aidlDecoder.sampleRate = legacyDecoder->sample_rate;
+    aidlDecoder.mappingFamily = legacyDecoder->mapping_family;
+    aidlDecoder.streamCount = legacyDecoder->stream_count;
+    // both types are uint8 type with predefined size, so use hardcoded values
+    memcpy(aidlDecoder.channelMap.data(), legacyDecoder->channel_map, 8);
+    memcpy(aidlDecoder.reserved.data(), legacyDecoder->reserved, 3);
+    ALOGI("%s config %s", __func__, aidlDecoder.toString().c_str());
+    return std::move(aidlDecoder);
+}
+
 AgmSessionAacEnc LegacyToAidl::convertAacCompressEncoderToAidl(
         struct agm_session_aac_enc *legacyEncoder) {
     AgmSessionAacEnc aidlEncoder;
@@ -149,6 +167,11 @@ AgmSessionCodec LegacyToAidl::convertCompressDecoderInfoToAidl(
         case AGM_FORMAT_WMASTD: {
             auto wmaDec = convertWmaStandardCompressDecoderToAidl(&sessionCodec->wma_dec);
             codec = AgmSessionCodec::make<AgmSessionCodec::Tag::wmaDecoder>(wmaDec);
+            break;
+        }
+        case AGM_FORMAT_OPUS: {
+            auto opusDec = convertOpusCompressDecoderToAidl(&sessionCodec->opus_dec);
+            codec = AgmSessionCodec::make<AgmSessionCodec::Tag::opusDecoder>(opusDec);
             break;
         }
         default:

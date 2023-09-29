@@ -29,5 +29,6 @@ union AgmSessionCodec {
   vendor.qti.hardware.agm.AgmSessionApeDec apeDecoder;
   vendor.qti.hardware.agm.AgmSessionWmaDec wmaDecoder;
   vendor.qti.hardware.agm.AgmSessionWmaproDec wmaproDecoder;
+  vendor.qti.hardware.agm.AgmSessionOpusDec opusDecoder;
   vendor.qti.hardware.agm.AgmSessionAacEnc aacEncoder;
 }

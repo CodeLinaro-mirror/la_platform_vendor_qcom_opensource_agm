@@ -48,6 +48,11 @@ void AidlToLegacy::convertCompressCodecInfo(
                 convertWmaProCompressDecoder(dec, &legacyConfig->codec.wmapro_dec);
                 break;
             }
+            case AgmSessionCodec::opusDecoder: {
+                auto dec = aidlCodec.get<AgmSessionCodec::opusDecoder>();
+                convertOpusCompressDecoder(dec, &legacyConfig->codec.opus_dec);
+                break;
+            }
             case AgmSessionCodec::aacEncoder: {
                 auto enc = aidlCodec.get<AgmSessionCodec::aacEncoder>();
                 convertAacCompressEncoder(enc, &legacyConfig->codec.aac_enc);
@@ -144,6 +149,24 @@ void AidlToLegacy::convertWmaProCompressDecoder(
     legacyDecoder->enc_options = aidlDecoder.encoderOption;
     legacyDecoder->advanced_enc_option = aidlDecoder.advancedEncoderOption;
     legacyDecoder->advanced_enc_option2 = aidlDecoder.advancedEncoderOption2;
+    ALOGI("%s config %s", __func__, aidlDecoder.toString().c_str());
+}
+
+void AidlToLegacy::convertOpusCompressDecoder(
+        const ::aidl::vendor::qti::hardware::agm::AgmSessionOpusDec &aidlDecoder,
+        struct agm_session_opus_dec *legacyDecoder) {
+    legacyDecoder->bitstream_format = aidlDecoder.bitStreamFormat;
+    legacyDecoder->payload_type = aidlDecoder.type;
+    legacyDecoder->version = aidlDecoder.version;
+    legacyDecoder->num_channels = aidlDecoder.channels;
+    legacyDecoder->pre_skip = aidlDecoder.preSkip;
+    legacyDecoder->sample_rate = aidlDecoder.sampleRate;
+    legacyDecoder->mapping_family = aidlDecoder.mappingFamily;
+    legacyDecoder->stream_count = aidlDecoder.streamCount;
+    // both types are uint8 type with predefined size, so use hardcoded values
+    memcpy(legacyDecoder->channel_map, aidlDecoder.channelMap.data(), 8);
+    memcpy(legacyDecoder->reserved, aidlDecoder.reserved.data(), 3);
+
     ALOGI("%s config %s", __func__, aidlDecoder.toString().c_str());
 }
 

@@ -21,12 +21,18 @@
 // later when a module using the interface is updated, e.g., Mainline modules.
 
 package vendor.qti.hardware.agm;
-@Backing(type="int") @VintfStability
-enum AgmDataMode {
-  AGM_DATA_INVALID,
-  AGM_DATA_BLOCKING,
-  AGM_DATA_NON_BLOCKING,
-  AGM_DATA_PUSH_PULL,
-  AGM_DATA_EXTERN_MEM,
-  AGM_DATA_MODE_MAX,
+@VintfStability
+parcelable AgmSessionOpusDec {
+  int bitStreamFormat;
+  int type;
+  byte version;
+  byte channels;
+  int preSkip;
+  long sampleRate;
+  int outputGain;
+  byte mappingFamily;
+  byte streamCount;
+  byte coupledCount;
+  byte[8] channelMap;
+  byte[3] reserved;
 }

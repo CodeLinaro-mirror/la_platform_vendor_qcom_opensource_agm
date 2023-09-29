@@ -160,6 +160,16 @@ struct AidlToLegacy {
                                                   struct agm_session_wma_dec *legacyDecoder);
 
     /**
+    * @brief convertOpusCompressDecoder converts AgmSessionCodec from AIDL to
+    * agm_session_opus_dec
+    * Client needs to pass valid allocated memory of agm_session_opus_dec,
+    * who is also responsible for dellocating the memory.
+    * @param aidlDecoder codec is opus type based on getTag of AIDL union type.
+    * @param legacyDecoder agm_session_opus_dec type.
+    */
+    static void convertOpusCompressDecoder(const AgmSessionOpusDec &aidlDecoder,
+                                                  struct agm_session_opus_dec *legacyDecoder);
+    /**
     * @brief convertAacCompressEncoder converts AgmSessionCodec from AIDL to agm_session_aac_enc
     * Client needs to pass valid allocated memory of agm_session_aac_enc,
     * who is also responsible for dellocating the memory.
