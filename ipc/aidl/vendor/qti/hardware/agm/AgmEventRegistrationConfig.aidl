@@ -10,8 +10,12 @@ package vendor.qti.hardware.agm;
  */
 @VintfStability
 parcelable AgmEventRegistrationConfig {
+    // Valid instance ID of module
     int moduleInstanceId;
+    // Valid event ID of the module
     int eventId;
+    // register or unregister 1 for register, 0 for unregister
     byte registerEvent;
+    // module specifc event registration payload
     byte[] eventConfigPayload;
 }

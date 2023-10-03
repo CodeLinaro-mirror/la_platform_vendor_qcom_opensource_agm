@@ -7,7 +7,10 @@ package vendor.qti.hardware.agm;
 
 @VintfStability
 parcelable AgmBufferConfig {
+    /**< number of buffers */
     int count;
+    /**< size of each buffer */
     int size;
+    /**< max metadata size a client attaches to a buffer */
     int maxMetadataSize;
 }

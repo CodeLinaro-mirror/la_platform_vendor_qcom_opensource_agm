@@ -269,7 +269,7 @@ class AgmServerWrapper : public BnAGM, public ISessionOps {
             int32_t in_sessiondId, int32_t in_aifId,
             const std::vector<uint8_t> &in_payload) override;
     ::ndk::ScopedAStatus ipc_agm_dump(
-            const std::vector<::aidl::vendor::qti::hardware::agm::AgmDumpInfo> &in_dumpInfo)
+            const ::aidl::vendor::qti::hardware::agm::AgmDumpInfo &in_dumpInfo)
             override;
 
     void addSessionHandle(uint32_t sessionId, uint64_t handle) override;

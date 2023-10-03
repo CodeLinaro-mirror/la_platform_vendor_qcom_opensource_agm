@@ -12,11 +12,11 @@ import vendor.qti.hardware.agm.Direction;
 
 @VintfStability
 parcelable AgmSessionConfig {
-    Direction direction;
-    AgmSessionMode sessionMode;
-    int startThreshold;
-    int stopThreshold;
-    @nullable AgmSessionCodec codec;
-    AgmDataMode dataMode;
-    int flags;
+    Direction direction; /**< TX or RX */
+    AgmSessionMode sessionMode; /**< indicates mode of agm sesison, non-tunnel, or hostless */
+    int startThreshold; /**< start_threshold: number of buffers * buffer size */
+    int stopThreshold; /**< stop_threshold: number of buffers * buffer size */
+    @nullable AgmSessionCodec codec; /**< codec configuration */
+    AgmDataMode dataMode; /**< data mode */
+    int flags; /**< pass session specific flags e.g enable inband SRCM event*/
 }

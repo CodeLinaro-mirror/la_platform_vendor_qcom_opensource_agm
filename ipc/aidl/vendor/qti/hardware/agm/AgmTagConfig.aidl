@@ -9,7 +9,8 @@ import vendor.qti.hardware.agm.AgmKeyValue;
 
 @VintfStability
 parcelable AgmTagConfig {
+    // tag id
     int tag;
-    //int num_tkvs;
+    //tag key vector;
     AgmKeyValue[] kv;
 }

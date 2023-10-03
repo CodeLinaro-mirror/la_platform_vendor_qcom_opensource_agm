@@ -9,5 +9,6 @@ import vendor.qti.hardware.agm.AgmKeyValue;
 
 @VintfStability
 parcelable AgmCalConfig {
+    /**< tag key vector*/
     AgmKeyValue[] kv;
 }

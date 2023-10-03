@@ -9,6 +9,8 @@ import vendor.qti.hardware.agm.Direction;
 
 @VintfStability
 parcelable AifInfo {
+    // AIF name
     String aifName;
+    // direction Rx or Tx
     Direction direction;
 }

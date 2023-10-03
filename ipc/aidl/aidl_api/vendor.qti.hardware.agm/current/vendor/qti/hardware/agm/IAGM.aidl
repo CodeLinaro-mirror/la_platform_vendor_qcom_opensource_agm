@@ -70,7 +70,7 @@ interface IAGM {
   void ipc_agm_set_params_to_acdb_tunnel(in byte[] payload);
   void ipc_agm_set_params_with_tag(in int sessiondId, in int aifId, in vendor.qti.hardware.agm.AgmTagConfig tagConfig);
   void ipc_agm_set_params_with_tag_to_acdb(in int sessiondId, in int aifId, in byte[] payload);
-  void ipc_agm_dump(in vendor.qti.hardware.agm.AgmDumpInfo[] dumpInfo);
+  void ipc_agm_dump(in vendor.qti.hardware.agm.AgmDumpInfo dumpInfo);
   parcelable AgmReadWithMetadataReturn {
     vendor.qti.hardware.agm.AgmBuff buffer;
     int capturesSize;

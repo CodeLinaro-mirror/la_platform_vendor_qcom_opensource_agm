@@ -12,8 +12,12 @@ import vendor.qti.hardware.agm.AgmMediaFormat;
  */
 @VintfStability
 parcelable AgmMediaConfig {
+    // sample rate
     int rate;
+    // number of channels
     int channels;
+    // media format in agm_media_format
     AgmMediaFormat format;
+    // data format
     int dataFormat;
 }

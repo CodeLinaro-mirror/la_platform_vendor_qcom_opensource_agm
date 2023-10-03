@@ -9,7 +9,10 @@ import vendor.qti.hardware.agm.AgmEventReadWriteDonePayload;
 
 @VintfStability
 parcelable AgmReadWriteEventCallbackParams {
+    // identifies the module which generated event
     int sourceModuleId;
+    // identifies the event
     int eventId;
+    // payload associated with the event if any
     AgmEventReadWriteDonePayload payload;
 }

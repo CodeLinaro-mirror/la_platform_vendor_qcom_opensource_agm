@@ -916,7 +916,7 @@ AgmServerWrapper::AgmServerWrapper() {
             in_sessionId, in_aifId, legacyPayload.get(), payloadSize));
 }
 
-::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_dump(const std::vector<AgmDumpInfo> &in_dumpInfo) {
+::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_dump(const AgmDumpInfo &in_dumpInfo) {
     return ScopedAStatus::ok();
 }
 }

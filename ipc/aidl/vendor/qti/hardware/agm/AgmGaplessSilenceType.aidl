@@ -11,6 +11,8 @@ package vendor.qti.hardware.agm;
 @VintfStability
 @Backing(type="int")
 enum AgmGaplessSilenceType {
+    // Initial silence sample to be removed
     INITIAL_SILENCE,
+    // Trailing silence sample to be removed
     TRAILING_SILENCE,
 }

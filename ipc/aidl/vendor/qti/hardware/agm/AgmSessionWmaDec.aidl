@@ -7,13 +7,13 @@ package vendor.qti.hardware.agm;
 
 @VintfStability
 parcelable AgmSessionWmaDec {
-    int formatTag;
-    int channels;
-    int sampleRate;
-    int averageBytesPerSecond;
-    int blockAlign;
-    int bitsPerSample;
-    int channelMask;
-    int encoderOption;
-    int reserved;
+    int formatTag; /**< Format Tag */
+    int channels; /**< Number of channels */
+    int sampleRate; /**< Sample rate */
+    int averageBytesPerSecond; /**< Avg bytes per sec */
+    int blockAlign; /**< Block align */
+    int bitsPerSample; /**< Bits per sample */
+    int channelMask; /**< Channel mask */
+    int encoderOption; /**< Encoder options */
+    int reserved; /**< reserved */
 }

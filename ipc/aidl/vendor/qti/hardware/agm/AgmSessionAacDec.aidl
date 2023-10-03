@@ -10,9 +10,14 @@ package vendor.qti.hardware.agm;
  */
 @VintfStability
 parcelable AgmSessionAacDec {
+    // AAC format flag
     int formatFlag;
+    // AAC obj type
     int objectType;
+    // number of channels
     int channels;
+    // PCE bits size
     int sizeOfPCEBits;
+    // sample rate
     int sampleRate;
 }

@@ -7,11 +7,11 @@ package vendor.qti.hardware.agm;
 
 @VintfStability
 parcelable AgmSessionFlacDec {
-    int channels;
-    int sampleSize;
-    int minBlockSize;
-    int maxBlockSize;
-    int sampleRate;
-    int minFrameSize;
-    int maxFrameSize;
+    int channels; /**< Number of channels */
+    int sampleSize; /**< Sample size */
+    int minBlockSize; /**< Minimum block size */
+    int maxBlockSize; /**< Maximum block size */
+    int sampleRate; /**< Sample rate */
+    int minFrameSize; /**< Minimum frame size */
+    int maxFrameSize; /**< Maximum frame size */
 }

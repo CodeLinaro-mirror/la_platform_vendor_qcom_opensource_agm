@@ -11,7 +11,10 @@ import android.hardware.common.NativeHandle;
  */
 @VintfStability
 parcelable AgmExternAllocBuffInfo {
+    // unique native handle identifying extern memory allocation
     NativeHandle allocHandle;
+    // size of external allocation
     int allocatedSize;
+    //  offset of buffer within extern allocation
     int offset;
 }
