@@ -28,13 +28,13 @@
 <!--
 Changes from Qualcomm Innovation Center are provided under the following license:
 
-Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 -->
 <defs>
 <card>
-    <id>1</id>
-    <name>sa8295-adp-star-snd-card</name>
+    <id>100</id>
+    <name>auto-agm-virtual-snd-card</name>
 
 <!-- playback devices -->
     <pcm-device>
