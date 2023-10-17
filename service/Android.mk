@@ -22,6 +22,9 @@ ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/vendor/etc/acdbdata/delta"
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbdata/delta"
 LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+else ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), gen4_au)
+LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/vendor/etc/acdbdata/delta"
+LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbdata/delta"
 else
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
 endif
