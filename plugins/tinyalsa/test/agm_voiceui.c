@@ -280,7 +280,7 @@ void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_in
 
     dev_config.rate = config.rate;
     dev_config.ch = config.channels;
-    dev_config.bits = get_pcm_bit_width(config.format);
+    dev_config.bits = get_tinyalsa_pcm_bit_width(config.format);
     dev_config.format = config.format;
     mixer = mixer_open(card);
     if (!mixer) {

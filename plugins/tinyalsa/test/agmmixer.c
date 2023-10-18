@@ -178,7 +178,7 @@ static enum pcm_format get_pcm_format(char *str)
     }
 }
 
-int get_pcm_bit_width(enum pcm_format fmt_id)
+int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id)
 {
     int bit_width = 16;
 
