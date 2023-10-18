@@ -9,8 +9,7 @@ h_sources = ./inc/public/agm/agm_api.h \
 AM_CFLAGS = @SPF_CFLAGS@
 AM_CFLAGS += -I $(srcdir)/inc/public
 AM_CFLAGS += -I $(srcdir)/inc/private
-AM_CFLAGS += @KVH2XML_CFLAGS@
-AM_CFLAGS += -Wl,-z,defs
+AM_CFLAGS += @MMHEADERS_CFLAGS@
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 
@@ -27,7 +26,8 @@ lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -ltinyalsa -lar-osal -lar-gsl -lar-ats
 
-libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
+libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/MTP/\" -DACDB_DELTA_FILE_PATH="/data/audio/delta"
+libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
 
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG
