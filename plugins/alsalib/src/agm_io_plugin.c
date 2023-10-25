@@ -464,13 +464,9 @@ static int agm_io_poll_desc(snd_pcm_ioplug_t *io, struct pollfd *pfd,
         AGM_LOGE("%s space %u is not correct!\n", __func__, space);
         return -EINVAL;
     }
-    if (io->stream == SND_PCM_STREAM_PLAYBACK) {
-        pfd[0].fd = pcm->event_fd;
-        pfd[0].events = POLLOUT;
-    } else {
-        pfd[0].fd = pcm->event_fd;
-        pfd[0].events = POLLIN;
-    }
+
+    pfd[0].fd = pcm->event_fd;
+    pfd[0].events = POLLIN;
 
     AGM_LOGD("%s: exit\n", __func__);
     return space;
@@ -487,13 +483,11 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
         return -EINVAL;
     }
 
-    if (pfd[0].revents & POLLIN) {
-        *revents = POLLIN;
-    } else if (pfd[0].revents & POLLOUT) {
+    if (io->stream == SND_PCM_STREAM_PLAYBACK) {
         *revents = POLLOUT;
+    } else {
+        *revents = POLLIN;
     }
-
-    usleep(1000); //wait for 1msec
 
     eventfd_read(pcm->event_fd, &evfd);
     AGM_LOGD("%s: exit\n", __func__);

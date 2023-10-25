@@ -43,11 +43,21 @@
 
 #include <agm/agm_api.h>
 #include "agmmixer.h"
+#include <unistd.h>
+#include <fcntl.h>
+#ifdef PLATFORM_MSMNILE_AU
+#include <cutils/properties.h>
+#endif
 
 #define ID_RIFF 0x46464952
 #define ID_WAVE 0x45564157
 #define ID_FMT  0x20746d66
 #define ID_DATA 0x61746164
+
+#define HOSTLESS_INIT_SLEEP_WAIT 10 /* 10 ms */
+#ifndef HOSTLESS_DEFAULT_STATE
+#define HOSTLESS_DEFAULT_STATE "\0"
+#endif
 
 struct riff_wave_header {
     uint32_t riff_id;
@@ -69,7 +79,7 @@ struct chunk_fmt {
     uint16_t bits_per_sample;
 };
 
-static int close = 0;
+static int streamClose = 0;
 static unsigned int stream_x = 0, stream_pp = 0, instance = 0, device_pp = 0, device_x = 0;
 
 void play_sample(FILE *file, unsigned int card, unsigned int device,
@@ -79,8 +89,37 @@ void stream_close(int sig)
 {
     /* allow the stream to be closed gracefully */
     signal(sig, SIG_IGN);
-    close = 1;
+    streamClose = 1;
 }
+
+#ifdef PLATFORM_MSMNILE_AU
+static void place_marker(char const *name)
+{
+   int fd=open("/sys/kernel/boot_kpi/kpi_values", O_WRONLY);
+   if (fd > 0)
+   {
+       /* Only allow marker text shorter than MARKER_STRING_WIDTH */
+       char earlyapp[100] = {0};
+       strlcpy(earlyapp, name, sizeof(earlyapp));
+       write(fd, earlyapp, strlen(earlyapp));
+       close(fd);
+   }
+}
+
+static int32_t audio_ar_wait_hostless(void)
+{
+    char hostless_state[PROPERTY_VALUE_MAX];
+    while (1) {
+        property_get("vendor.audio.feature.hostless.enable", hostless_state, HOSTLESS_DEFAULT_STATE);
+        if (!strcmp(hostless_state, "running")) {
+            break;
+        } else {
+            usleep(HOSTLESS_INIT_SLEEP_WAIT*1000);
+        }
+    }
+    return 0;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -94,6 +133,9 @@ int main(int argc, char **argv)
     struct device_config config;
     char *filename;
     int more_chunks = 1, ret = 0;
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - agmplay start");
+#endif
 
     if (argc < 3) {
         printf("Usage: %s file.wav [-D card] [-d device] [-i intf_name] [-h haptics] [-sx stream_rx] [-spp stream_pp] [-ist instance] [-dpp device_pp] [-dx device_rx]\n", argv[0]);
@@ -178,6 +220,10 @@ int main(int argc, char **argv)
         if (*argv)
             argv++;
     }
+
+#ifdef PLATFORM_MSMNILE_AU
+    audio_ar_wait_hostless();
+#endif
     printf("Stream Rx = 0x%X, Stream PP = 0x%X, Instance = 0x%X, Device PP = 0x%X, Device RX = 0x%X\n", stream_x, stream_pp, instance, device_pp, device_x);
 
     if (intf_name == NULL)
@@ -192,6 +238,9 @@ int main(int argc, char **argv)
     play_sample(file, card, device, chunk_fmt, &config, haptics);
 
     fclose(file);
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - agmplay done");
+#endif
 
     return 0;
 }
@@ -221,7 +270,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     else if (fmt.bits_per_sample == 16)
         config.format = PCM_FORMAT_S16_LE;
     config.start_threshold = 0;
-    config.stop_threshold = 0;
+    config.stop_threshold = INT32_MAX;
     config.silence_threshold = 0;
 
     printf("Backend %s rate ch bit : %d, %d, %d\n", name,
@@ -257,7 +306,14 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
 
     /* set stream metadata mixer control */
     if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL, 0, 1)) {
-        printf("Failed to set pcm metadata\n");
+        printf("Failed to set pcm stream metadata\n");
+        goto err_close_mixer;
+    }
+
+    /* set stream device metadata mixer control */
+    if (set_agm_streamdevice_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM,
+                    name, device_pp)) {
+        printf("Failed to set pcm stream device metadata\n");
         goto err_close_mixer;
     }
 
@@ -319,6 +375,9 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     /* catch ctrl-c to shutdown cleanly */
     signal(SIGINT, stream_close);
 
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - Audio Sample Write Start");
+#endif
     do {
         num_read = fread(buffer, 1, size, file);
         if (num_read > 0) {
@@ -327,7 +386,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
                 break;
             }
         }
-    } while (!close && num_read > 0);
+    } while (!streamClose && num_read > 0);
 
     pcm_stop(pcm);
     /* connect pcm stream to audio intf */
@@ -339,4 +398,3 @@ err_close_pcm:
 err_close_mixer:
     mixer_close(mixer);
 }
-

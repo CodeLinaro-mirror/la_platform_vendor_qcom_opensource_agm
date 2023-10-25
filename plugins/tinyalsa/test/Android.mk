@@ -28,7 +28,43 @@ LOCAL_SHARED_LIBRARIES += \
 
 include $(BUILD_SHARED_LIBRARY)
 
-# Build agmplay
+# Build agmplay 32-bit
+include $(CLEAR_VARS)
+
+LOCAL_MODULE        := agmplay_32
+LOCAL_MODULE_OWNER  := qti
+LOCAL_MODULE_TAGS   := optional
+LOCAL_VENDOR_MODULE := true
+LOCAL_MULTILIB      := 32
+
+LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
+LOCAL_CFLAGS        += -DBACKEND_CONF_FILE=\"/vendor/etc/backend_conf.xml\"
+LOCAL_SRC_FILES     := agmplay.c
+
+ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
+LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+endif
+
+LOCAL_HEADER_LIBRARIES := \
+    libagm_headers \
+    libacdb_headers
+
+#if android version is R, refer to qtitinyxx otherwise use upstream ones
+#This assumes we would be using AR code only for Android R and subsequent versions.
+ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
+LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
+else
+LOCAL_SHARED_LIBRARIES += libtinyalsa libcutils
+endif
+
+LOCAL_SHARED_LIBRARIES += \
+    libagmmixer
+
+include $(BUILD_EXECUTABLE)
+include $(CLEAR_VARS)
+
+# Build agmplay 64-bit
 include $(CLEAR_VARS)
 
 LOCAL_MODULE        := agmplay
@@ -39,6 +75,40 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
 LOCAL_CFLAGS        += -DBACKEND_CONF_FILE=\"/vendor/etc/backend_conf.xml\"
 LOCAL_SRC_FILES     := agmplay.c
+
+ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
+LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+endif
+
+LOCAL_HEADER_LIBRARIES := \
+    libagm_headers \
+    libacdb_headers
+
+#if android version is R, refer to qtitinyxx otherwise use upstream ones
+#This assumes we would be using AR code only for Android R and subsequent versions.
+ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
+LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
+else
+LOCAL_SHARED_LIBRARIES += libtinyalsa libcutils
+endif
+
+LOCAL_SHARED_LIBRARIES += \
+    libagmmixer
+
+include $(BUILD_EXECUTABLE)
+include $(CLEAR_VARS)
+
+# Build agmcap 32-bit
+LOCAL_MODULE        := agmcap_32
+LOCAL_MODULE_OWNER  := qti
+LOCAL_MODULE_TAGS   := optional
+LOCAL_VENDOR_MODULE := true
+
+LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
+LOCAL_CFLAGS        += -DBACKEND_CONF_FILE=\"/vendor/etc/backend_conf.xml\"
+LOCAL_SRC_FILES     := agmcap.c
+LOCAL_MULTILIB      := 32
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
@@ -57,8 +127,10 @@ LOCAL_SHARED_LIBRARIES += \
     libagmmixer
 
 include $(BUILD_EXECUTABLE)
+
 include $(CLEAR_VARS)
 
+# Build agmcap 64-bit
 LOCAL_MODULE        := agmcap
 LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
@@ -88,6 +160,7 @@ include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
+# Build agmhostless
 LOCAL_MODULE        := agmhostless
 LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
