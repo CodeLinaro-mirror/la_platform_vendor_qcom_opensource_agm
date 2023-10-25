@@ -25,6 +25,12 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following
+ * license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
 
@@ -996,6 +1002,7 @@ int graph_write(struct graph_obj *graph_obj, void *buffer, size_t *size)
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl_write for size %zu failed with error %d\n", *size, ret);
+        goto done;
     }
     *size = (size_t)size_written;
 done:
