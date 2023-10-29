@@ -62,6 +62,7 @@ LOCAL_SHARED_LIBRARIES += libar-gsl_fe
   ifeq ($(PRODUCT_NAME), msmnile_gvmgh)
   LOCAL_CFLAGS += -DBYPASS_ATS_INIT
   endif
+LOCAL_CFLAGS += -DBYPASS_ALSA_HW
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
