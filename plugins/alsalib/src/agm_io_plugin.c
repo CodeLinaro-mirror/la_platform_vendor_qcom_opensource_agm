@@ -41,6 +41,7 @@
 #include <sys/eventfd.h>
 #include <alsa/asoundlib.h>
 #include <alsa/pcm_external.h>
+#include <alsa/pcm.h>
 #include <agm/agm_api.h>
 #include <agm/agm_list.h>
 #include <snd-card-def.h>
@@ -416,6 +417,7 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     snd_pcm_sw_params_get_start_threshold(params, &start_threshold);
     snd_pcm_sw_params_get_stop_threshold(params, &stop_threshold);
     snd_pcm_sw_params_get_boundary(params, &pcm->boundary);
+    snd_pcm_sw_params_set_tstamp_type((snd_pcm_t*)pcm, params, SND_PCM_TSTAMP_TYPE_MONOTONIC);
     session_config->start_threshold = (uint32_t)start_threshold;
     session_config->stop_threshold = (uint32_t)stop_threshold;
     ret = agm_session_set_config(pcm->handle, session_config,
