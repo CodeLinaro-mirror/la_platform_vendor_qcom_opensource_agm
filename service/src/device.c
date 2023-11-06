@@ -1270,7 +1270,8 @@ bool get_file_path_extn(char* file_path_extn)
                     chipset_value = CHIPSET_6155;
                 } else if (strstr(snd_card_name,"8155")){
                     chipset_value = CHIPSET_8155;
-                } else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")){
+                } else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255") 
+                    || strstr(snd_card_name,"7255")){
                 } else {
                     AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s",snd_card_name);
                     snd_card_found = false;
@@ -1278,7 +1279,8 @@ bool get_file_path_extn(char* file_path_extn)
                 }
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
-            else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")) {
+            else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255") 
+                || strstr(snd_card_name,"7255")) {
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
             else if (strstr(snd_card_name,"8155")){
