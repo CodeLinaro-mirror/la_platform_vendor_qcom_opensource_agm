@@ -971,17 +971,17 @@ int agm_session_read_with_metadata(uint64_t handle, struct agm_buff  *buf, uint3
         auto status = agm_client->ipc_agm_session_read_with_metadata(handle, buf_hidl, *captured_size,
                [&](int32_t ret_, hidl_vec<AgmBuff> ret_buf_hidl, uint32_t captured_size_ret)
                   {
-                      if (ret_ > 0) {
+                      if (ret_ >= 0) {
                           if (ret_buf_hidl.data()->size > buf->size) {
                               ALOGE("ret buf sz %d bigger than request buf sz %d",
                                      ret_buf_hidl.data()->size, buf->size);
                               ret_ = -ENOMEM;
                            } else {
                                 if ((buf->metadata_size > 0) && buf->metadata)
-                                     memcpy(buf->metadata,
+                                    memcpy(buf->metadata,
                                            ret_buf_hidl.data()->metadata.data(),
                                            ret_buf_hidl.data()->metadata_size);
-                                     buf->timestamp = ret_buf_hidl.data()->timestamp;
+                                buf->timestamp = ret_buf_hidl.data()->timestamp;
                            }
                            buf->flags = ret_buf_hidl.data()->flags;
                            if (buf->addr)
