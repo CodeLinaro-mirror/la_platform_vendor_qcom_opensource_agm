@@ -1094,24 +1094,23 @@ int graph_get_config(struct graph_obj *graph_obj, void *payload,
     return ret;
 }
 
-int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload)
+int graph_get_avail_buffer_size(struct graph_obj *graph_obj, bool is_playback, uint32_t *bytes)
 {
+    int ret = 0;
+
     if (!graph_obj) {
         AGM_LOGE("graph object not set\n");
         return -EINVAL;
     }
 
-    pthread_mutex_lock(&graph_obj->lock);
-    int ret = gsl_get_available_frame_count(graph_obj->graph_handle, is_playback, payload);
+    ret = gsl_get_avail_buffer_size(graph_obj->graph_handle, is_playback, bytes);
     if (ret) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("gsl_get_available_frame_count failed with error %d\n", ret);
+        AGM_LOGE("gsl_get_avail_buffer_size failed with error %d\n", ret);
     }
-    pthread_mutex_unlock(&graph_obj->lock);
 
     return ret;
 }
-
 
 int graph_set_config_with_tag(struct graph_obj *graph_obj,
                               struct agm_key_vector_gsl *gkv,
