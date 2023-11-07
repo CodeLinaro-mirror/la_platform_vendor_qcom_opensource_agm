@@ -25,6 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following
+** license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_death_notifier"
@@ -76,7 +82,7 @@ client_info *get_client_handle_from_list(pid_t pid)
     list_for_each(node, &g_client_list) {
         handle = node_to_item(node, client_info, list);
         if (handle->pid == pid) {
-            AGM_LOGV("%s: Found handle 0x%x\n", __func__, handle);
+            AGM_LOGV("%s: Found handle %p\n", __func__, handle);
             pthread_mutex_unlock(&g_client_list_lock);
             return handle;
         }
@@ -114,7 +120,6 @@ void agm_register_client(sp<IBinder> binder)
     list_add_tail(&g_client_list, &client_handle->list);
     list_init(&client_handle->agm_client_hndl_list);
     pthread_mutex_unlock(&g_client_list_lock);
-    
 }
 
 void agm_add_session_obj_handle(uint64_t handle)
@@ -162,7 +167,7 @@ void agm_remove_session_obj_handle(uint64_t handle)
     list_for_each_safe(node, tempnode, &client_handle->agm_client_hndl_list) {
         hndl = node_to_item(node, agm_client_session_handle, list);
         if (hndl->handle == handle) {
-            AGM_LOGV("%s: Removed handle 0x%x\n", __func__, handle);
+            AGM_LOGV("%s: Removed handle 0x%llx\n", __func__, handle);
             list_remove(node);
             free(hndl);
             break;
