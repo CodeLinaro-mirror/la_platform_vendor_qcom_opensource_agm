@@ -25,6 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following
+** license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_client_wrapper"
@@ -85,11 +91,16 @@ server_death_notifier::server_death_notifier()
     proc->startThreadPool();
 }
 
-void server_death_notifier::binderDied(const wp<IBinder>& who)
+void server_death_notifier::binderDied(const wp<IBinder>& who __attribute__((unused)))
 {
     agm_server_died = true;
     AGM_LOGE("Agm server died !! and I am notified\n");
     //add further functionality
+}
+
+int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie)
+{
+    return 0;
 }
 
 int agm_aif_set_media_config(uint32_t audio_intf,
@@ -462,6 +473,18 @@ int agm_set_gapless_session_metadata(uint64_t handle,
         android::sp<IAgmService> agm_client = get_agm_server();
         return agm_client->ipc_agm_set_gapless_session_metadata(handle, type,
                                                                 silence);
+    }
+    ALOGE("%s: agm service is not running\n", __func__);
+    return -EAGAIN;
+}
+
+int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
+                             uint32_t flag)
+{
+    if(!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_session_get_buf_info(session_id, buf_info,
+                                                        flag);
     }
     ALOGE("%s: agm service is not running\n", __func__);
     return -EAGAIN;

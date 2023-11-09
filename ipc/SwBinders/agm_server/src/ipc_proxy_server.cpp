@@ -25,6 +25,39 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted (subject to the limitations in the
+ * disclaimer below) provided that the following conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *
+ *   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
+ * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
+ * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
 #define LOG_TAG "ipc_proxy"
@@ -114,6 +147,7 @@ enum {
     BUF_TSTAMP,
     AIF_SET_PARAMS,
     SET_GAPLESS_SESSION_METADATA,
+    GET_BUF_INFO,
 };
 
 class BpAgmService : public ::android::BpInterface<IAgmService>
@@ -516,7 +550,8 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
              data.writeUint32(session_id);
              data.writeUint32(aif_id);
              remote()->transact(GET_TAG_MODULE_INFO, data, &reply);
-             *size = reply.readInt32();
+             count = (size_t) reply.readUint32();
+             *size = count;
              return  reply.readInt32();
          } else if (payload != NULL && count != 0) {
              android::Parcel::ReadableBlob tag_info_blob;
@@ -715,6 +750,26 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
         remote()->transact(SET_GAPLESS_SESSION_METADATA, data, &reply);
         return reply.readInt32();
     }
+
+    virtual int ipc_agm_session_get_buf_info(uint32_t session_id,
+                          struct agm_buf_info *buf_info, uint32_t flag)
+    {
+        android::Parcel data, reply;
+
+        data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+        data.writeUint32(session_id);
+        data.writeUint32(flag);
+        remote()->transact(GET_BUF_INFO, data, &reply);
+        if (flag & DATA_BUF) {
+            buf_info->data_buf_fd = dup(reply.readFileDescriptor());
+            buf_info->data_buf_size = reply.readInt32();
+        }
+        if (flag & POS_BUF) {
+            buf_info->pos_buf_fd = dup(reply.readFileDescriptor());
+            buf_info->pos_buf_size = reply.readInt32();
+        }
+        return reply.readInt32();
+    }
 };
 
 void ipc_cb (uint32_t session_id, struct agm_event_cb_params *event_params,
@@ -731,21 +786,21 @@ void ipc_cb (uint32_t session_id, struct agm_event_cb_params *event_params,
         if (handle != NULL && handle->session_id == session_id &&
                               handle->client_data == client_data) {
             AGM_LOGV("%s: Found handle %p\n", __func__, handle);
-            pthread_mutex_unlock(&clbk_data_list_lock);
             break;
         }
     }
-    pthread_mutex_unlock(&clbk_data_list_lock);
 
     if (handle!= NULL) {
         sp<ICallback> cb_binder = handle->cb_binder;
         if (cb_binder == NULL) {
             AGM_LOGE("%s Invalid binder handle\n", __func__);
+            pthread_mutex_unlock(&clbk_data_list_lock);
             return;
         }
         cb_binder->event_cb(session_id, event_params,
                handle->client_data, handle->cb_func);
     }
+    pthread_mutex_unlock(&clbk_data_list_lock);
 }
 
 
@@ -775,7 +830,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         enum agm_session_mode sess_mode;
         uint64_t handle = 0;
         session_id = data.readUint32();
-        sess_mode = data.readUint32();
+        sess_mode = (enum agm_session_mode)data.readUint32();
         rc = ipc_agm_session_open(session_id, sess_mode, &handle);
         if (handle != 0)
             agm_add_session_obj_handle(handle);reply->writeInt64((long)handle);
@@ -1318,7 +1373,7 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         data.readBlob(ckv_blob_size, &ckv_blob);
         memcpy(acc->kv, ckv_blob.data(), ckv_blob_size);
         ckv_blob.release();
-        rc = agm_session_aif_set_cal(session_id, audio_intf, acc);
+        rc = ipc_agm_session_aif_set_cal(session_id, audio_intf, acc);
     fail_ses_aud_set_cal_data:
         if (acc)
             free(acc);
@@ -1381,9 +1436,28 @@ android::status_t BnAgmService::onTransact(uint32_t code,
 
     case SET_GAPLESS_SESSION_METADATA : {
         uint64_t handle = (uint64_t )data.readInt64();
-        uint32_t type = data.readUint32();
+        agm_gapless_silence_type type = (agm_gapless_silence_type) data.readUint32();
         uint32_t silence = data.readUint32();
-        rc = ipc_agm_set_gapless_session_metadata(handle, init_silence, trail_silence);
+        rc = ipc_agm_set_gapless_session_metadata(handle, type, silence);
+        reply->writeInt32(rc);
+        break; }
+
+    case GET_BUF_INFO : {
+        int rc;
+        uint32_t session_id, flag;
+        struct agm_buf_info buf_info;
+
+        session_id = data.readUint32();
+        flag = data.readUint32();
+        rc = ipc_agm_session_get_buf_info(session_id, &buf_info, flag);
+        if (flag & DATA_BUF) {
+            reply->writeFileDescriptor(buf_info.data_buf_fd);
+            reply->writeInt32(buf_info.data_buf_size);
+        }
+        if (flag & POS_BUF) {
+            reply->writeFileDescriptor(buf_info.pos_buf_fd);
+            reply->writeInt32(buf_info.pos_buf_size);
+        }
         reply->writeInt32(rc);
         break; }
 
