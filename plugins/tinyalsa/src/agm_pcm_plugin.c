@@ -861,21 +861,18 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
     return munmap(addr, length);
 }
 
-static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, ...)
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *args)
 {
+    //args parameter is not used but needed 
+    //to align with tinyalsa ioctl function declaration
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
     int ret = 0;
-    va_list ap;
-    void *arg;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
 
-    va_start(ap, cmd);
-    arg = va_arg(ap, void *);
-    va_end(ap);
 
     switch (cmd) {
     case SNDRV_PCM_IOCTL_RESET:
