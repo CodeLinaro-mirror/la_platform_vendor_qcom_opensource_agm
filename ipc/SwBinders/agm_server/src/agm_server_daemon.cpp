@@ -25,6 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following
+** license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_server_daemon"
@@ -32,8 +38,8 @@
 #include <binder/ProcessState.h>
 #include <binder/IServiceManager.h>
 #include <utils/Log.h>
-#include "ipc_interface.h"
-#include "agm_server_wrapper.h"
+#include "inc/ipc_interface.h"
+#include "inc/agm_server_wrapper.h"
 #include <signal.h>
 #include "utils.h"
 
@@ -48,9 +54,17 @@ static class AgmService *agmServiceInstance = new AgmService();
 
 static void sigint_handler(int sig)
 {
-    AGM_LOGD("AgmService received signal\n");
-    agmServiceInstance->~AgmService();
-    exit(0);
+    switch (sig) {
+        case SIGINT:
+        case SIGTERM:
+        case SIGABRT:
+        case SIGQUIT:
+        case SIGKILL:
+        default:
+            AGM_LOGD("AgmService received signal\n");
+            agmServiceInstance->~AgmService();
+            exit(0);
+    }
 }
 
 int main()

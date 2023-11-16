@@ -25,6 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center are provided under the following
+** license:
+**
+** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_server_wrapper"
@@ -278,4 +284,10 @@ int AgmService::ipc_agm_set_gapless_session_metadata(uint64_t handle,
                          uint32_t silence) {
     ALOGV("%s called\n", __func__);
     return agm_set_gapless_session_metadata(handle, type, silence);
+};
+
+int AgmService::ipc_agm_session_get_buf_info(uint32_t session_id,
+                       struct agm_buf_info *buf_info, uint32_t flag) {
+
+    return agm_session_get_buf_info(session_id, buf_info, flag);
 };
