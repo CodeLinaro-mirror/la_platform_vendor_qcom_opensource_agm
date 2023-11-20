@@ -712,14 +712,14 @@ static int session_connect_aif(struct session_obj *sess_obj,
     //step 2.c set cached params for stream only in closed
     if (sess_obj->state == SESSION_CLOSED && sess_obj->params != NULL) {
         ret = graph_set_config(graph, sess_obj->params, sess_obj->params_size);
+        free(sess_obj->params);
+        sess_obj->params = NULL;
+        sess_obj->params_size = 0;
         if (ret) {
             AGM_LOGE("Error:%d setting session cached params: %d\n",
                 ret, sess_obj->sess_id);
             goto graph_cleanup;
         }
-        free(sess_obj->params);
-        sess_obj->params = NULL;
-        sess_obj->params_size = 0;
     }
 
     //step 2.d set cached streamdevice params
@@ -749,6 +749,11 @@ graph_cleanup:
         graph_remove(sess_obj->graph, merged_metadata);
 
 close_device:
+    if (aif_obj->params != NULL) {
+        free(aif_obj->params);
+        aif_obj->params = NULL;
+        aif_obj->params_size = 0;
+    }
     device_close(aif_obj->dev_obj);
 
 done:
