@@ -26,7 +26,7 @@ if BUILDSYSTEM_OPENWRT
 libagm_pcm_plugin_la_LDFLAGS += -lagm
 else
 libagm_pcm_plugin_la_LDFLAGS += -lagmclientwrapper
-libagm_pcm_plugin_la_LDFLAGS += -laudio_log_utils
+libagm_pcm_plugin_la_LDFLAGS += -laudio_log_utils -lpthread
 endif
 
 lib_LTLIBRARIES += libagm_pcm_passthrough_plugin.la
@@ -58,7 +58,7 @@ if BUILDSYSTEM_OPENWRT
 libagm_mixer_plugin_la_LDFLAGS += -lagm
 else
 libagm_mixer_plugin_la_LDFLAGS += -lagmclientwrapper
-libagm_mixer_plugin_la_LDFLAGS += -laudio_log_utils
+libagm_mixer_plugin_la_LDFLAGS += -laudio_log_utils -lpthread
 endif
 
 lib_LTLIBRARIES += libagm_mixer_passthrough_plugin.la
