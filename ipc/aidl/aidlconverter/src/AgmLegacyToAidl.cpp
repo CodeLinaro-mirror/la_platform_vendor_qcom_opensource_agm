@@ -333,7 +333,7 @@ AgmBuff LegacyToAidl::convertAgmBufferToAidl(struct agm_buff *legacyBuffer, bool
 
     if (externalMemory) {
         aidlBuffer.metadata.resize(legacyBuffer->metadata_size);
-        if (copyBuffers && (legacyBuffer->metadata_size > 0) && legacyBuffer->metadata) {
+        if ((legacyBuffer->metadata_size > 0) && legacyBuffer->metadata) {
             memcpy(aidlBuffer.metadata.data(), legacyBuffer->metadata, legacyBuffer->metadata_size);
         }
 

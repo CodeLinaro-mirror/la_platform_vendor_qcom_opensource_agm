@@ -304,8 +304,14 @@ int AgmServerWrapper::removeSharedMemoryFdPairs(uint32_t sessionId, int dupFd) {
     std::lock_guard<std::mutex> guard(mLock);
     ALOGV("%s, caller sessionId %d  dupFd %d", __func__, sessionId, dupFd);
 
-    auto client = getClient_l();
-    return client->removeSharedMemoryFdPairs(sessionId, dupFd);
+    int inputFd = -1;
+    for (auto &client: mClients) {
+         auto &clientInfoObj = client.second;
+         inputFd = clientInfoObj->removeSharedMemoryFdPairs(sessionId, dupFd);
+         if (inputFd != -1)
+             return inputFd;
+    }
+    return inputFd;
 }
 
 void AgmServerWrapper::connectSessionAif(uint32_t sessionId, uint32_t aifId, bool state) {
@@ -668,7 +674,7 @@ AgmServerWrapper::AgmServerWrapper() {
     agmLegacyBuffer.alloc_info.alloc_size = in_buff.externalAllocInfo.allocatedSize;
     agmLegacyBuffer.alloc_info.offset = in_buff.externalAllocInfo.offset;
 
-    if (bufSize) memcpy(agmLegacyBuffer.addr, in_buff.buffer.data(), bufSize);
+    if (bufSize && agmLegacyBuffer.addr) memcpy(agmLegacyBuffer.addr, in_buff.buffer.data(), bufSize);
 
     size_t consumed_size = 0;
     int32_t ret = agm_session_write_with_metadata(in_handle, &agmLegacyBuffer, &consumed_size);

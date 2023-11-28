@@ -574,7 +574,7 @@ int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buf, size_
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    auto aidlBuffer = LegacyToAidl::convertAgmBufferToAidl(buf, true);
+    auto aidlBuffer = LegacyToAidl::convertAgmBufferToAidl(buf, true, false);
     int32_t written = 0;
     auto status = client->ipc_agm_session_write_with_metadata(handle, aidlBuffer, &written);
     if (status.isOk()) {
