@@ -38,7 +38,6 @@
 #include <agm/device.h>
 #include <agm/session_obj.h>
 #include <agm/utils.h>
-#include "ats.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -47,6 +46,11 @@
 #include "gsl_shmem_mgr.h"
 
 #include "ar_osal_sys_id.h"
+
+#ifdef BYPASS_ATS_INIT
+#else
+#include "ats.h"
+#endif
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -165,7 +169,11 @@ int agm_deinit()
     //close all sessions first
     if (agm_initialized) {
         AGM_LOGD("Deinitializing ATS...");
+#ifdef BYPASS_ATS_INIT
+        AGM_LOGD("ATS deinit skipped for Automotive Hypervisor");
+#else
         ats_deinit();
+#endif
         session_obj_deinit();
         agm_initialized = 0;
     }
