@@ -35,19 +35,23 @@
 **/
 
 #define LOG_TAG "PLUGIN: AGMIO"
+#define DUMP_OPEN 0
 #include <stdio.h>
 #include <sys/poll.h>
-
 #include <sys/eventfd.h>
 #include <alsa/asoundlib.h>
 #include <alsa/pcm_external.h>
-
 #include <agm/agm_api.h>
 #include <agm/agm_list.h>
 #include <snd-card-def.h>
 #include "utils.h"
+#if DUMP_OPEN
+#include <alsa/pcm.h>
+#endif
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
+#define DUMP_BUFFER 1024
+static char* dump_file_name;
 
 enum {
     AGM_IO_STATE_XRUN = -1,
@@ -137,7 +141,6 @@ static int agm_get_session_handle(struct agmio_priv *priv,
     *handle = priv->handle;
     if (!*handle)
         return -EINVAL;
-
     return 0;
 }
 
@@ -146,7 +149,8 @@ static int agm_io_start(snd_pcm_ioplug_t * io)
     struct agmio_priv *pcm = io->private_data;
     uint64_t handle;
     int ret;
-
+    if(DUMP_OPEN)
+        dump_file_name = malloc(DUMP_BUFFER);
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
@@ -184,7 +188,8 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
     if (ret)
         return ret;
     ret = agm_session_stop(handle);
-
+    if(DUMP_OPEN)
+        free(dump_file_name);
     AGM_LOGD("%s: exit\n", __func__);
     return ret;
 }
@@ -267,6 +272,22 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
             AGM_LOGE("XRUN happen! reqested size %d, actual filled size %d", size * pcm->frame_size, count);
             agm_io_xrun(io);
             ret = -EPIPE;
+        }
+    }
+
+    //write into file
+    if (DUMP_OPEN) {
+        snprintf(dump_file_name,100,"/data/test_session_id_%d_device_%d_rate_%d",pcm->session_id, pcm->device, pcm->media_config->rate);
+        AGM_LOGE("%s: dump_file_name = %s \n", __func__, dump_file_name);
+        FILE *fp = fopen(dump_file_name, "a+");
+        if (fp) {
+            int fwrite_len = fwrite((char *)buf, 1, count, fp);
+            if(!fwrite_len){
+                AGM_LOGE("%s: dump data write size is 0!!!\n", __func__);
+            }
+            fclose(fp);
+        }else {
+            AGM_LOGE("%s: open fail \n", __func__);
         }
     }
 
@@ -446,7 +467,6 @@ static int agm_io_pause(snd_pcm_ioplug_t * io, int enable)
      AGM_LOGD("%s: exit\n", __func__);
      return ret;
 }
-
 static int agm_io_poll_desc_count(snd_pcm_ioplug_t *io) {
     (void)io;
     /* TODO : Needed for ULL usecases */

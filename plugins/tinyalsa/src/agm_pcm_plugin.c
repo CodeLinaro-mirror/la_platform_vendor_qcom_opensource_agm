@@ -562,6 +562,39 @@ static int agm_pcm_drop(struct pcm_plugin *plugin)
     return ret;
 }
 
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *arg)
+{
+    int ret;
+    uint64_t handle;
+    struct agm_pcm_priv *priv = plugin->priv;
+
+    ret = agm_get_session_handle(priv, &handle);
+    if (ret)
+        return ret;
+
+    switch (cmd) {
+        //! Short-term solution now.
+        //! Will support drain by struct pcm_plugin_ops::drain() once upstream tinyalsa is integrated.
+        case SNDRV_PCM_IOCTL_DRAIN:
+            pthread_mutex_lock(&priv->eos_lock);
+            ret = agm_session_eos(handle);
+            if (ret) {
+                AGM_LOGE("EOS fail");
+                pthread_mutex_unlock(&priv->eos_lock);
+                return ret;
+            }
+            priv->eos = true;
+            pthread_mutex_unlock(&priv->eos_lock);
+            break;
+        default:
+            break;
+    }
+
+    AGM_LOGD("exit");
+
+    return 0;
+}
+
 static int agm_pcm_close(struct pcm_plugin *plugin)
 {
     struct agm_pcm_priv *priv = plugin->priv;
@@ -802,6 +835,7 @@ struct pcm_plugin_ops agm_pcm_ops = {
     .prepare = agm_pcm_prepare,
     .start = agm_pcm_start,
     .drop = agm_pcm_drop,
+    .ioctl = agm_pcm_ioctl,
     .mmap = agm_pcm_mmap,
     .munmap = agm_pcm_munmap,
     .poll = agm_pcm_poll,
