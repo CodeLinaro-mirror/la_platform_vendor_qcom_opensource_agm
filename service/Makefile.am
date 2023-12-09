@@ -39,7 +39,7 @@ if TARGET_HYPERVISOR
     libagm_la_LIBADD += -lgsl_fe
     libagm_la_CFLAGS += -DBYPASS_ATS_INIT
 else
-    libagm_la_LIBADD += -lar_gsl
+    libagm_la_LIBADD += -lar_gsl -lats
 endif
 
 if ALSALIB_SUPPORT
