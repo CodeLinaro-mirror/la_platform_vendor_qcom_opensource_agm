@@ -263,7 +263,7 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count)
 
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
-        if(handle == NULL)
+        if(!handle)
            return -EINVAL;
 
         return agm_client->ipc_agm_session_read(handle, buf, byte_count);
@@ -277,7 +277,7 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count)
 
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
-        if(handle == NULL)
+        if(!handle)
            return -EINVAL;
 
         return agm_client->ipc_agm_session_write(handle, buf, byte_count);

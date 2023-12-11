@@ -17,8 +17,6 @@ AC_CONFIG_HEADERS([config.h])
 # defines some macros variable to be included by source
 AC_CONFIG_MACRO_DIR([m4])
 
-PKG_CHECK_MODULES([AGMSERVER], [agmserver])
-AC_SUBST([AGMSERVER_CFLAGS])
 
 # Checks for programs.
 AC_PROG_CC
