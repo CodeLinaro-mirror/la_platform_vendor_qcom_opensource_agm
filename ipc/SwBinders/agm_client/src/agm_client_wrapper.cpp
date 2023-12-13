@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -68,9 +68,14 @@
 #include <binder/IBinder.h>
 #include <log/log.h>
 #include <utils/Log.h>
+#ifdef FEATURE_IPQ_OPENWRT
+#include <ipc_interface.h>
+#include <agm_death_notifier.h>
+#else
 #include <qti-agm-service/ipc_interface.h>
-#include <agm/agm_api.h>
 #include <qti-agm-service/agm_death_notifier.h>
+#endif
+#include <agm/agm_api.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
