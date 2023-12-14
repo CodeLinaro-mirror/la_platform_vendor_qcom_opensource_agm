@@ -74,7 +74,7 @@
 #define AGM_SESSION_IFACE "org.Qti.Agm.Session"
 #define AGM_DBUS_CONNECTION "org.Qti.AgmService"
 #define AGM_MAX_G_OBJ_PATH 128
-#define AGM_DBUS_ASYNC_CALL_TIMEOUT_MS 1000
+#define AGM_DBUS_ASYNC_CALL_TIMEOUT_MS 1200
 
 typedef struct {
     GDBusConnection *conn;
@@ -282,6 +282,10 @@ static void on_emit_ses_signal_callback(GDBusConnection *conn,
                     AGM_LOGE("Insufficient bytes size to copy bytes read\n");
                 }
             }
+            else {
+                AGM_LOGE("%s: Read buffer size is zero \n", __func__);
+                ses_data->buf_size = 0;
+            }
             g_variant_unref(array_v);
         }
     }
@@ -295,6 +299,23 @@ exit:
     return;
 }
 
+static void free_callbacks(agm_client_session_data *ses_data) {
+    GList *node;
+    agm_callback_data *cb_data;
+    g_assert(mdata != NULL);
+
+    for (node = ses_data->callbacks; node != NULL; node = node->next) {
+        if (node->data != NULL) {
+            cb_data = (agm_callback_data *)node->data;
+            g_dbus_connection_signal_unsubscribe(mdata->conn,
+                                              cb_data->sub_id_callback_event);
+            free(node->data);
+            node->data = NULL;
+        }
+    }
+
+    g_list_free(ses_data->callbacks);
+}
 
 static int subscribe_ses_callback_event(agm_client_session_data *ses_data,
                                     bool subscribe) {
@@ -1913,7 +1934,10 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
         g_cond_wait_until(&ses_data->cond, &ses_data->mutex, end_time);
         if (g_get_monotonic_time() >= end_time){
             AGM_LOGE("%s: -ETIMEDOUT %d\n", __func__, g_get_monotonic_time());
-            break;
+            ses_data->signal = false;
+            g_mutex_unlock(&ses_data->mutex);
+            g_variant_unref(result);
+            return -EINVAL;
         }
     }
 
@@ -1922,6 +1946,11 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
 
     g_mutex_unlock(&ses_data->mutex);
     g_variant_unref(result);
+
+    if (*byte_count == 0) {
+        AGM_LOGE("%s: Not able to read data \n", __func__);
+        return -EINVAL;
+    }
     return 0;
 }
 
@@ -2089,6 +2118,11 @@ int agm_session_close(uint64_t handle) {
         g_error_free(error);
         return -EINVAL;
     }
+
+    if (ses_data->data_mode == AGM_DATA_NON_BLOCKING)
+    {
+        free_callbacks(ses_data);
+	}
 
     if (ses_data->thread_loop) {
         AGM_LOGE("%s:Quitting loop", __func__);
