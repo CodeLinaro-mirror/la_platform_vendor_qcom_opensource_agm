@@ -144,7 +144,7 @@ class ClientInfo : public ISessionOps {
 class AgmServerWrapper : public BnAGM, public ISessionOps {
   public:
     explicit AgmServerWrapper();
-    virtual ~AgmServerWrapper() {}
+    virtual ~AgmServerWrapper();
     bool isInitialized() { return mInitialized; }
 
     ::ndk::ScopedAStatus ipc_agm_init() override;
