@@ -109,6 +109,10 @@ LOCAL_CFLAGS += -DSND_COMPRESS_DEC_HDR
 endif
 endif
 
+ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), gen4_au)
+     LOCAL_CFLAGS := -DSND_COMPRESS_DEC_HDR
+endif
+
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
