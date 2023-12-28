@@ -28,7 +28,7 @@
 **/
 
 /* Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -44,6 +44,10 @@
 #include <agm/agm_api.h>
 #include "agmmixer.h"
 #include <unistd.h>
+#ifdef AR_EARLY_CHIME
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 #include <fcntl.h>
 #ifdef PLATFORM_MSMNILE_AU
 #include <cutils/properties.h>
@@ -106,6 +110,25 @@ static void place_marker(char const *name)
    }
 }
 
+#ifdef AR_EARLY_CHIME
+int read_file()
+{
+   int num;
+   FILE *fptr;
+
+   if ((fptr = fopen("/vendor_early_services/hostless.txt","r")) == NULL){
+
+       // Program exits if the file pointer returns NULL.
+      return 0;
+   }
+
+   fscanf(fptr,"%d", &num);
+
+   fclose(fptr);
+      return num;
+}
+#endif
+
 static int32_t audio_ar_wait_hostless(void)
 {
     char hostless_state[PROPERTY_VALUE_MAX];
@@ -116,6 +139,13 @@ static int32_t audio_ar_wait_hostless(void)
         } else {
             usleep(HOSTLESS_INIT_SLEEP_WAIT*1000);
         }
+#ifdef AR_EARLY_CHIME
+        if (read_file() == 1) {
+            break;
+        } else {
+            usleep(HOSTLESS_INIT_SLEEP_WAIT*1000);
+        }
+#endif
     }
     return 0;
 }
@@ -221,15 +251,20 @@ int main(int argc, char **argv)
             argv++;
     }
 
-#ifdef PLATFORM_MSMNILE_AU
-    audio_ar_wait_hostless();
-#endif
     printf("Stream Rx = 0x%X, Stream PP = 0x%X, Instance = 0x%X, Device PP = 0x%X, Device RX = 0x%X\n", stream_x, stream_pp, instance, device_pp, device_x);
 
     if (intf_name == NULL)
         return 1;
 
-    ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
+#if defined(PLATFORM_MSMNILE_AU) || defined(AR_EARLY_CHIME)
+    audio_ar_wait_hostless();
+#endif
+#ifdef AR_EARLY_CHIME
+    if(!property_get_bool("vendor.audio.feature.mdf.enable", false))
+        ret = get_device_media_config(BACKEND_CONF_ES_FILE, intf_name, &config);
+    else
+#endif
+        ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
     if (ret) {
         printf("Invalid input, entry not found for : %s\n", intf_name);
         fclose(file);

@@ -73,6 +73,7 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     vendor.qti.hardware.AGMIPC@1.0-impl \
     libagm \
+    libselinux \
     libagmsocket_server
 
 LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
@@ -159,6 +160,7 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     vendor.qti.hardware.AGMIPC@1.0-impl \
     libagm \
+    libselinux \
     libagmsocket_server
 
 LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
