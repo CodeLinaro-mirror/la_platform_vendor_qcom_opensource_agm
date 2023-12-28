@@ -25,10 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -474,11 +474,21 @@ enum agm_event_id {
     */
 
     AGM_EVENT_WRITE_DONE = 0x2,
-   /**
+    /**
+     * Sent in non-blocking mode only, indicates that buffer has become
+     * available for client to write to
+     */
+    AGM_EVENT_BUFFER_AVAIL = 0x3,
+    /**
     * Indicates early EOS event
     */
 
     AGM_EVENT_EARLY_EOS = 0x08001126,
+    /**
+     * Sent in pull-push mode only, indicates that data in the circular buffer
+     * reaches watermark levels
+    */
+    AGM_EVENT_PULL_PUSH_MODE_WATERMARK = 0x0800101C,
 
     AGM_EVENT_ID_MAX
 };

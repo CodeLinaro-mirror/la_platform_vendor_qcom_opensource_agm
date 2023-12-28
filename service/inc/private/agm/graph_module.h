@@ -26,6 +26,12 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 #ifndef GPH_MODULE_H
 #define GPH_MODULE_H
 
@@ -49,6 +55,7 @@
 #include "spr_api.h"
 #include "gapless_api.h"
 #include "pcm_encoder_api.h"
+#include "sh_mem_pull_push_mode_api.h"
 
 /*
  *Internal enum to identify different modules
@@ -80,12 +87,14 @@ typedef enum module
     MODULE_STREAM_GAPLESS,
     MODULE_RD_SHARED_MEM,
     MODULE_STREAM_MFC,
+    MODULE_SHARED_MEM_PULL_MODE,
+    MODULE_SHARED_MEM_PUSH_MODE,
     /*
      *Ensure that whenever a new stream module is added it
      *is added in the end of stream module list and the end
      *is updated with the same entry.
      */
-    MODULE_STREAM_END = MODULE_STREAM_MFC,
+    MODULE_STREAM_END = MODULE_SHARED_MEM_PUSH_MODE,
     MODULE_DEVICE_START = 0,
     MODULE_HW_EP_RX = MODULE_DEVICE_START,
     MODULE_HW_EP_TX,
