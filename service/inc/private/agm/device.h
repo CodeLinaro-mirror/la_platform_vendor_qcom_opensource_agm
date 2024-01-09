@@ -199,8 +199,9 @@ int device_group_set_media_config(struct device_group_data *grp_data,
           struct agm_group_media_config *device_media_config);
 int device_get_group_data(uint32_t group_id , struct device_group_data **grp_data);
 int device_get_group_list(struct aif_info *aif_list, size_t *num_groups);
-
 int device_get_start_refcnt(struct device_obj *dev_obj);
+
 bool get_file_path_extn(char* file_path_extn);
+int get_pcm_bits_per_sample(enum agm_media_format fmt_id);
 bool support_chipset_tkv(void);
 #endif

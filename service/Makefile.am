@@ -33,13 +33,13 @@ libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_DELTA_FILE_PATH="/data"
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -fcommon
 libagm_la_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libagm_la_LDFLAGS = -module -shared -avoid-version
-libagm_la_LIBADD = -lar_osal -lats
+libagm_la_LIBADD = -lar_osal
 
 if TARGET_HYPERVISOR
     libagm_la_LIBADD += -lgsl_fe
     libagm_la_CFLAGS += -DBYPASS_ATS_INIT
 else
-    libagm_la_LIBADD += -lar_gsl
+    libagm_la_LIBADD += -lar_gsl -lats
 endif
 
 if ALSALIB_SUPPORT
