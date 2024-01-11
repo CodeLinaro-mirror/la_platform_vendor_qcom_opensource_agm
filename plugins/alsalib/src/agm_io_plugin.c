@@ -77,7 +77,7 @@ struct agmio_priv {
     struct agm_session_config *session_config;
     unsigned int period_size;
     size_t frame_size;
-    unsigned int state;
+    int state;
     snd_pcm_uframes_t hw_pointer;
     snd_pcm_uframes_t boundary;
     int event_fd;
@@ -128,7 +128,7 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
     } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
         AGM_LOGD("%s: Early EOS event received \n", __func__);
     } else {
-        AGM_LOGE("%s: error: Invalid event params id: %d\n", __func__,
+        AGM_LOGE("%s: error: Invalid event params id: %u\n", __func__,
            event_params->event_id);
     }
 }
@@ -270,7 +270,7 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
     else {
         ret = agm_session_read(handle, buf, &count);
         if (io->appl_ptr != 0 && count != 0 && count < size * pcm->frame_size) {
-            AGM_LOGE("XRUN happen! reqested size %d, actual filled size %d", size * pcm->frame_size, count);
+            AGM_LOGE("XRUN happen! reqested size %lu, actual filled size %lu", size * pcm->frame_size, count);
             agm_io_xrun(io);
             ret = -EPIPE;
         }
@@ -278,7 +278,7 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
 
     //write into file
     if (DUMP_OPEN) {
-        snprintf(dump_file_name,100,"/data/test_session_id_%d_device_%d_rate_%d",pcm->session_id, pcm->device, pcm->media_config->rate);
+        snprintf(dump_file_name,100,"/data/test_session_id_%d_device_%d_rate_%u",pcm->session_id, pcm->device, pcm->media_config->rate);
         AGM_LOGE("%s: dump_file_name = %s \n", __func__, dump_file_name);
         FILE *fp = fopen(dump_file_name, "a+");
         if (fp) {
@@ -344,6 +344,9 @@ static enum agm_media_format alsa_to_agm_fmt(int fmt)
     case SND_PCM_FORMAT_S32_LE:
         agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
         break;
+    default:
+        AGM_LOGE("%s: Unsupport format\n", __func__);
+        break;
     }
 
     return agm_pcm_fmt;
@@ -374,7 +377,7 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
     buffer_config->count = io->buffer_size / io->period_size;
     if (io->buffer_size != io->period_size * buffer_config->count)
     {
-        AGM_LOGE("%s: buffer_size[%d] is not multiple times of period_size[%d]!\n", __func__, io->buffer_size, io->period_size);
+        AGM_LOGE("%s: buffer_size[%lu] is not multiple times of period_size[%lu]!\n", __func__, io->buffer_size, io->period_size);
         return -EINVAL;
     }
 

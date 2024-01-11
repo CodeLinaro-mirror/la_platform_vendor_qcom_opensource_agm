@@ -448,7 +448,7 @@ void *snd_card_def_get_card(unsigned int card)
     char filename[MAX_PATH];
     char card_def_file[MAX_PATH];
 
-    snprintf(filename, MAX_PATH, "/proc/asound/card%d/id", card);
+    snprintf(filename, MAX_PATH, "/proc/asound/card%u/id", card);
     if (access(filename, F_OK ) != -1 ) {
         file = fopen(filename, "r");
         if (!file) {
