@@ -2687,7 +2687,11 @@ static void ipc_agm_session_open(DBusConnection *conn,
 
     if (agm_session_open(session_id, (enum agm_session_mode) sess_mode, &ses_data->handle)) {
         if (is_allocated ==  true)
-            agm_free_session(ses_data);
+        {
+            AGM_LOGE("g_hash_table_remove called");
+            g_hash_table_remove(mdata->sessions,
+                        GUINT_TO_POINTER(ses_data->session_id));
+        }
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "agm_session_open failed.");
         return;

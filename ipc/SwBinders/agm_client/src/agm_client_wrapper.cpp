@@ -41,9 +41,14 @@
 #include <binder/IBinder.h>
 #include <log/log.h>
 #include <utils/Log.h>
+#ifdef FEATURE_IPQ_OPENWRT
+#include <ipc_interface.h>
+#include <agm_death_notifier.h>
+#else
 #include <qti-agm-service/ipc_interface.h>
-#include <agm/agm_api.h>
 #include <qti-agm-service/agm_death_notifier.h>
+#endif
+#include <agm/agm_api.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -263,7 +268,7 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count)
 
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
-        if(handle == NULL)
+        if(!handle)
            return -EINVAL;
 
         return agm_client->ipc_agm_session_read(handle, buf, byte_count);
@@ -277,7 +282,7 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count)
 
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
-        if(handle == NULL)
+        if(!handle)
            return -EINVAL;
 
         return agm_client->ipc_agm_session_write(handle, buf, byte_count);
