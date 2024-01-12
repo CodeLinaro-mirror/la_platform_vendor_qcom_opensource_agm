@@ -709,8 +709,11 @@ static snd_pcm_sframes_t agm_pcm_get_avail(struct pcm_plugin *plugin)
 {
     struct agm_pcm_priv *priv = plugin->priv;
     snd_pcm_sframes_t avail = 0;
+    enum direction dir;
 
-    if (plugin->mode & PCM_OUT) {
+    dir = (plugin->mode & PCM_IN) ? TX : RX;
+
+    if (dir == RX) {
         avail = priv->pos_buf->hw_ptr +
             priv->total_size_frames -
             priv->pos_buf->appl_ptr;
@@ -719,7 +722,7 @@ static snd_pcm_sframes_t agm_pcm_get_avail(struct pcm_plugin *plugin)
             avail += priv->pos_buf->boundary;
         else if ((snd_pcm_uframes_t)avail >= priv->pos_buf->boundary)
             avail -= priv->pos_buf->boundary;
-    } else if (plugin->mode & PCM_IN) {
+    } else if (dir == TX) {
         __builtin_sub_overflow(priv->pos_buf->hw_ptr, priv->pos_buf->appl_ptr, &avail);
         if (avail < 0)
             avail += priv->pos_buf->boundary;
@@ -858,21 +861,18 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
     return munmap(addr, length);
 }
 
-static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, ...)
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *args)
 {
+    //args parameter is not used but needed 
+    //to align with tinyalsa ioctl function declaration
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
     int ret = 0;
-    va_list ap;
-    void *arg;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
 
-    va_start(ap, cmd);
-    arg = va_arg(ap, void *);
-    va_end(ap);
 
     switch (cmd) {
     case SNDRV_PCM_IOCTL_RESET:
