@@ -28,7 +28,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -696,6 +696,11 @@ Return<void> AGM::ipc_agm_get_params_from_acdb_tunnel(
     size_t size_local;
     size_local = (size_t) size;
     hidl_vec<uint8_t> payload_hidl;
+
+    if (size > payload.size()) {
+        ALOGE("%s: Invalid param", __func__);
+        return Void();
+    }
     if (size_local) {
         payload_local = (uint8_t *) calloc (1, size_local);
         if (payload_local == NULL) {
@@ -1350,6 +1355,8 @@ Return<void> AGM::ipc_agm_session_get_buf_info(uint32_t session_id, uint32_t fla
 
     ALOGV("%s : session_id = %d\n", __func__, session_id);
 
+    memset(&buf_info, 0, sizeof(struct agm_buf_info));
+
     ret = agm_session_get_buf_info(session_id, &buf_info, flag);
     if (!ret) {
         if (flag & DATA_BUF) {
@@ -1647,18 +1654,26 @@ Return<int32_t> AGM::ipc_agm_session_write_datapath_params(uint32_t session_id,
     buf.addr = nullptr;
     buf.metadata = nullptr;
 
-    bufSize = buff_hidl.data()->size;
+    if (1 != buff_hidl.size()) {
+        ALOGE("%s: buff_hidl size is not equal to 1.", __func__);
+        goto exit;
+    }
+    bufSize = buff_hidl[0].size;
     buf.addr = (uint8_t *)calloc(1, bufSize);
     if (!buf.addr) {
         ALOGE("%s: failed to calloc", __func__);
         goto exit;
     }
+    if (bufSize != buff_hidl[0].buffer.size()) {
+        ALOGE("%s: Invalid buffer vector size", __func__);
+        goto exit;
+    }
     buf.size = (size_t)bufSize;
-    buf.timestamp = buff_hidl.data()->timestamp;
-    buf.flags = buff_hidl.data()->flags;
+    buf.timestamp = buff_hidl[0].timestamp;
+    buf.flags = buff_hidl[0].flags;
 
     if (bufSize)
-        memcpy(buf.addr, buff_hidl.data()->buffer.data(), bufSize);
+        memcpy(buf.addr, buff_hidl[0].buffer.data(), bufSize);
     else {
         ALOGE("%s: buf size is null", __func__);
         goto exit;

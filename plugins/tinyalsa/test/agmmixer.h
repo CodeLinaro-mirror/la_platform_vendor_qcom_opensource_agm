@@ -74,7 +74,7 @@ typedef enum {
 }slot_mask_t;
 
 int convert_char_to_hex(char *char_num);
-int get_pcm_bit_width(enum pcm_format fmt_id);
+int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id);
 int set_agm_device_media_config(struct mixer *mixer, char *intf_name, struct device_config *config);
 int set_agm_group_device_config(struct mixer *mixer, char *intf_name, struct group_config *config);
 int set_agm_group_mux_config(struct mixer *mixer, unsigned int device, struct group_config *config, char *intf_name, unsigned int channels);
