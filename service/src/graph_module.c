@@ -29,7 +29,7 @@
 /*
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1063,7 +1063,7 @@ int configure_hw_ep(struct module_info *mod,
     int ret = 0;
     struct device_obj *dev_obj = mod->dev_obj;
 
-    if(dev_obj->hw_ep_info.intf == PCM_RT_PROXY) {
+    if(dev_obj->hw_ep_info.intf == PCM_RT_PROXY || dev_obj->hw_ep_info.intf == PCM_DUMMY) {
         AGM_LOGD("no ep media config for %d\n",  dev_obj->hw_ep_info.intf);
     }
     else {
@@ -1098,6 +1098,9 @@ int configure_hw_ep(struct module_info *mod,
         break;
     case AUDIOSS_DMA:
         AGM_LOGD("no ep configuration for %u\n",  dev_obj->hw_ep_info.intf);
+        break;
+    case PCM_DUMMY:
+        AGM_LOGD("no ep configuration for %d\n",  dev_obj->hw_ep_info.intf);
         break;
     default:
          AGM_LOGE("hw intf %u not enabled yet", dev_obj->hw_ep_info.intf);
