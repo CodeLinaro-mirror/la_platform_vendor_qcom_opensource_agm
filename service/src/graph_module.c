@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022, 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -1311,6 +1311,7 @@ int configure_encoder_output_media_format(struct module_info *mod,
     size_t size_apm_module = sizeof(struct apm_module_param_data_t);
     size_t size_encoder_config =
         sizeof(struct param_id_encoder_output_config_t);
+    size_t size_encoder_etxtra = 0;
     size_t size_apm_and_encoder_config = size_apm_module + size_encoder_config;
     AGM_LOGV("Enter");
 
@@ -1345,6 +1346,7 @@ int configure_encoder_output_media_format(struct module_info *mod,
             memcpy(payload + size_apm_and_encoder_config,
                    &(sess_obj->stream_config.codec.aac_enc.enc_cfg),
                    size_aac_cfg);
+            size_encoder_etxtra = size_aac_cfg;
             break;
         }
 
@@ -1358,7 +1360,7 @@ int configure_encoder_output_media_format(struct module_info *mod,
     header->module_instance_id = mod->miid;
     header->param_id = PARAM_ID_ENCODER_OUTPUT_CONFIG;
     header->error_code = 0x0;
-    header->param_size = sizeof(struct param_id_encoder_output_config_t);
+    header->param_size = size_encoder_config + size_encoder_etxtra;
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
