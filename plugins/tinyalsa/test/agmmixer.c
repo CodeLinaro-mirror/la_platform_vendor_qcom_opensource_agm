@@ -1404,7 +1404,7 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
         index++;
     }
 
-    for (int i = 0; i < index + 1; i++) {
+    for (int i = 0; i < index; i++) {
         printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
