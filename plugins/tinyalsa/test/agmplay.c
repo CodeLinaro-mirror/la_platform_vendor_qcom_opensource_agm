@@ -27,7 +27,7 @@
 ** DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -70,9 +70,11 @@ struct chunk_fmt {
 
 static int close = 0;
 
-void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned int *device_kv,
-                 unsigned int stream_kv, unsigned int instance_kv, unsigned int *devicepp_kv,
-                 struct chunk_fmt fmt, bool haptics, char **intf_name, int intf_num, bool is_24_LE);
+void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned int usb_device,
+                 unsigned int channels, unsigned int rate, unsigned int bits,
+                 unsigned int *device_kv, unsigned int stream_kv, unsigned int instance_kv,
+                 unsigned int *devicepp_kv, struct chunk_fmt fmt, bool haptics, char **intf_name,
+                 int intf_num, bool is_24_LE);
 
 void stream_close(int sig)
 {
@@ -84,6 +86,7 @@ void stream_close(int sig)
 static void usage(void)
 {
     printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
+           " [-c channels] [-r rate] [-b bits]\n"
            " [-num_intf num of interfaces followed by interface name]\n"
            " [-i intf_name] : Can be multiple if num_intf is more than 1\n"
            " [-dkv device_kv] : Can be multiple if num_intf is more than 1\n"
@@ -91,6 +94,7 @@ static void usage(void)
            " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph\n"
            " [-skv stream_kv] [-h haptics usecase]\n"
            " [is_24_LE] : [0-1] Only to be used if user wants to play S24_LE clip\n"
+           " [-usb_d usb device]\n"
            " 0: If clip bps is 32, and format is S32_LE\n"
            " 1: If clip bps is 24, and format is S24_LE\n");
 }
@@ -102,6 +106,10 @@ int main(int argc, char **argv)
     struct chunk_header chunk_header;
     struct chunk_fmt chunk_fmt;
     unsigned int card = 100, device = 100, i=0;
+    unsigned int usb_device = 1;
+    unsigned int channels = 2;
+    unsigned int rate = 48000;
+    unsigned int bits = 16;
     int intf_num = 1;
     uint32_t dkv = SPEAKER;
     uint32_t dppkv = DEVICEPP_RX_AUDIO_MBDRC;
@@ -170,6 +178,18 @@ int main(int argc, char **argv)
             argv++;
             if (*argv)
                 device = atoi(*argv);
+        } else if (strcmp(*argv, "-c") == 0) {
+            argv++;
+            if (*argv)
+                channels = atoi(*argv);
+        } else if (strcmp(*argv, "-r") == 0) {
+            argv++;
+            if (*argv)
+                rate = atoi(*argv);
+        } else if (strcmp(*argv, "-b") == 0) {
+            argv++;
+            if (*argv)
+                bits = atoi(*argv);
         } else if (strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
@@ -235,6 +255,10 @@ int main(int argc, char **argv)
             if (*argv) {
                 is_24_LE = atoi(*argv);
             }
+        } else if (strcmp(*argv, "-usb_d") == 0) {
+            argv++;
+            if (*argv)
+                usb_device = atoi(*argv);
         } else if (strcmp(*argv, "-help") == 0) {
             usage();
         }
@@ -245,8 +269,8 @@ int main(int argc, char **argv)
     if (intf_name == NULL)
         return 1;
 
-    play_sample(file, card, device, device_kv, stream_kv, instance_kv, devicepp_kv,
-                 chunk_fmt, haptics, intf_name, intf_num, is_24_LE);
+    play_sample(file, card, device, usb_device, channels, rate, bits, device_kv, stream_kv,
+                 instance_kv, devicepp_kv, chunk_fmt, haptics, intf_name, intf_num, is_24_LE);
 
     fclose(file);
     if (device_kv)
@@ -259,9 +283,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned int *device_kv,
-                 unsigned int stream_kv, unsigned int instance_kv, unsigned int *devicepp_kv,
-                 struct chunk_fmt fmt, bool haptics, char **intf_name, int intf_num, bool is_24_LE)
+void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned int usb_device,
+                 unsigned int channels, unsigned int rate, unsigned int bits,
+                 unsigned int *device_kv, unsigned int stream_kv, unsigned int instance_kv,
+                 unsigned int *devicepp_kv, struct chunk_fmt fmt, bool haptics, char **intf_name,
+                 int intf_num, bool is_24_LE)
 {
     struct pcm_config config;
     struct pcm *pcm;
@@ -273,6 +299,9 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     struct group_config *grp_config = NULL;
     struct device_config *dev_config = NULL;
     uint32_t miid = 0;
+    struct usbAudioConfig cfg;
+    uint8_t* payload = NULL;
+    size_t payloadSize = 0;
 
     grp_config = (struct group_config *) malloc(intf_num * sizeof(struct group_config));
     if (!grp_config) {
@@ -319,17 +348,23 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     }
 
     for (index = 0; index < intf_num; index++) {
-        ret = get_device_media_config(BACKEND_CONF_FILE, intf_name[index], &dev_config[index]);
-        if (ret) {
-            printf("Invalid input, entry not found for : %s\n", intf_name[index]);
-            fclose(file);
-        }
-        if (dev_config[index].format != PCM_FORMAT_INVALID) {
-            printf("Valid format from backend_conf %d\n", dev_config[index].format);
-            /* Updating bitwitdh based on format to avoid mismatch between bitwidth
-             * and format, as device bw will be used to configure MFC.
-             */
-            dev_config[index].bits = get_pcm_bit_width(dev_config[index].format);
+        if(intf_name[index] != NULL && strcmp(intf_name[index], "USB_AUDIO-RX") == 0) {
+            dev_config[index].rate = rate;
+            dev_config[index].ch = channels;
+            dev_config[index].bits = bits;
+        } else {
+            ret = get_device_media_config(BACKEND_CONF_FILE, intf_name[index], &dev_config[index]);
+            if (ret) {
+                printf("Invalid input, entry not found for : %s\n", intf_name[index]);
+                fclose(file);
+            }
+            if (dev_config[index].format != PCM_FORMAT_INVALID) {
+                printf("Valid format from backend_conf %d\n", dev_config[index].format);
+                /* Updating bitwitdh based on format to avoid mismatch between bitwidth
+                 * and format, as device bw will be used to configure MFC.
+                 */
+                dev_config[index].bits = get_pcm_bit_width(dev_config[index].format);
+            }
         }
         printf("Backend %s rate ch bit fmt : %d, %d, %d %d\n", intf_name[index],
             dev_config[index].rate, dev_config[index].ch, dev_config[index].bits,
@@ -365,6 +400,27 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
                  goto err_close_mixer;
              }
          }
+
+        if (intf_name[index] != NULL && strcmp(intf_name[index], "USB_AUDIO-RX") == 0) {
+            ret = agm_mixer_get_miid (mixer, device, intf_name[index], STREAM_PCM, DEVICE_HW_ENDPOINT_RX, &miid);
+            if (ret == 0) {
+                cfg.usb_token = usb_device << 16;
+                cfg.svc_interval = 0;
+                get_agm_usb_audio_config_payload(&payload, &payloadSize, miid, &cfg);
+
+                if (payloadSize) {
+                    ret = set_agm_device_custom_payload(mixer, intf_name[index], payload, payloadSize);
+                } else {
+                    ret = -1;
+                    printf("set_agm_device_custom_payload failed\n");
+                    goto err_close_mixer;
+                }
+            } else {
+                printf("Failed to get miid for USB_AUDIO-TX\n");
+                goto err_close_mixer;
+            }
+
+        }
 
         /* connect pcm stream to audio intf */
         if (connect_agm_audio_intf_to_stream(mixer, device, intf_name[index], STREAM_PCM, true)) {
@@ -448,6 +504,9 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
 err_close_pcm:
     pcm_close(pcm);
 err_close_mixer:
+    if (payload) {
+      free(payload);
+    }
     if (dev_config)
         free(dev_config);
     if (grp_config)

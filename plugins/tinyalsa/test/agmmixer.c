@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -48,6 +48,8 @@
 
 #define PARAM_ID_DETECTION_ENGINE_GENERIC_EVENT_CFG 0x0800104E
 #define PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT            0x08001024
+
+#define PARAM_ID_USB_AUDIO_INTF_CFG 0x080010D6
 
 enum {
     DEVICE = 1,
@@ -83,6 +85,19 @@ struct apm_module_param_data_t
    uint32_t param_id;
    uint32_t param_size;
    uint32_t error_code;
+};
+
+struct param_id_usb_audio_intf_cfg_t
+{
+   uint32_t usb_token;
+   /**< @h2xmle_description {Valid token for the USB audio device} */
+   uint32_t svc_interval;
+   /**< @h2xmle_description {USB device service interval in microseconds. Though the acceptable
+         values are between 125- 3276800, the actual supported values are
+         determined by the equation specified in USB 3.0 documentation.}
+         @h2xmle_range      {125..3276800}
+         @h2xmle_default {125}
+   */
 };
 
 struct detection_engine_generic_event_cfg {
@@ -551,6 +566,75 @@ int set_agm_device_media_config(struct mixer *mixer, char *intf_name, struct dev
     ret = mixer_ctl_set_array(ctl, &media_config, sizeof(media_config)/sizeof(media_config[0]));
     free(mixer_str);
     return ret;
+}
+
+int set_agm_device_custom_payload(struct mixer *mixer, char *intf_name, void *payload, size_t size)
+{
+    char *control = "setParam";
+    char *mixer_str;
+    struct mixer_ctl *ctl;
+    long media_config[4];
+    int ctl_len = 0;
+    int ret = 0;
+
+    ctl_len = strlen(intf_name) + 1 + strlen(control) + 1;
+    mixer_str = calloc(1, ctl_len);
+    if (!mixer_str) {
+        printf("mixer_str calloc failed\n");
+        return -ENOMEM;
+    }
+    snprintf(mixer_str, ctl_len, "%s %s", intf_name, control);
+    ctl = mixer_get_ctl_by_name(mixer, mixer_str);
+    if (!ctl) {
+        printf("Invalid mixer control: %s\n", mixer_str);
+        free(mixer_str);
+        return ENOENT;
+    }
+
+    ret = mixer_ctl_set_array(ctl, payload, size);
+    free(mixer_str);
+    return ret;
+}
+
+void get_agm_usb_audio_config_payload(uint8_t** payload, size_t* size,
+    uint32_t miid, struct usbAudioConfig *data)
+{
+    struct apm_module_param_data_t* header;
+    struct param_id_usb_audio_intf_cfg_t *usbConfig;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0;
+
+    payloadSize = sizeof(struct apm_module_param_data_t) +
+       sizeof(struct param_id_usb_audio_intf_cfg_t);
+
+
+    if (payloadSize % 8 != 0)
+        payloadSize = payloadSize + (8 - payloadSize % 8);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize);
+    if (!payloadInfo) {
+        printf("payloadInfo new failed %s \n", strerror(errno));
+        return;
+    }
+
+    header = (struct apm_module_param_data_t*)payloadInfo;
+    usbConfig = (struct param_id_usb_audio_intf_cfg_t*)(payloadInfo +
+                sizeof(struct apm_module_param_data_t));
+    header->module_instance_id = miid;
+    header->param_id = PARAM_ID_USB_AUDIO_INTF_CFG;
+    header->error_code = 0x0;
+    header->param_size = payloadSize - sizeof(struct apm_module_param_data_t);
+    printf("header params \n IID:%x param_id:%x error_code:%d param_size:%d \n",
+                     header->module_instance_id, header->param_id,
+                     header->error_code, header->param_size);
+
+    usbConfig->usb_token = data->usb_token;
+    usbConfig->svc_interval = data->svc_interval;
+    printf("customPayload address %pK and size %zu \n", payloadInfo, payloadSize);
+
+    *size = payloadSize;
+    *payload = payloadInfo;
+
 }
 
 int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsigned int c_device)
