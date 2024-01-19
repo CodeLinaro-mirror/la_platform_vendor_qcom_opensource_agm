@@ -646,6 +646,8 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
 
     gkv_size = num_gkv * sizeof(struct agm_key_value);
     ckv_size = num_ckv * sizeof(struct agm_key_value);
+    ckv_size = 0;
+    num_ckv = 0;
     prop_size = sizeof(struct prop_data) + (num_props * sizeof(uint32_t));
 
     metadata = calloc(1, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
@@ -1037,7 +1039,7 @@ int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, in
 }
 
 int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
-     enum stream_type stype, unsigned int dev_channels)
+     enum stream_type stype, unsigned int dev_channels, unsigned int dpp_kv)
 {
     char *stream = "PCM";
     char *control = "metadata";
@@ -1050,6 +1052,13 @@ int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t va
     uint32_t gkv_size, ckv_size, prop_size, index = 0;
     int ctl_len = 0, ret = 0, offset = 0;
     char *type = "ZERO";
+
+    ret = set_agm_stream_metadata_type(mixer, device, type, stype);
+    if (ret)
+        return ret;
+
+    if (!dpp_kv)
+        num_gkv = 1;
 
     if (gInstance > 0)
         num_gkv += 1;
@@ -1085,8 +1094,10 @@ int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t va
         index++;
     }
 
-    gkv[index].key = DEVICEPP_TX;
-    gkv[index].value = gDevice_pp;
+    if (dpp_kv) {
+        gkv[index].key = DEVICEPP_TX;
+        gkv[index].value = gDevice_pp;
+    }
 
     for (int i = 0; i < index + 1; i++) {
         printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
@@ -1158,6 +1169,9 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     if (ret)
         return ret;
 
+    if (!dpp_kv)
+        num_gkv = 1;
+
     if (stype == STREAM_COMPRESS)
         stream = "COMPRESS";
 
@@ -1172,13 +1186,6 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             num_gkv = 2;
         else
             num_gkv = 3;
-    }
-
-    if (usecase == LOOPBACK) {
-        if (dpp_kv)
-            num_gkv = 2;
-        else
-            num_gkv = 1;
     }
 
     gkv_size = num_gkv * sizeof(struct agm_key_value);
@@ -1263,12 +1270,13 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             index++;
         }
 
-        if (usecase == PLAYBACK  && val != HAPTICS_PLAYBACK) {
+        if (usecase == PLAYBACK  && val != HAPTICS_PLAYBACK && dpp_kv) {
             gkv[index].key = DEVICEPP_RX;
-        } else if (val != HAPTICS_PLAYBACK) {
+            gkv[index].value = gDevice_pp;
+        } else if (val != HAPTICS_PLAYBACK && dpp_kv) {
             gkv[index].key = DEVICEPP_TX;
+            gkv[index].value = gDevice_pp;
         }
-        gkv[index].value = gDevice_pp;
     }
 
     for (int i = 0; i < index + 1; i++) {
@@ -1277,6 +1285,131 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
 
     index = 0;
     ckv[index].key = VOLUME;
+    ckv[index].value = LEVEL_0;
+
+    prop->prop_id = 0;  //Update prop_id here
+    prop->num_values = num_props;
+
+    memcpy(metadata, &num_gkv, sizeof(num_gkv));
+    offset += sizeof(num_gkv);
+    memcpy(metadata + offset, gkv, gkv_size);
+    offset += gkv_size;
+    memcpy(metadata + offset, &num_ckv, sizeof(num_ckv));
+
+    offset += sizeof(num_ckv);
+    memcpy(metadata + offset, ckv, ckv_size);
+    offset += ckv_size;
+    memcpy(metadata + offset, prop, prop_size);
+
+    ctl_len = strlen(stream) + 4 + strlen(control) + 1;
+    mixer_str = calloc(1, ctl_len);
+    if (!mixer_str) {
+        free(gkv);
+        free(ckv);
+        free(prop);
+        free(metadata);
+        return -ENOMEM;
+    }
+    snprintf(mixer_str, ctl_len, "%s%d %s", stream, device, control);
+
+    ctl = mixer_get_ctl_by_name(mixer, mixer_str);
+    if (!ctl) {
+        printf("Invalid mixer control: %s\n", mixer_str);
+        free(gkv);
+        free(ckv);
+        free(prop);
+        free(metadata);
+        free(mixer_str);
+        return ENOENT;
+    }
+
+    ret = mixer_ctl_set_array(ctl, metadata, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
+    free(gkv);
+    free(ckv);
+    free(prop);
+    free(metadata);
+    free(mixer_str);
+    return ret;
+}
+
+// ported from mobile
+int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val, enum usecase_type usecase,
+                                  enum stream_type stype, char *intf_name,
+                                  unsigned int devicepp_kv)
+{
+    char *stream = "PCM";
+    char *control = "metadata";
+    char *mixer_str;
+    struct mixer_ctl *ctl;
+    uint8_t *metadata = NULL;
+    struct agm_key_value *gkv = NULL, *ckv = NULL;
+    struct prop_data *prop = NULL;
+    uint32_t num_gkv = 2, num_ckv = 1, num_props = 0;
+    uint32_t gkv_size, ckv_size, prop_size, index = 0;
+    int ctl_len = 0, ret = 0, offset = 0;
+    char *type = intf_name;
+
+    ret = set_agm_stream_metadata_type(mixer, device, type, stype);
+    if (ret)
+        return ret;
+
+    if (stype == STREAM_COMPRESS)
+        stream = "COMPRESS";
+
+    gkv_size = num_gkv * sizeof(struct agm_key_value);
+    ckv_size = num_ckv * sizeof(struct agm_key_value);
+    prop_size = sizeof(struct prop_data) + (num_props * sizeof(uint32_t));
+
+    metadata = calloc(1, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
+    if (!metadata)
+        return -ENOMEM;
+
+    gkv = calloc(num_gkv, sizeof(struct agm_key_value));
+    ckv = calloc(num_ckv, sizeof(struct agm_key_value));
+    prop = calloc(1, prop_size);
+    if (!gkv || !ckv || !prop) {
+        if (ckv)
+            free(ckv);
+        if (gkv)
+            free(gkv);
+        if (prop)
+            free(prop);
+        free(metadata);
+        return -ENOMEM;
+    }
+    if (val == VOICE_UI) {
+        gkv[index].key = STREAMTX;
+        gkv[index].value = val;
+        index++;
+    } else if (usecase == PLAYBACK) {
+        gkv[index].key = STREAMRX;
+        gkv[index].value = val;
+        index++;
+    } else if (usecase == CAPTURE) {
+        gkv[index].key = STREAMTX;
+        gkv[index].value = val;
+        index++;
+    }
+    if (val == VOICE_UI) {
+        gkv[index].key = DEVICEPP_TX;
+        gkv[index].value = devicepp_kv;
+        index++;
+    } else if (usecase == PLAYBACK) {
+        gkv[index].key = DEVICEPP_RX;
+        gkv[index].value = devicepp_kv;
+        index++;
+    } else if (usecase == CAPTURE) {
+        gkv[index].key = DEVICEPP_TX;
+        gkv[index].value = devicepp_kv;
+        index++;
+    }
+
+    for (int i = 0; i < index; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
+    }
+
+    index = 0;
+    ckv[index].key = GAIN;
     ckv[index].value = LEVEL_0;
 
     prop->prop_id = 0;  //Update prop_id here

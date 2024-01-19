@@ -26,6 +26,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
 
@@ -38,6 +43,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include "gsl_intf.h"
+#ifdef AGM_HW_RSC_CFG_EN
+#include "gsl_hw_rsc_intf.h"
+#endif
 #include <agm/graph.h>
 #include <agm/graph_module.h>
 #include <agm/metadata.h>
@@ -338,7 +346,13 @@ int graph_init()
     }
     gsl_set_temp_path_to_acdb(strlen(delta_file_path) + 1, delta_file_path);
 #endif
-
+#ifdef AGM_HW_RSC_CFG_EN
+    ret = gsl_hw_rsc_init();
+    if (ret) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("gsl hw rsc init failed %d", ret);
+    }
+#endif
 err:
     return ret;
 }
@@ -1080,24 +1094,23 @@ int graph_get_config(struct graph_obj *graph_obj, void *payload,
     return ret;
 }
 
-int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload)
+int graph_get_avail_buffer_size(struct graph_obj *graph_obj, bool is_playback, uint32_t *bytes)
 {
+    int ret = 0;
+
     if (!graph_obj) {
         AGM_LOGE("graph object not set\n");
         return -EINVAL;
     }
 
-    pthread_mutex_lock(&graph_obj->lock);
-    int ret = gsl_get_available_frame_count(graph_obj->graph_handle, is_playback, payload);
+    ret = gsl_get_avail_buffer_size(graph_obj->graph_handle, is_playback, bytes);
     if (ret) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("gsl_get_available_frame_count failed with error %d\n", ret);
+        AGM_LOGE("gsl_get_avail_buffer_size failed with error %d\n", ret);
     }
-    pthread_mutex_unlock(&graph_obj->lock);
 
     return ret;
 }
-
 
 int graph_set_config_with_tag(struct graph_obj *graph_obj,
                               struct agm_key_vector_gsl *gkv,

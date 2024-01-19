@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -26,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "agm_server_wrapper"
@@ -35,13 +39,15 @@
 #include <pthread.h>
 #include "gsl_intf.h"
 #include <hwbinder/IPCThreadState.h>
-
+#ifdef AGM_HW_RSC_CFG_EN
+#include "gsl_hw_rsc_intf.h"
+#endif
 #define MAX_CACHE_SIZE 64
 #define NUM_GKV(x)                     (*((uint32_t *) x))
 
 using AgmCallbackData = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::clbk_data;
 using AgmServerCallback = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::SrvrClbk;
-
+using AgmHwConfigType = ::vendor::qti::hardware::AGMIPC::V1_0::AgmHwConfigType;
 static list_declare(client_list);
 static pthread_mutex_t client_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -414,7 +420,7 @@ void ipc_callback (uint32_t session_id,
         }
 
         // allocated during read_with_metadata()
-        if (rw_done_payload->buff.metadata)
+        if (rw_done_payload->buff.metadata && rw_done_payload->buff.metadata_size > 0)
             free(rw_done_payload->buff.metadata);
         if (allocHidlHandle)
             native_handle_delete(allocHidlHandle);
@@ -744,6 +750,18 @@ Return<int32_t> AGM::ipc_agm_session_register_for_events(uint32_t session_id,
     ALOGV("%s : session_id = %d\n", __func__, session_id);
     struct agm_event_reg_cfg *evt_reg_cfg_local;
     int32_t ret = 0;
+
+    if (evt_reg_cfg.size() != 1) {
+        ALOGE("%s evt_reg_cfg needs to be of size 1\n", __func__);
+        return -EINVAL;
+    }
+
+    if (evt_reg_cfg.data()->event_config_payload.size() !=
+        evt_reg_cfg.data()->event_config_payload_size) {
+        ALOGE("%s: event_config_payload_size value mismatch\n", __func__);
+        return -EINVAL;
+    }
+
     evt_reg_cfg_local = (struct agm_event_reg_cfg*)
               calloc(1,(sizeof(struct agm_event_reg_cfg) +
               (evt_reg_cfg.data()->event_config_payload_size)*sizeof(uint8_t)));
@@ -1344,7 +1362,7 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
                                                uint32_t captured_sz,
                                                ipc_agm_session_read_with_metadata_cb _hidl_cb)
 {
-    struct agm_buff buf;
+    struct agm_buff buf = {0};
     int32_t ret = 0;
     hidl_vec<AgmBuff> outBuff_hidl;
     uint32_t bufSize;
@@ -1461,18 +1479,26 @@ Return<int32_t> AGM::ipc_agm_session_write_datapath_params(uint32_t session_id,
     buf.addr = nullptr;
     buf.metadata = nullptr;
 
-    bufSize = buff_hidl.data()->size;
+    if (1 != buff_hidl.size()) {
+        ALOGE("%s: buff_hidl size is not equal to 1.", __func__);
+        goto exit;
+    }
+    bufSize = buff_hidl[0].size;
     buf.addr = (uint8_t *)calloc(1, bufSize);
     if (!buf.addr) {
         ALOGE("%s: failed to calloc", __func__);
         goto exit;
     }
+    if (bufSize != buff_hidl[0].buffer.size()) {
+        ALOGE("%s: Invalid buffer vector size", __func__);
+        goto exit;
+    }
     buf.size = (size_t)bufSize;
-    buf.timestamp = buff_hidl.data()->timestamp;
-    buf.flags = buff_hidl.data()->flags;
+    buf.timestamp = buff_hidl[0].timestamp;
+    buf.flags = buff_hidl[0].flags;
 
     if (bufSize)
-        memcpy(buf.addr, buff_hidl.data()->buffer.data(), bufSize);
+        memcpy(buf.addr, buff_hidl[0].buffer.data(), bufSize);
     else {
         ALOGE("%s: buf size is null", __func__);
         goto exit;
@@ -1536,7 +1562,54 @@ Return<void> AGM::ipc_agm_session_get_available_frame_count(uint32_t session_id,
     _hidl_cb(ret, frame_count);
     return Void();
 }
+#ifdef AGM_HW_RSC_CFG_EN
+Return<void>  AGM::ipc_agm_hw_rsc_config(AgmHwConfigType type,
+                                const hidl_vec<uint8_t>& cfg,
+                                uint32_t cfg_len, uint32_t out_len,
+                                ipc_agm_hw_rsc_config_cb _hidl_cb)
+{
+    int32_t ret = -EINVAL;
+    void *payload = nullptr;
+    void *outbuff = nullptr;
+    uint32_t out_len_l = out_len;
+    payload = calloc(1, cfg_len);
+    outbuff = calloc(1, out_len);
+    hidl_vec<uint8_t> outbuff_hidl;
+    outbuff_hidl.resize(out_len);
+    if (payload == nullptr || outbuff == nullptr) {
+        ALOGE("%s: Cannot allocate memory\n", __func__);
+        _hidl_cb(-ENOMEM, outbuff_hidl, out_len);
+        return Void();
+    }
+    memcpy(payload, cfg.data(), cfg_len);
+    if (type == AgmHwConfigType::REQ){
+        ret = gsl_request_hw_rsc_custom_config((uint8_t *)payload,
+                cfg_len, outbuff, &out_len_l);
+    } else if ( type == AgmHwConfigType::REL) {
+        ret = gsl_release_hw_rsc_custom_config((uint8_t *)payload,
+                cfg_len, outbuff, &out_len_l);
+    }
+    if (out_len_l)
+        memcpy(outbuff_hidl.data(), outbuff, out_len_l);
 
+    _hidl_cb(ret, outbuff_hidl, out_len_l);
+exit:
+    if (payload)
+        free(payload);
+    if (outbuff)
+        free(outbuff);
+
+    return Void();
+}
+#else
+Return<void>  AGM::ipc_agm_hw_rsc_config(AgmHwConfigType type,
+                                const hidl_vec<uint8_t>& cfg,
+                                uint32_t cfg_len, uint32_t out_len,
+                                ipc_agm_hw_rsc_config_cb _hidl_cb)
+{
+    return Void();
+}
+#endif
 }  // namespace implementation
 }  // namespace V1_0
 }  // namespace AGMIPC

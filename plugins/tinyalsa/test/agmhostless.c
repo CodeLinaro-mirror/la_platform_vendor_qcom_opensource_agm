@@ -210,6 +210,7 @@ int main(int argc, char **argv)
         printf("%u bits is not supported.\n", bits);
         return 1;
     }
+    signal(SIGINT, sigint_handler);
     play_loopback(card, p_device, c_device, num_channels, sample_rate, format, &capture_config, &play_config, period_size,
                   period_count, play_cap_time, c_intf_name, p_intf_name, p_device_kv,
                   c_device_kv, stream_kv, do_loopback, dpp_kv, isdirRx);

@@ -1761,19 +1761,36 @@ done:
 
 int session_obj_get_available_frame_count(struct session_obj *sess_obj, uint32_t *payload)
 {
+    int ret = 0;
+    uint32_t avail_buffer_size = 0;
+    struct agm_media_config *media_config = NULL;
+
     pthread_mutex_lock(&sess_obj->lock);
     if (sess_obj->state == SESSION_CLOSED) {
         AGM_LOGE("session with id %d is closed\n", sess_obj->sess_id);
-        pthread_mutex_unlock(&sess_obj->lock);
-        return -EPERM;
+        ret = -EINVAL;
+        goto done;
     }
 
-    int ret = graph_get_available_frame_count(sess_obj->graph, sess_obj->stream_config.dir == RX, payload);
+    ret = graph_get_avail_buffer_size(sess_obj->graph, sess_obj->stream_config.dir == RX,
+                                      &avail_buffer_size);
     if (ret)
-        AGM_LOGE("graph_get_available_frame_count failed with error %d, session id %d\n", ret, sess_obj->sess_id);
-    pthread_mutex_unlock(&sess_obj->lock);
+        AGM_LOGE("graph_get_avail_buffer_size failed with error %d, session id %d\n", ret,
+                 sess_obj->sess_id);
 
-    return ret;
+    if (sess_obj->stream_config.dir == RX)
+        media_config = &sess_obj->out_media_config;
+    else
+        media_config = &sess_obj->in_media_config;
+
+    uint32_t bytes_per_sample = get_pcm_bits_per_sample(media_config->format) / 8;
+
+    *payload = avail_buffer_size / media_config->channels / bytes_per_sample;
+
+done:
+   pthread_mutex_unlock(&sess_obj->lock);
+
+   return ret;
 }
 
 int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
@@ -2306,10 +2323,8 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue read in state:%d\n",
                            sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     buffer.timestamp = 0x0;
     buffer.flags = 0;
@@ -2322,6 +2337,7 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
@@ -2335,10 +2351,8 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
         AGM_LOGE("Cannot issue write in state:%d\n",
                             sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     buffer.timestamp = 0x0;
     buffer.flags = 0;
@@ -2351,6 +2365,7 @@ int session_obj_write(struct session_obj *sess_obj, void *buff, size_t *count)
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
@@ -2596,16 +2611,16 @@ int session_obj_write_with_metadata(struct session_obj *sess_obj,
         AGM_LOGE("Cannot issue write in state:%d\n",
                             sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
+
     ret = graph_write(sess_obj->graph, buffer, consumed_size);
     if (ret) {
         AGM_LOGE("Error:%d writing to graph\n", ret);
     }
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 
@@ -2619,10 +2634,8 @@ int session_obj_read_with_metadata(struct session_obj *sess_obj,
         AGM_LOGE("Cannot issue read in state:%d\n",
                            sess_obj->state);
         ret = -EINVAL;
-        pthread_mutex_unlock(&sess_obj->lock);
         goto done;
     }
-    pthread_mutex_unlock(&sess_obj->lock);
 
     size_t read_size;
     ret = graph_read(sess_obj->graph, buffer, &read_size);
@@ -2633,6 +2646,7 @@ int session_obj_read_with_metadata(struct session_obj *sess_obj,
     *captured_size = (uint32_t)read_size;
 
 done:
+    pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
 

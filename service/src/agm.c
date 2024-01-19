@@ -38,7 +38,6 @@
 #include <agm/device.h>
 #include <agm/session_obj.h>
 #include <agm/utils.h>
-#include "ats.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -47,6 +46,11 @@
 #include "gsl_shmem_mgr.h"
 
 #include "ar_osal_sys_id.h"
+
+#ifdef BYPASS_ATS_INIT
+#else
+#include "ats.h"
+#endif
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -102,10 +106,28 @@ static void *ats_init_thread(void *obj __unused)
     return NULL;
 }
 
+#ifdef PLATFORM_MSMNILE_AU
+static void place_marker(char const *name)
+{
+   int fd=open("/sys/kernel/boot_kpi/kpi_values", O_WRONLY);
+   if (fd > 0)
+   {
+       /* Only allow marker text shorter than MARKER_STRING_WIDTH */
+       char earlyapp[50] = {0};
+       strlcpy(earlyapp, name, sizeof(earlyapp));
+       write(fd, earlyapp, strlen(earlyapp));
+       close(fd);
+   }
+}
+#endif
+
 int agm_init()
 {
     int ret = 0;
 
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - AGM init");
+#endif
     if (agm_initialized)
         goto exit;
 
@@ -134,6 +156,10 @@ int agm_init()
     }
     agm_initialized = 1;
 
+#ifdef PLATFORM_MSMNILE_AU
+    place_marker("M - AGM init Done");
+#endif
+
 exit:
     return ret;
 }
@@ -143,7 +169,11 @@ int agm_deinit()
     //close all sessions first
     if (agm_initialized) {
         AGM_LOGD("Deinitializing ATS...");
+#ifdef BYPASS_ATS_INIT
+        AGM_LOGD("ATS deinit skipped for Automotive Hypervisor");
+#else
         ats_deinit();
+#endif
         session_obj_deinit();
         agm_initialized = 0;
     }

@@ -253,6 +253,7 @@ int device_open(struct device_obj *dev_obj)
                           (get_pcm_bits_per_sample(media_config->format)/8));
     period_count = DEFAULT_PERIOD_COUNT;
 
+#ifndef BYPASS_ALSA_HW
     ret = snd_pcm_open(&pcm, pcm_name, stream, 0);
     if (ret < 0) {
         AGM_LOGE("%s: Unable to open PCM device %s", __func__, pcm_name);
@@ -279,6 +280,7 @@ int device_open(struct device_obj *dev_obj)
                  __func__, pcm_name, rate, channels, format);
         goto done;
     }
+#endif
 
     update_sysfs_fd(obj->pcm_id, DEVICE_ENABLE);
     obj->pcm = pcm;
@@ -355,6 +357,7 @@ int device_open(struct device_obj *dev_obj)
     config.stop_threshold = INT_MAX;
 
     pcm_flags = (obj->hw_ep_info.dir == AUDIO_OUTPUT) ? PCM_OUT : PCM_IN;
+#ifndef BYPASS_ALSA_HW
     pcm = pcm_open(obj->card_id, obj->pcm_id, pcm_flags,
                 &config);
     if (!pcm || !pcm_is_ready(pcm)) {
@@ -365,6 +368,7 @@ int device_open(struct device_obj *dev_obj)
         ret = -EIO;
         goto done;
     }
+#endif
     update_sysfs_fd(obj->pcm_id, DEVICE_ENABLE);
     obj->pcm = pcm;
     obj->state = DEV_OPENED;
@@ -404,10 +408,12 @@ int device_prepare(struct device_obj *dev_obj)
         pthread_mutex_unlock(&obj->lock);
         return ret;
     }
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
     ret = snd_pcm_prepare(obj->pcm);
 #else
     ret = pcm_prepare(obj->pcm);
+#endif
 #endif
     if (ret) {
         AGM_LOGE("PCM device %u prepare failed, ret = %d\n",
@@ -493,10 +499,12 @@ int device_stop(struct device_obj *dev_obj)
 
     obj->refcnt.start--;
     if (obj->refcnt.start == 0) {
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_drop(obj->pcm);
 #else
         ret = pcm_stop(obj->pcm);
+#endif
 #endif
         if (ret) {
             AGM_LOGE("PCM device %u stop failed, ret = %d\n",
@@ -540,10 +548,12 @@ int device_close(struct device_obj *dev_obj)
 
     if (--obj->refcnt.open == 0) {
         update_sysfs_fd(obj->pcm_id, DEVICE_DISABLE);
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_close(obj->pcm);
 #else
         ret = pcm_close(obj->pcm);
+#endif
 #endif
         if (ret) {
             AGM_LOGE("PCM device %u close failed, ret = %d\n",
@@ -1260,7 +1270,8 @@ bool get_file_path_extn(char* file_path_extn)
                     chipset_value = CHIPSET_6155;
                 } else if (strstr(snd_card_name,"8155")){
                     chipset_value = CHIPSET_8155;
-                } else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")){
+                } else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255") 
+                    || strstr(snd_card_name,"7255")){
                 } else {
                     AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s",snd_card_name);
                     snd_card_found = false;
@@ -1268,7 +1279,8 @@ bool get_file_path_extn(char* file_path_extn)
                 }
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
-            else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255")) {
+            else if (strstr(snd_card_name,"8295") || strstr(snd_card_name,"8255") 
+                || strstr(snd_card_name,"7255")) {
                 strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             }
             else if (strstr(snd_card_name,"8155")){

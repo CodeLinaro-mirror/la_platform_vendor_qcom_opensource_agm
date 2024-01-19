@@ -94,6 +94,9 @@ struct agm_pcm_priv {
     unsigned int period_size;
     snd_pcm_uframes_t total_size_frames;
     uint32_t mmap_buf_tout;
+    pthread_cond_t eos_cond;
+    pthread_mutex_t eos_lock;
+    bool eos;
 };
 
 struct pcm_plugin_hw_constraints agm_pcm_constrs = {
@@ -370,7 +373,7 @@ static int agm_pcm_hw_params(struct pcm_plugin *plugin,
     snd_card_def_get_int(plugin->node, "session_mode", &sess_mode);
     session_config->dir = (plugin->mode & PCM_IN) ? TX : RX;
     session_config->sess_mode = sess_mode;
-    AGM_LOGD("%s: mode: %d\n", __func__, plugin->mode);
+    AGM_LOGD("mode: %d", plugin->mode);
     if ((plugin->mode & PCM_MMAP) && (plugin->mode & PCM_NOIRQ))
         session_config->data_mode = AGM_DATA_PUSH_PULL;
 
@@ -538,18 +541,58 @@ static int agm_pcm_start(struct pcm_plugin *plugin)
 
 static int agm_pcm_drop(struct pcm_plugin *plugin)
 {
+    int ret;
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
+
+    pthread_mutex_lock(&priv->eos_lock);
+    if (priv->eos) {
+        pthread_cond_wait(&priv->eos_cond, &priv->eos_lock);
+    }
+    pthread_mutex_unlock(&priv->eos_lock);
+
+    ret = agm_get_session_handle(priv, &handle);
+    if (ret)
+        return ret;
+    ret = agm_session_stop(handle);
+    errno = ret;
+
+    AGM_LOGD("exit");
+
+    return ret;
+}
+
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *arg)
+{
     int ret;
+    uint64_t handle;
+    struct agm_pcm_priv *priv = plugin->priv;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
 
-    ret = agm_session_stop(handle);
-    errno = ret;
+    switch (cmd) {
+        //! Short-term solution now.
+        //! Will support drain by struct pcm_plugin_ops::drain() once upstream tinyalsa is integrated.
+        case SNDRV_PCM_IOCTL_DRAIN:
+            pthread_mutex_lock(&priv->eos_lock);
+            ret = agm_session_eos(handle);
+            if (ret) {
+                AGM_LOGE("EOS fail");
+                pthread_mutex_unlock(&priv->eos_lock);
+                return ret;
+            }
+            priv->eos = true;
+            pthread_mutex_unlock(&priv->eos_lock);
+            break;
+        default:
+            break;
+    }
 
-    return ret;
+    AGM_LOGD("exit");
+
+    return 0;
 }
 
 static int agm_pcm_close(struct pcm_plugin *plugin)
@@ -561,7 +604,7 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
-
+    ret = agm_session_register_cb(priv->session_id, NULL, AGM_EVENT_DATA_PATH, (void*)priv);
     ret = agm_session_close(handle);
     errno = ret;
 
@@ -574,6 +617,7 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
             close(priv->buf_info->data_buf_fd);
         free(priv->buf_info);
     }
+    pthread_mutex_destroy(&priv->eos_lock);
     free(plugin->priv);
     free(plugin);
 
@@ -696,8 +740,7 @@ static void* agm_pcm_mmap(struct pcm_plugin *plugin, void *addr __unused, size_t
                 boundary *= 2;
 
             priv->pos_buf->boundary = boundary;
-            AGM_LOGE("%s: boundary: 0x%x, size_frames: 0x%lx\n",
-                    __func__, boundary, priv->total_size_frames);
+            AGM_LOGE("boundary: 0x%x, size_frames: 0x%lx", boundary, priv->total_size_frames);
         }
     }
 
@@ -724,6 +767,38 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
     return munmap(addr, length);
 }
 
+void agm_pcm_event_cb(uint32_t session_id __unused,
+                      struct agm_event_cb_params *event_params,
+                      void* client_data)
+{
+    struct agm_pcm_priv *priv = (struct agm_pcm_priv*)client_data;
+
+    if (!priv) {
+        AGM_LOGE("private data is NULL");
+        return;
+    }
+    if (!event_params) {
+        AGM_LOGE("event params is NULL");
+        return;
+    }
+
+    if (event_params->event_id == AGM_EVENT_WRITE_DONE) {
+    } else if (event_params->event_id == AGM_EVENT_READ_DONE) {
+    } else if (event_params->event_id == AGM_EVENT_EOS_RENDERED) {
+        AGM_LOGD("EOS event received");
+        pthread_mutex_lock(&priv->eos_lock);
+        if (priv->eos) {
+            pthread_cond_signal(&priv->eos_cond);
+            priv->eos = false;
+        }
+        pthread_mutex_unlock(&priv->eos_lock);
+    } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
+        AGM_LOGD("Early EOS event received");
+    } else {
+        AGM_LOGE("error: Invalid event params id: %d", event_params->event_id);
+    }
+}
+
 struct pcm_plugin_ops agm_pcm_ops = {
     .close = agm_pcm_close,
     .hw_params = agm_pcm_hw_params,
@@ -735,6 +810,7 @@ struct pcm_plugin_ops agm_pcm_ops = {
     .prepare = agm_pcm_prepare,
     .start = agm_pcm_start,
     .drop = agm_pcm_drop,
+    .ioctl = agm_pcm_ioctl,
     .mmap = agm_pcm_mmap,
     .munmap = agm_pcm_munmap,
     .poll = agm_pcm_poll,
@@ -821,8 +897,19 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     priv->handle = handle;
     *plugin = agm_pcm_plugin;
 
+    ret = agm_session_register_cb(session_id, agm_pcm_event_cb, AGM_EVENT_DATA_PATH, (void*)priv);
+    if (ret) {
+        AGM_LOGE("register event callback failure");
+        ret = -EINVAL;
+        goto err_session_close;
+    }
+
+    pthread_mutex_init(&priv->eos_lock, (const pthread_mutexattr_t*)NULL);
+
     return 0;
 
+err_session_close:
+    agm_session_close(handle);
 err_card_put:
     snd_card_def_put_card(card_node);
 err_session_free:

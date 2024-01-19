@@ -21,6 +21,10 @@ LOCAL_CFLAGS        += -D_GNU_SOURCE -DACDB_PATH=\"/vendor/etc/acdbdata\"
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/vendor/etc/acdbdata/delta"
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbdata/delta"
+LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+else ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), gen4_au)
+LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/vendor/etc/acdbdata/delta"
+LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbdata/delta"
 else
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
 endif
@@ -32,6 +36,7 @@ ifeq ($(ENABLE_HYP),true)
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
 else
 LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
 endif
 
 #if android version is R, use qtitinyalsa headers otherwise use upstream ones
@@ -65,7 +70,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
-LOCAL_CFLAGS += -DBYPASS_ATS_INIT
+LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif

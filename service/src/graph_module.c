@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -26,6 +25,12 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+/*
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "AGM: graph_module"
@@ -720,13 +725,13 @@ static int configure_tdm_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         if (ret == AR_EALREADY) {
-            AGM_LOGE("Getting AR_EALREADY, check if Custom_config is the same");
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
             memcpy(tdm_config_copy, tdm_config, sizeof(param_id_tdm_intf_cfg_t));
             gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_sz);
             if (gsl_ret == 0){
                 if(compare_tdm_custom_config(tdm_config_copy,tdm_config)){
                     ret = 0;
-                    AGM_LOGE("config is the same, bypass EALREADY");
+                    AGM_LOGI("config is the same, bypass EALREADY");
                     goto free_kvp;
                 }
             }
@@ -1004,14 +1009,14 @@ int configure_hw_ep_media_config(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         if (ret == AR_EALREADY) {
-            AGM_LOGE("Getting AR_EALREADY, check if Custom_config is the same");
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
             memcpy(hw_ep_media_conf_copy, hw_ep_media_conf, sizeof(param_id_hw_ep_mf_t));
-            AGM_LOGE("payload after set: %d", payload);
+            AGM_LOGI("payload after set: %d", payload);
             gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_size);
             if (gsl_ret == 0){
                 if(compare_hw_ep_media_config(hw_ep_media_conf_copy, hw_ep_media_conf)){
                     ret = 0;
-                    AGM_LOGE("config is the same, bypass EALREADY");
+                    AGM_LOGI("config is the same, bypass EALREADY");
                     goto free_payload_copy;
                 }
             }
@@ -1552,7 +1557,7 @@ int configure_placeholder_dec(struct module_info *mod,
 
     size_t payload_size = 0, real_fmt_id = 0;
     tkv.kvp =  NULL;
-    AGM_LOGE("enter");
+    AGM_LOGD("enter");
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object");
         goto done;
@@ -1601,7 +1606,7 @@ int configure_placeholder_dec(struct module_info *mod,
 done:
     if (tkv.kvp)
         free(tkv.kvp);
-    AGM_LOGE("exit, ret %d", ret);
+    AGM_LOGD("exit, ret %d", ret);
     return ret;
 }
 

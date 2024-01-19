@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center are provided under the following license:
+ *
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #pragma once
@@ -55,6 +60,7 @@ using AgmEventReadWriteDonePayload = ::vendor::qti::hardware::AGMIPC::V1_0::AgmE
 using android::hardware::hidl_handle;
 using android::hardware::hidl_memory;
 using AgmShmemInfo = ::vendor::qti::hardware::AGMIPC::V1_0::AgmShmemInfo;
+using AgmHwConfigType = ::vendor::qti::hardware::AGMIPC::V1_0::AgmHwConfigType;
 
 class server_death_notifier : public android::hardware::hidl_death_recipient
 {
