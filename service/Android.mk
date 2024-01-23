@@ -46,9 +46,7 @@ LOCAL_SHARED_LIBRARIES := \
     libaudioroute \
     libats
 
-#if android version is R, use qtitinyalsa lib otherwise use upstream ones
-#This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter R 11,$(PLATFORM_VERSION)),)
+ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
 LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
 LOCAL_SHARED_LIBRARIES += libtinyalsa
