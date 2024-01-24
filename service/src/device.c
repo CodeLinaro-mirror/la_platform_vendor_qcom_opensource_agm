@@ -61,9 +61,6 @@
 #include <log_utils.h>
 #endif
 
-#define TRUE 1
-#define FALSE 0
-
 #define DEVICE_ENABLE 1
 #define DEVICE_DISABLE 0
 
@@ -276,7 +273,7 @@ int device_open(struct device_obj *dev_obj)
 
     ret = snd_pcm_hw_params(pcm, hwparams);
     if (ret < 0) {
-        AGM_LOGE("%s unable to set hw params for %s, rate[%u], ch[%u], fmt[%u]",
+        AGM_LOGE("%s unable to set hw params for %s, rate[%u], ch[%u], fmt[%d]",
                  __func__, pcm_name, rate, channels, format);
         goto done;
     }
@@ -623,12 +620,12 @@ int device_get_group_list(struct aif_info *aif_list, size_t *num_groups)
 
 int device_get_obj(uint32_t device_idx, struct device_obj **dev_obj)
 {
-    int i = 0;
+    uint32_t i = 0;
     struct listnode *dev_node, *temp;
     struct device_obj *obj;
 
     if (device_idx > num_audio_intfs) {
-        AGM_LOGE("Invalid device_id %u, max_supported device id: %d\n",
+        AGM_LOGE("Invalid device_id %u, max_supported device id: %u\n",
                 device_idx, num_audio_intfs);
         return -EINVAL;
     }
@@ -645,12 +642,12 @@ int device_get_obj(uint32_t device_idx, struct device_obj **dev_obj)
 
 int device_get_group_data(uint32_t group_id , struct device_group_data **grp_data)
 {
-    int i = 0;
+    uint32_t i = 0;
     struct listnode *group_node, *temp;
     struct device_group_data *data;
 
     if (group_id >= num_group_devices) {
-        AGM_LOGE("Invalid group_id %u, max_supported device id: %d\n",
+        AGM_LOGE("Invalid group_id %u, max_supported device id: %u\n",
                 group_id, num_group_devices);
         return -EINVAL;
     }
@@ -723,7 +720,7 @@ int device_set_params(struct device_obj *dev_obj,
 
    dev_obj->params = calloc(1, size);
    if (!dev_obj->params) {
-       AGM_LOGE("No memory for dev params on dev_id:%d\n",
+       AGM_LOGE("No memory for dev params on dev_id:%u\n",
                                    dev_obj->pcm_id);
        ret = -EINVAL;
        goto done;
@@ -744,7 +741,8 @@ int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap)
     snd_ctl_elem_info_t *info;
     snd_ctl_elem_value_t *control;
     char *mixer_str = NULL;
-    int i, ctl_len = 0, ret = 0, card_id;
+    int ctl_len = 0, ret = 0, card_id;
+    uint32_t i;
     uint8_t *payload = NULL;
     char card[16];
     char *dev_name = NULL;
@@ -756,7 +754,7 @@ int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap)
             return -EINVAL;
         }
 
-        snprintf(card, 16, "hw:%u", card_id);
+        snprintf(card, 16, "hw:%d", card_id);
         if ((ret = snd_ctl_open(&mixer, card, 0)) < 0) {
             AGM_LOGE("Control device %s open error: %s", card, snd_strerror(ret));
             return ret;
@@ -938,7 +936,7 @@ done:
 int parse_snd_card(void)
 {
     char buffer[MAX_BUF_SIZE];
-    unsigned int count = 0, i = 0;
+    unsigned int count = 0;
     FILE *fp;
     int ret = 0;
     struct listnode *dev_node, *temp;
@@ -1034,7 +1032,7 @@ close_file:
 static int wait_for_snd_card_to_online()
 {
     int ret = 0;
-    uint32_t retries = MAX_RETRY;
+    int retries = MAX_RETRY;
     int fd = -1;
     char buf[2];
     snd_card_status_t card_status = SND_CARD_STATUS_NONE;
@@ -1043,7 +1041,7 @@ static int wait_for_snd_card_to_online()
     /* maximum wait period = (MAX_RETRY * RETRY_INTERVAL_US) micro-seconds */
     do {
         if ((fd = open(SNDCARD_PATH, O_RDWR)) < 0) {
-            AGM_LOGE(LOG_TAG, "Failed to open snd sysfs node, will retry for %d times ...", (retries - 1));
+            AGM_LOGE(LOG_TAG ": Failed to open snd sysfs node, will retry for %d times ...", (retries - 1));
         } else {
             memset(buf , 0 ,sizeof(buf));
             lseek(fd,0L,SEEK_SET);
@@ -1053,10 +1051,10 @@ static int wait_for_snd_card_to_online()
 
             buf[sizeof(buf) - 1] = '\0';
             card_status = SND_CARD_STATUS_NONE;
-            sscanf(buf , "%d", &card_status);
+            sscanf(buf , "%u", &card_status);
 
             if (card_status == SND_CARD_STATUS_ONLINE) {
-                AGM_LOGV(LOG_TAG, "snd sysfs node open successful");
+                AGM_LOGV(LOG_TAG ": snd sysfs node open successful");
                 break;
             }
         }
@@ -1065,7 +1063,7 @@ static int wait_for_snd_card_to_online()
     } while ( retries > 0);
 
     if (0 == retries) {
-        AGM_LOGE(LOG_TAG, "Failed to open snd sysfs node, exiting ... ");
+        AGM_LOGE(LOG_TAG ": Failed to open snd sysfs node, exiting ... ");
         ret = -EIO;
     }
 

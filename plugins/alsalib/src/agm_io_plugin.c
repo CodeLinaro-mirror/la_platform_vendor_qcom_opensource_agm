@@ -35,19 +35,24 @@
 **/
 
 #define LOG_TAG "PLUGIN: AGMIO"
+#define DUMP_OPEN 0
 #include <stdio.h>
 #include <sys/poll.h>
-
 #include <sys/eventfd.h>
 #include <alsa/asoundlib.h>
 #include <alsa/pcm_external.h>
-
+#include <alsa/pcm.h>
 #include <agm/agm_api.h>
 #include <agm/agm_list.h>
 #include <snd-card-def.h>
 #include "utils.h"
+#if DUMP_OPEN
+#include <alsa/pcm.h>
+#endif
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
+#define DUMP_BUFFER 1024
+static char* dump_file_name;
 
 enum {
     AGM_IO_STATE_XRUN = -1,
@@ -72,7 +77,7 @@ struct agmio_priv {
     struct agm_session_config *session_config;
     unsigned int period_size;
     size_t frame_size;
-    unsigned int state;
+    int state;
     snd_pcm_uframes_t hw_pointer;
     snd_pcm_uframes_t boundary;
     int event_fd;
@@ -123,7 +128,7 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
     } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
         AGM_LOGD("%s: Early EOS event received \n", __func__);
     } else {
-        AGM_LOGE("%s: error: Invalid event params id: %d\n", __func__,
+        AGM_LOGE("%s: error: Invalid event params id: %u\n", __func__,
            event_params->event_id);
     }
 }
@@ -137,7 +142,6 @@ static int agm_get_session_handle(struct agmio_priv *priv,
     *handle = priv->handle;
     if (!*handle)
         return -EINVAL;
-
     return 0;
 }
 
@@ -146,7 +150,8 @@ static int agm_io_start(snd_pcm_ioplug_t * io)
     struct agmio_priv *pcm = io->private_data;
     uint64_t handle;
     int ret;
-
+    if(DUMP_OPEN)
+        dump_file_name = malloc(DUMP_BUFFER);
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
@@ -184,7 +189,8 @@ static int agm_io_stop(snd_pcm_ioplug_t * io)
     if (ret)
         return ret;
     ret = agm_session_stop(handle);
-
+    if(DUMP_OPEN)
+        free(dump_file_name);
     AGM_LOGD("%s: exit\n", __func__);
     return ret;
 }
@@ -264,9 +270,25 @@ static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
     else {
         ret = agm_session_read(handle, buf, &count);
         if (io->appl_ptr != 0 && count != 0 && count < size * pcm->frame_size) {
-            AGM_LOGE("XRUN happen! reqested size %d, actual filled size %d", size * pcm->frame_size, count);
+            AGM_LOGE("XRUN happen! reqested size %lu, actual filled size %lu", size * pcm->frame_size, count);
             agm_io_xrun(io);
             ret = -EPIPE;
+        }
+    }
+
+    //write into file
+    if (DUMP_OPEN) {
+        snprintf(dump_file_name,100,"/data/test_session_id_%d_device_%d_rate_%u",pcm->session_id, pcm->device, pcm->media_config->rate);
+        AGM_LOGE("%s: dump_file_name = %s \n", __func__, dump_file_name);
+        FILE *fp = fopen(dump_file_name, "a+");
+        if (fp) {
+            int fwrite_len = fwrite((char *)buf, 1, count, fp);
+            if(!fwrite_len){
+                AGM_LOGE("%s: dump data write size is 0!!!\n", __func__);
+            }
+            fclose(fp);
+        }else {
+            AGM_LOGE("%s: open fail \n", __func__);
         }
     }
 
@@ -322,6 +344,9 @@ static enum agm_media_format alsa_to_agm_fmt(int fmt)
     case SND_PCM_FORMAT_S32_LE:
         agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
         break;
+    default:
+        AGM_LOGE("%s: Unsupport format\n", __func__);
+        break;
     }
 
     return agm_pcm_fmt;
@@ -352,7 +377,7 @@ static int agm_io_hw_params(snd_pcm_ioplug_t * io,
     buffer_config->count = io->buffer_size / io->period_size;
     if (io->buffer_size != io->period_size * buffer_config->count)
     {
-        AGM_LOGE("%s: buffer_size[%d] is not multiple times of period_size[%d]!\n", __func__, io->buffer_size, io->period_size);
+        AGM_LOGE("%s: buffer_size[%lu] is not multiple times of period_size[%lu]!\n", __func__, io->buffer_size, io->period_size);
         return -EINVAL;
     }
 
@@ -395,6 +420,7 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     snd_pcm_sw_params_get_start_threshold(params, &start_threshold);
     snd_pcm_sw_params_get_stop_threshold(params, &stop_threshold);
     snd_pcm_sw_params_get_boundary(params, &pcm->boundary);
+    snd_pcm_sw_params_set_tstamp_type((snd_pcm_t*)pcm, params, SND_PCM_TSTAMP_TYPE_MONOTONIC);
     session_config->start_threshold = (uint32_t)start_threshold;
     session_config->stop_threshold = (uint32_t)stop_threshold;
     ret = agm_session_set_config(pcm->handle, session_config,
@@ -446,7 +472,6 @@ static int agm_io_pause(snd_pcm_ioplug_t * io, int enable)
      AGM_LOGD("%s: exit\n", __func__);
      return ret;
 }
-
 static int agm_io_poll_desc_count(snd_pcm_ioplug_t *io) {
     (void)io;
     /* TODO : Needed for ULL usecases */
