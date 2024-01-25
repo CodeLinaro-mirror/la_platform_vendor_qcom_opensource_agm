@@ -185,7 +185,7 @@ struct agmctl_priv {
      * Unused for BE devs
      */
     void *get_param_payload;
-    int get_param_payload_size;
+    uint32_t get_param_payload_size;
 
     uint32_t total_ctl_cnt;
     struct agm_mixer_controls *controls;
@@ -211,6 +211,8 @@ static enum agm_media_format alsa_to_agm_fmt(int fmt)
     case SND_PCM_FORMAT_S32_LE:
         agm_pcm_fmt = AGM_FORMAT_PCM_S32_LE;
         break;
+    default:
+        AGM_LOGE("%s: unsupport format\n", __func__);
     }
 
     return agm_pcm_fmt;
@@ -218,7 +220,7 @@ static enum agm_media_format alsa_to_agm_fmt(int fmt)
 
 static int agmctl_pcm_get_control_value(struct agmctl_priv *agmctl, int pcm_idx)
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i < agmctl->pcm_count; i++) {
         if (agmctl->pcm_idx[i] == pcm_idx)
@@ -351,7 +353,7 @@ static int agmctl_pcm_event_put(struct agm_mixer_controls *control,
         ret = 0;
 
     if (ret)
-        AGM_LOGE("%s: set_event failed, err %d, session_id %u\n",
+        AGM_LOGE("%s: set_event failed, err %d, session_id %d\n",
                __func__, ret, pcm_idx);
     return ret;
 }
@@ -373,7 +375,7 @@ static int agmctl_pcm_calibration_put(struct agm_mixer_controls *control,
     be_idx = pcm_control - 1;
     ret = agm_session_aif_set_cal(pcm_idx, be_idx, cal_config);
     if (ret)
-        AGM_LOGE("%s: set_calbration failed, err %d, aif_id %u\n",
+        AGM_LOGE("%s: set_calbration failed, err %d, aif_id %d\n",
                __func__, ret, be_idx);
     return ret;
 }
@@ -546,8 +548,9 @@ static int agmctl_pcm_ecref_put(struct agm_mixer_controls *control,
 static int agmctl_pcm_control_put(struct agm_mixer_controls *control,
                                   unsigned int *item)
 {
-    int i, idx = control->pcm_be_id;
+    int idx = control->pcm_be_id;
     unsigned int val;
+    uint32_t i;
 
     val = *item;
     if (val > control->priv->aif_count) {
@@ -629,7 +632,7 @@ static int agmctl_be_media_config_put(struct agm_mixer_controls *control,
 
     ret = agm_aif_set_media_config(be_idx, &media_fmt);
     if (ret)
-        AGM_LOGE("%s: set_media_config failed, err %d, aif_id %u rate %u \
+        AGM_LOGE("%s: set_media_config failed, err %d, aif_id %d rate %u \
                  channels %u fmt %u, data_fmt %u\n",
                  __func__, ret, be_idx, media_fmt.rate, media_fmt.channels,
                  media_fmt.format, media_fmt.data_format);
@@ -752,6 +755,7 @@ static int amp_form_mixer_controls(struct agmctl_priv *agmctl, int *ctl_idx)
     int total_pcms, total_tx = 0, rx_idx = 0;
     int ret, val = 0, i;
     int ctl_per_pcm;
+    uint32_t cnt;
 
     /* Get both pcm and compressed node count */
     num_pcms = snd_card_def_get_num_node(agmctl->card_node,
@@ -759,7 +763,7 @@ static int amp_form_mixer_controls(struct agmctl_priv *agmctl, int *ctl_idx)
     num_compr = snd_card_def_get_num_node(agmctl->card_node,
                                           SND_NODE_TYPE_COMPR);
     if (num_pcms <= 0 && num_compr <= 0) {
-        AGM_LOGE("%s: no pcms(%d)/compr(%d) nodes found for card %u\n",
+        AGM_LOGE("%s: no pcms(%d)/compr(%d) nodes found for card %d\n",
                __func__, num_pcms, num_compr, agmctl->card);
         ret = -EINVAL;
         goto done;
@@ -871,8 +875,8 @@ static int amp_form_mixer_controls(struct agmctl_priv *agmctl, int *ctl_idx)
             agmctl_form_tx_controls(agmctl, pcm_node, ctl_idx);
     }
 
-    for (i = 0; i < agmctl->aif_count; i++) {
-        agmctl_form_be_controls(agmctl, i, ctl_idx);
+    for (cnt = 0; cnt < agmctl->aif_count; cnt++) {
+        agmctl_form_be_controls(agmctl, cnt, ctl_idx);
     }
 
 done:
@@ -979,7 +983,7 @@ static int agmctl_get_integer_info(snd_ctl_ext_t * ext,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
     return rc;
@@ -1008,7 +1012,7 @@ static int agmctl_get_enumerated_info(snd_ctl_ext_t *ext,
         *items = agmctl->rx_count + 1;
         break;
     default:
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         rc = -EINVAL;
         break;
     }
@@ -1057,7 +1061,7 @@ static int agmctl_get_enumerated_name(snd_ctl_ext_t *ext,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
 
@@ -1083,7 +1087,7 @@ static int agmctl_read_enumerated(snd_ctl_ext_t *ext,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
 
@@ -1115,7 +1119,7 @@ static int agmctl_write_enumerated(snd_ctl_ext_t *ext,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
 
@@ -1136,7 +1140,7 @@ static int agmctl_read_integer(snd_ctl_ext_t * ext, snd_ctl_ext_key_t key,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
     return rc;
@@ -1157,7 +1161,7 @@ static int agmctl_write_integer(snd_ctl_ext_t * ext, snd_ctl_ext_key_t key,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
     return rc;
@@ -1196,12 +1200,12 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
     if(rc == 0) {
         unsigned int numid = ((unsigned int *)tlv)[0];
-        if (numid == -1)
+        if (numid == 0xFFFFFFFF)
             ((unsigned int *)tlv)[0] = 0;
     }
     return rc;
@@ -1251,7 +1255,7 @@ static int agmctl_write_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         break;
     default:
         rc = -EINVAL;
-        AGM_LOGE("Unsupported control %d\n", agmctl->controls[key].ctl_id);
+        AGM_LOGE("Unsupported control %u\n", agmctl->controls[key].ctl_id);
         break;
     }
     return rc;
