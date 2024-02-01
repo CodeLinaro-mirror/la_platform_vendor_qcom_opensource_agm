@@ -191,7 +191,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_NON_BLOCKING)
             buf_config.attributes = GSL_DATA_MODE_NON_BLOCKING;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGE("Unsupported buffer mode : %u, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
         buf_config.shmem_ep_tag = RD_SHMEM_ENDPOINT;
@@ -258,7 +258,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_PUSH_PULL)
             buf_config.attributes = GSL_DATA_MODE_PUSH_PULL;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGE("Unsupported buffer mode : %u, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
 
@@ -335,7 +335,7 @@ int graph_init()
     ret = gsl_init(&init_data);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("gsl_init failed error %d \n", ret);
+        AGM_LOGE("gsl_init failed error %u \n", ret);
     }
 #ifdef ACDB_DELTA_FILE_PATH_WRITABLE
     delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH_WRITABLE);
@@ -506,7 +506,7 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
     size_t tag_module_info_size;
     struct gsl_tag_module_info_entry *gsl_tag_entry = NULL;
     struct agm_key_vector_gsl *gkv;
-    int i = 0;
+    uint32_t i = 0;
     size_t module_list_count =  0;
     module_info_t *mod, *temp_mod = NULL;
     module_info_link_list_t *mod_list = NULL;
@@ -793,7 +793,7 @@ int graph_prepare(struct graph_obj *graph_obj)
               (stream_config.dir == TX)) ||
             ((mod->tag == STREAM_PCM_ENCODER) &&
               (stream_config.dir == RX))) {
-            AGM_LOGE("Session cfg (dir = %d) does not match session module %x\n",
+            AGM_LOGE("Session cfg (dir = %u) does not match session module %x\n",
                       stream_config.dir, mod->module);
              ret = -EINVAL;
              goto done;
@@ -885,7 +885,7 @@ int graph_stop(struct graph_obj *graph_obj,
     pthread_mutex_lock(&graph_obj->lock);
     AGM_LOGD("entry graph_handle %p\n", graph_obj->graph_handle);
     if ((graph_obj->state & (CLOSED))) {
-       AGM_LOGE("graph object is not in correct state, current state %d\n",
+       AGM_LOGE("graph object is not in correct state, current state %u\n",
                     graph_obj->state);
        ret = -EINVAL;
        goto done;
@@ -1094,24 +1094,23 @@ int graph_get_config(struct graph_obj *graph_obj, void *payload,
     return ret;
 }
 
-int graph_get_available_frame_count(struct graph_obj *graph_obj, char is_playback, uint32_t *payload)
+int graph_get_avail_buffer_size(struct graph_obj *graph_obj, bool is_playback, uint32_t *bytes)
 {
+    int ret = 0;
+
     if (!graph_obj) {
         AGM_LOGE("graph object not set\n");
         return -EINVAL;
     }
 
-    pthread_mutex_lock(&graph_obj->lock);
-    int ret = gsl_get_available_frame_count(graph_obj->graph_handle, is_playback, payload);
+    ret = gsl_get_avail_buffer_size(graph_obj->graph_handle, is_playback, bytes);
     if (ret) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("gsl_get_available_frame_count failed with error %d\n", ret);
+        AGM_LOGE("gsl_get_avail_buffer_size failed with error %d\n", ret);
     }
-    pthread_mutex_unlock(&graph_obj->lock);
 
     return ret;
 }
-
 
 int graph_set_config_with_tag(struct graph_obj *graph_obj,
                               struct agm_key_vector_gsl *gkv,
@@ -1269,7 +1268,7 @@ int graph_add(struct graph_obj *graph_obj,
     AGM_LOGD("entry graph_handle %p\n", graph_obj->graph_handle);
 
     if (graph_obj->state < OPENED) {
-        AGM_LOGE("Cannot add a graph in %d state\n", graph_obj->state);
+        AGM_LOGE("Cannot add a graph in %u state\n", graph_obj->state);
         ret = -EINVAL;
         goto done;
     }
@@ -1768,7 +1767,7 @@ int graph_get_buffer_timestamp(struct graph_obj *graph_obj, uint64_t *tstamp)
 
     pthread_mutex_lock(&graph_obj->lock);
     if (!(graph_obj->state & (STARTED))) {
-       AGM_LOGE("graph object is not in correct state, current state %d",
+       AGM_LOGE("graph object is not in correct state, current state %u",
                     graph_obj->state);
        ret = -EINVAL;
        goto done;
@@ -1946,13 +1945,13 @@ int graph_set_gapless_metadata(struct graph_obj *graph_obj,
     } else if (type == TRAILING_SILENCE) {
        header->param_id = PARAM_ID_REMOVE_TRAILING_SILENCE;
     } else {
-        AGM_LOGE("Invalid gapless silence type %d", type);
+        AGM_LOGE("Invalid gapless silence type %u", type);
         goto error;
     }
     pid_is->samples_per_ch_to_remove = silence;
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret !=0)
-        AGM_LOGE("failed to set %d type silence with ret = %d", type, ret);
+        AGM_LOGE("failed to set %u type silence with ret = %d", type, ret);
 
 error:
     free(payload);
@@ -2011,7 +2010,7 @@ static bool is_media_config_needed_on_datapath(enum agm_media_format format)
         ret = true;
         break;
     default:
-        AGM_LOGE("Entered default, format %d", format);
+        AGM_LOGE("Entered default, format %u", format);
         break;
     }
     return ret;

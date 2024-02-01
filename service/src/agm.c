@@ -38,7 +38,6 @@
 #include <agm/device.h>
 #include <agm/session_obj.h>
 #include <agm/utils.h>
-#include "ats.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -47,6 +46,11 @@
 #include "gsl_shmem_mgr.h"
 
 #include "ar_osal_sys_id.h"
+
+#ifdef BYPASS_ATS_INIT
+#else
+#include "ats.h"
+#endif
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -165,7 +169,11 @@ int agm_deinit()
     //close all sessions first
     if (agm_initialized) {
         AGM_LOGD("Deinitializing ATS...");
+#ifdef BYPASS_ATS_INIT
+        AGM_LOGD("ATS deinit skipped for Automotive Hypervisor");
+#else
         ats_deinit();
+#endif
         session_obj_deinit();
         agm_initialized = 0;
     }
@@ -200,7 +208,7 @@ int agm_aif_set_metadata(uint32_t aif_id, uint32_t size, uint8_t *metadata)
 
     ret = device_get_obj(aif_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
+        AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%u\n",
                                          ret, aif_id);
         goto done;
     }
@@ -208,7 +216,7 @@ int agm_aif_set_metadata(uint32_t aif_id, uint32_t size, uint8_t *metadata)
     ret = device_set_metadata(obj, size, metadata);
     if (ret) {
         AGM_LOGE("Error:%d setting metadata device obj with"
-                                  "audio_intf id=%d\n", ret, aif_id);
+                                  "audio_intf id=%u\n", ret, aif_id);
         goto done;
     }
 
@@ -224,7 +232,7 @@ int agm_aif_set_media_config(uint32_t aif_id,
 
     ret = device_get_obj(aif_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%d\n",
+        AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%u\n",
                                                         ret, aif_id);
         goto done;
     }
@@ -232,7 +240,7 @@ int agm_aif_set_media_config(uint32_t aif_id,
     ret = device_set_media_config(obj, media_config);
     if (ret) {
         AGM_LOGE("Error:%d setting mediaconfig device obj \
-                              with audio_intf id=%d\n", ret, aif_id);
+                              with audio_intf id=%u\n", ret, aif_id);
         goto done;
     }
 
@@ -248,7 +256,7 @@ int agm_aif_group_set_media_config(uint32_t aif_group_id,
 
     ret = device_get_group_data(aif_group_id, &grp_data);
     if (ret) {
-        AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%d\n",
+        AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%u\n",
                                                         ret, aif_group_id);
         goto done;
     }
@@ -256,7 +264,7 @@ int agm_aif_group_set_media_config(uint32_t aif_group_id,
     ret = device_group_set_media_config(grp_data, media_config);
     if (ret) {
         AGM_LOGE("Error:%d setting mediaconfig for device group \
-                              with group id=%d\n", ret, aif_group_id);
+                              with group id=%u\n", ret, aif_group_id);
         goto done;
     }
 
@@ -273,7 +281,7 @@ int agm_session_set_metadata(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -281,7 +289,7 @@ int agm_session_set_metadata(uint32_t session_id,
     ret = session_obj_set_sess_metadata(obj, size, metadata);
     if (ret) {
         AGM_LOGE("Error:%d setting metadata for session obj with \
-                               session id=%d\n", ret, session_id);
+                               session id=%u\n", ret, session_id);
         goto done;
     }
 
@@ -299,7 +307,7 @@ int agm_session_aif_set_metadata(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -307,7 +315,7 @@ int agm_session_aif_set_metadata(uint32_t session_id,
     ret = session_obj_set_sess_aif_metadata(obj, aif_id, size, metadata);
     if (ret) {
         AGM_LOGE("Error:%d setting metadata for session obj \
-          with session id=%d, aif_id=%d\n", ret, session_id, aif_id);
+          with session id=%u, aif_id=%u\n", ret, session_id, aif_id);
         goto done;
     }
 
@@ -323,7 +331,7 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -331,7 +339,7 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id,
     ret = session_obj_get_tag_with_module_info(obj, aif_id, payload, size);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
-                      session id=%d, aif_id=%d\n",
+                      session id=%u, aif_id=%u\n",
                       ret, session_id, aif_id);
         goto done;
     }
@@ -349,7 +357,7 @@ int agm_session_aif_set_cal(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -357,7 +365,7 @@ int agm_session_aif_set_cal(uint32_t session_id,
     ret = session_obj_set_sess_aif_cal(obj, aif_id, cal_config);
     if (ret) {
         AGM_LOGE("Error:%d setting calibration for session obj \
-                   with session id=%d, aif_id=%d\n",
+                   with session id=%u, aif_id=%u\n",
                    ret, session_id, aif_id);
 goto done;
 }
@@ -375,14 +383,14 @@ int agm_aif_set_params(uint32_t aif_id,
 
     ret = device_get_obj(aif_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
+        AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%u\n",
                                          ret, aif_id);
         goto done;
     }
 
     ret = device_set_params(obj, payload, size);
     if (ret) {
-        AGM_LOGE("Error:%d set params for aif_id=%d\n",
+        AGM_LOGE("Error:%d set params for aif_id=%u\n",
                         ret, aif_id);
         goto done;
     }
@@ -401,14 +409,14 @@ int agm_session_aif_set_params(uint32_t session_id,
     ret = session_obj_get(session_id, &obj);
     if (ret) {
         AGM_LOGE("Error:%d retrieving session obj with \
-                        session id=%d\n", ret, session_id);
+                        session id=%u\n", ret, session_id);
         goto done;
     }
 
     ret = session_obj_set_sess_aif_params(obj, aif_id, payload, size);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
-                                          session id=%d, aif_id=%d\n",
+                                          session id=%u, aif_id=%u\n",
                                         ret, session_id, aif_id);
         goto done;
     }
@@ -425,7 +433,7 @@ int agm_session_get_params(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-            AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+            AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                     ret, session_id);
             goto done;
     }
@@ -433,7 +441,7 @@ int agm_session_get_params(uint32_t session_id,
     ret = session_obj_get_sess_params(obj, payload, size);
     if (ret) {
             AGM_LOGE("Error:%d getting parameters for session obj with"
-                         "session id=%d\n",ret, session_id);
+                         "session id=%u\n",ret, session_id);
             goto done;
     }
 
@@ -449,7 +457,7 @@ int agm_session_set_params(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -457,7 +465,7 @@ int agm_session_set_params(uint32_t session_id,
     ret = session_obj_set_sess_params(obj, payload, size);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
-                               session id=%d\n", ret, session_id);
+                               session id=%u\n", ret, session_id);
     goto done;
 }
 
@@ -471,13 +479,13 @@ int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload
     struct session_obj *obj = NULL;
     int ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("session_obj_get failed with error %d and session id %d\n", ret, session_id);
+        AGM_LOGE("session_obj_get failed with error %d and session id %u\n", ret, session_id);
         return ret;
     }
 
     ret = session_obj_get_available_frame_count(obj, payload);
     if (ret)
-        AGM_LOGE("session_obj_get_available_frame_count failed with error %d and session id %d\n", ret, session_id);
+        AGM_LOGE("session_obj_get_available_frame_count failed with error %d and session id %u\n", ret, session_id);
 
     return ret;
 
@@ -491,7 +499,7 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -499,7 +507,7 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
     ret = session_obj_set_sess_aif_params_with_tag(obj, aif_id, tag_config);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
-                           session id=%d\n", ret, session_id);
+                           session id=%u\n", ret, session_id);
         goto done;
     }
 
@@ -508,14 +516,14 @@ done:
 }
 
 int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
-                                       void *payload, size_t size)
+                                       void *payload, size_t size __attribute__((__unused__)))
 {
     struct session_obj *obj = NULL;
     int ret = 0;
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -524,7 +532,7 @@ int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
                 (struct agm_acdb_param *)payload, true);
     if (ret) {
         AGM_LOGE("Error:%d setting parameters for session obj with \
-                           session id=%d\n", ret, session_id);
+                           session id=%u\n", ret, session_id);
         goto done;
     }
 
@@ -540,7 +548,7 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -548,7 +556,7 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
     ret = session_obj_register_cb(obj, cb, evt_type, client_data);
     if (ret) {
         AGM_LOGE("Error:%d registering callback for session obj with \
-                               session id=%d\n", ret, session_id);
+                               session id=%u\n", ret, session_id);
         goto done;
     }
 
@@ -563,7 +571,7 @@ int agm_session_register_for_events(uint32_t session_id,
     int ret = 0;
 
     if (!evt_reg_cfg) {
-        AGM_LOGE("Invalid ev_reg_cfg for session id=%d\n",
+        AGM_LOGE("Invalid ev_reg_cfg for session id=%u\n",
                                         session_id);
         ret = -EINVAL;
         goto done;
@@ -571,7 +579,7 @@ int agm_session_register_for_events(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
@@ -579,7 +587,7 @@ int agm_session_register_for_events(uint32_t session_id,
     ret = session_obj_register_for_events(obj, evt_reg_cfg);
     if (ret) {
         AGM_LOGE("Error:%d registering event for session obj with \
-                        session id=%d\n", ret, session_id);
+                        session id=%u\n", ret, session_id);
         goto done;
     }
 
@@ -597,14 +605,14 @@ int agm_session_aif_connect(uint32_t session_id,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         goto done;
     }
 
     ret = session_obj_sess_aif_connect(obj, aif_id, state);
     if (ret) {
-        AGM_LOGE("Error:%d Connecting aifid:%d with session id=%d\n",
+        AGM_LOGE("Error:%d Connecting aifid:%u with session id=%u\n",
                                       ret, aif_id, session_id);
         goto done;
     }
@@ -773,7 +781,7 @@ int agm_session_set_loopback(uint32_t capture_session_id,
 
     ret = session_obj_get(capture_session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                          ret, capture_session_id);
         goto done;
     }
@@ -781,7 +789,7 @@ int agm_session_set_loopback(uint32_t capture_session_id,
     ret = session_obj_set_loopback(obj, playback_session_id, state);
     if (ret) {
         AGM_LOGE("Error:%d setting loopback for session obj with \
-                     session id=%d\n", ret, capture_session_id);
+                     session id=%u\n", ret, capture_session_id);
         goto done;
     }
 
@@ -798,7 +806,7 @@ int agm_session_set_ec_ref(uint32_t capture_session_id, uint32_t aif_id,
 
     ret = session_obj_get(capture_session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                          ret, capture_session_id);
         goto done;
     }
@@ -806,7 +814,7 @@ int agm_session_set_ec_ref(uint32_t capture_session_id, uint32_t aif_id,
     ret = session_obj_set_ec_ref(obj, aif_id, state);
     if (ret) {
         AGM_LOGE("Error:%d setting ec_ref for session obj with \
-                       session id=%d\n", ret, capture_session_id);
+                       session id=%u\n", ret, capture_session_id);
         goto done;
     }
 
@@ -841,7 +849,7 @@ int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp)
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         return ret;
     }
@@ -861,14 +869,14 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                  ret, session_id);
         goto done;
     }
 
     ret = session_obj_get_sess_buf_info(obj, buf_info, flag);
     if (ret)
-        AGM_LOGE("Error:%d getting buf_info for session id=%d, flag = %d\n",
+        AGM_LOGE("Error:%d getting buf_info for session id=%u, flag = %u\n",
                  ret, session_id, flag);
 
 done:
@@ -1059,7 +1067,7 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
 
     ret = session_obj_get(session_id, &obj);
     if (ret) {
-        AGM_LOGE("Error:%d retrieving session obj with session id=%d\n",
+        AGM_LOGE("Error:%d retrieving session obj with session id=%u\n",
                                                  ret, session_id);
         return ret;
     }
