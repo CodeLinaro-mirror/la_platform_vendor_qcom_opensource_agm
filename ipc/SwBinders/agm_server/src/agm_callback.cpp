@@ -118,10 +118,10 @@ ICallback::ICallback()
 ICallback::~ICallback()
 {AGM_LOGD("ICallback::~ICallback()\n"); }
 
-int32_t BnCallback::onTransact(uint32_t code,
+int32_t BnCallback::onTransact(uint32_t code __unused,
                                    const Parcel& data,
                                    Parcel* reply __unused,
-                                   uint32_t flags)
+                                   uint32_t flags __unused)
 {
     AGM_LOGD("BnCallback::onTransact(%i) %i\n", code, flags);
     data.checkInterface(this);

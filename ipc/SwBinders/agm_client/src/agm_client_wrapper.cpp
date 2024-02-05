@@ -97,7 +97,8 @@ void server_death_notifier::binderDied(const wp<IBinder>& who __unused)
     //add further functionality
 }
 
-int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie)
+int agm_register_service_crash_callback(agm_service_crash_cb cb  __attribute__((__unused__)),
+                                    uint64_t cookie  __attribute__((__unused__)))
 {
     return 0;
 }
@@ -513,9 +514,9 @@ int agm_session_get_available_frame_count(uint32_t session_id, uint32_t *payload
     return -EAGAIN;
 }
 
-int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg,
-                        uint32_t cfg_len, uint8_t *outbuff,
-                        uint32_t *out_len)
+int agm_hw_rsc_config(enum agm_hw_config_type type __attribute__((__unused__)), uint8_t *cfg __attribute__((__unused__)),
+                        uint32_t cfg_len __attribute__((__unused__)), uint8_t *outbuff __attribute__((__unused__)),
+                        uint32_t *out_len __attribute__((__unused__)))
 {
     ALOGE("%s: agm_hw_rsc_config is not supported by SwBinder\n", __func__);
     return -ENOTSUP;
