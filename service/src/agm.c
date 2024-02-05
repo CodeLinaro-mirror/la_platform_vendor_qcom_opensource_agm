@@ -35,7 +35,9 @@
 #include <agm/device.h>
 #include <agm/session_obj.h>
 #include <agm/utils.h>
+#ifndef AGM_MEMLOG_UNSUPPORTED
 #include <agm/agm_memlogger.h>
+#endif
 #include "ats.h"
 #include <stdio.h>
 #include <stdbool.h>
@@ -89,7 +91,9 @@ int agm_init()
     log_utils_init();
 #endif
 
+#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_init();
+#endif
     pthread_attr_init (&tattr);
     pthread_attr_getschedparam (&tattr, &param);
     param.sched_priority = SCHED_FIFO;
@@ -118,7 +122,9 @@ int agm_deinit()
         AGM_LOGD("Deinitializing ATS...");
         ats_deinit();
         session_obj_deinit();
+#ifndef AGM_MEMLOG_UNSUPPORTED
         agm_memlog_deinit();
+#endif
         agm_initialized = 0;
     }
 

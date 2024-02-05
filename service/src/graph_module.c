@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -121,9 +121,9 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[3] = PCM_CHANNEL_LS;
          channel_map[4] = PCM_CHANNEL_RS;
          channel_map[5] = PCM_CHANNEL_LFE;
-         channel_map[6] = PCM_CHANNEL_LB;
-         channel_map[7] = PCM_CHANNEL_RB;
-         channel_map[8] = PCM_CHANNEL_CS;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
          channel_map[9] = PCM_CHANNEL_TS;
          break;
     case CHANNELS_12:
@@ -133,9 +133,9 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[3] = PCM_CHANNEL_LS;
          channel_map[4] = PCM_CHANNEL_RS;
          channel_map[5] = PCM_CHANNEL_LFE;
-         channel_map[6] = PCM_CHANNEL_LB;
-         channel_map[7] = PCM_CHANNEL_RB;
-         channel_map[8] = PCM_CHANNEL_CS;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
          channel_map[9] = PCM_CHANNEL_TS;
          channel_map[10] = PCM_CHANNEL_TFC;
          channel_map[11] = PCM_CHANNEL_MS;
@@ -147,9 +147,9 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[3] = PCM_CHANNEL_LS;
          channel_map[4] = PCM_CHANNEL_RS;
          channel_map[5] = PCM_CHANNEL_LFE;
-         channel_map[6] = PCM_CHANNEL_LB;
-         channel_map[7] = PCM_CHANNEL_RB;
-         channel_map[8] = PCM_CHANNEL_CS;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
          channel_map[9] = PCM_CHANNEL_TS;
          channel_map[10] = PCM_CHANNEL_TFC;
          channel_map[11] = PCM_CHANNEL_MS;
@@ -163,9 +163,9 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[3] = PCM_CHANNEL_LS;
          channel_map[4] = PCM_CHANNEL_RS;
          channel_map[5] = PCM_CHANNEL_LFE;
-         channel_map[6] = PCM_CHANNEL_LB;
-         channel_map[7] = PCM_CHANNEL_RB;
-         channel_map[8] = PCM_CHANNEL_CS;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
          channel_map[9] = PCM_CHANNEL_TS;
          channel_map[10] = PCM_CHANNEL_TFC;
          channel_map[11] = PCM_CHANNEL_MS;
