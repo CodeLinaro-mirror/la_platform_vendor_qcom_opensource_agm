@@ -3,8 +3,8 @@ pkgconfig_DATA = agmtest.pc
 EXTRA_DIST = $(pkgconfig_DATA)
 
 AM_CFLAGS = -Wno-unused-parameter -Wno-unused-result
-AM_CFLAGS += $(KVH2XML_CFLAGS) -I$(top_srcdir)/service/inc/public
-AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h @MMHEADERS_CFLAGS@
+AM_CFLAGS += -I${includedir}/acdbdata -I$(top_srcdir)/service/inc/public
+AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h @KVH2XML_CFLAGS@
 
 AM_CFLAGS += -DBACKEND_CONF_FILE=\"/etc/backend_conf.xml\"
 lib_LTLIBRARIES      = libagmmixer.la

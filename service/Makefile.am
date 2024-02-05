@@ -9,7 +9,8 @@ h_sources = ./inc/public/agm/agm_api.h \
 AM_CFLAGS = @SPF_CFLAGS@
 AM_CFLAGS += -I $(srcdir)/inc/public
 AM_CFLAGS += -I $(srcdir)/inc/private
-AM_CFLAGS += @MMHEADERS_CFLAGS@
+AM_CFLAGS += @KVH2XML_CFLAGS@
+AM_CFLAGS += -Wl,-z,defs
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 

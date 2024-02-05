@@ -8,8 +8,9 @@ AM_CFLAGS = -Wno-unused-parameter
 AM_CFLAGS += -I $(top_srcdir)/service/inc/public -I $(top_srcdir)/snd_parser/inc
 AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 AM_CFLAGS += -DAGM_USE_SYSLOG
-AM_CFLAGS += @MMHEADERS_CFLAGS@
+AM_CFLAGS += @KVH2XML_CFLAGS@
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
+AM_CFLAGS += -Wl,-z,defs
 
 lib_LTLIBRARIES      = libagm_pcm_plugin.la
 libagm_pcm_plugin_la_SOURCES   = src/agm_pcm_plugin.c

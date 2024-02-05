@@ -51,8 +51,8 @@ PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST(SPF_CFLAGS)
 
 
-PKG_CHECK_MODULES([MMHEADERS], [mm-audio-headers])
-AC_SUBST([MMHEADERS_CFLAGS])
+PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
+AC_SUBST([KVH2XML_CFLAGS])
 
 #TODO: Check dependency only if --with-ipc is set
 #PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.4.12 ], dummy=yes,
