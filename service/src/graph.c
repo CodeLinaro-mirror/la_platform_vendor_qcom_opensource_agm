@@ -145,7 +145,6 @@ done:
     return ret;
 }
 
-#define PULL_PUSH_SHMEM_ENDPOINT SHMEM_ENDPOINT /** Temp: till pull mode keys are defined */
 int configure_buffer_params(struct graph_obj *gph_obj,
                             struct session_obj *sess_obj)
 {
@@ -241,10 +240,14 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         buf_config.start_threshold = sess_obj->stream_config.start_threshold;
         buf_config.stop_threshold = sess_obj->stream_config.stop_threshold;
 
-        if (mode == AGM_DATA_PUSH_PULL)
-            buf_config.shmem_ep_tag = PULL_PUSH_SHMEM_ENDPOINT;
-        else
+        if (mode == AGM_DATA_PUSH_PULL) {
+            if (sess_obj->stream_config.dir == TX)
+                buf_config.shmem_ep_tag = SHMEM_PUSH_MODE;
+            else
+                buf_config.shmem_ep_tag = SHMEM_PULL_MODE;
+        } else {
             buf_config.shmem_ep_tag = SHMEM_ENDPOINT;
+        }
         /**
          *TODO:expose a flag to chose between different data passing modes
          *BLOCKING/NON-BLOCKING/SHARED_MEM.

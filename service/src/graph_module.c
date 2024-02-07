@@ -2105,7 +2105,6 @@ done:
     return ret;
 }
 
-
 int configure_stream_mfc(struct module_info *mod,
                             struct graph_obj *graph_obj)
 {
@@ -2158,6 +2157,136 @@ int configure_stream_mfc(struct module_info *mod,
 
 done:
     AGM_LOGD("exit, ret %d", ret);
+    return ret;
+}
+
+int configure_shared_mem_pull_ep(struct module_info *mod,
+    struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct session_obj *sess_obj = graph_obj->sess_obj;
+    struct gsl_cmd_register_custom_event *reg_ev_payload = NULL;
+    struct event_cfg_sh_mem_pull_push_mode_watermark_t *shmem_pull_cfg;
+    struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *watermark_level = NULL;
+    size_t payload_size = 0, config_payload_size = 0;
+
+    AGM_LOGD("Shared Memory Pull Mode Endpoint module \n");
+
+    if (graph_obj->graph_handle == NULL) {
+        pthread_mutex_unlock(&graph_obj->lock);
+        AGM_LOGE("invalid graph handle\n");
+        ret = -EINVAL;
+        goto done;
+    }
+
+    config_payload_size = sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_t) +
+        sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t) * sess_obj->out_buffer_config.count;
+    payload_size = sizeof(struct gsl_cmd_register_custom_event) + config_payload_size;
+    /*ensure that the payloadszie is byte multiple atleast*/
+    ALIGN_PAYLOAD(payload_size, 8);
+
+    reg_ev_payload = calloc(1, payload_size);
+    if (reg_ev_payload == NULL) {
+        pthread_mutex_unlock(&graph_obj->lock);
+        AGM_LOGE("calloc failed for reg_ev_payload\n");
+        ret = -ENOMEM;
+        goto done;
+    }
+
+    shmem_pull_cfg = (struct event_cfg_sh_mem_pull_push_mode_watermark_t *)
+                     ((uint8_t*)reg_ev_payload + sizeof(struct gsl_cmd_register_custom_event));
+    watermark_level = (struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *)
+                      ((uint8_t*)shmem_pull_cfg + sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_t));
+
+    //By default, we set water mark number to the count of buffers. Each level interval is a buffer size.
+    //We can adjust the configuration of this watermark if needed in the future.
+    shmem_pull_cfg->num_water_mark_levels = sess_obj->out_buffer_config.count;
+    for (int i = 0; i < sess_obj->out_buffer_config.count; i++) {
+        watermark_level[i].watermark_level_bytes = sess_obj->out_buffer_config.size * (i + 1);
+    }
+    AGM_LOGD("Shared Memory Pull Mode Endpoint module IID = %d\n", mod->miid);
+
+    reg_ev_payload->event_id = EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK;
+    // Shared Memory Pull Mode Endpoint module
+    reg_ev_payload->module_instance_id = mod->miid;
+    reg_ev_payload->event_config_payload_size = config_payload_size;
+    reg_ev_payload->is_register = 1;
+
+    ret = gsl_ioctl(graph_obj->graph_handle, GSL_CMD_REGISTER_CUSTOM_EVENT,
+                    reg_ev_payload, payload_size);
+    if (ret != 0) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("Shared Memory Pull Mode Endpoint event registration failed with error %d\n", ret);
+    }
+
+done:
+    if (reg_ev_payload)
+        free(reg_ev_payload);
+    return ret;
+}
+
+int configure_shared_mem_push_ep(struct module_info *mod,
+    struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct session_obj* sess_obj = graph_obj->sess_obj;
+    struct gsl_cmd_register_custom_event *reg_ev_payload = NULL;
+    struct event_cfg_sh_mem_pull_push_mode_watermark_t *shmem_push_cfg;
+    struct event_cfg_sh_mem_pull_push_mode_watermark_level_t *watermark_level = NULL;
+    size_t payload_size = 0, config_payload_size = 0;
+
+    AGM_LOGD("Shared Memory Push Mode Endpoint module \n");
+
+    if (graph_obj->graph_handle == NULL) {
+        pthread_mutex_unlock(&graph_obj->lock);
+        AGM_LOGE("invalid graph handle\n");
+        ret = -EINVAL;
+        goto done;
+    }
+
+    config_payload_size = sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_t) +
+        sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_level_t) * sess_obj->in_buffer_config.count;
+    payload_size = sizeof(struct gsl_cmd_register_custom_event) + config_payload_size;
+    /*ensure that the payloadszie is byte multiple atleast*/
+    ALIGN_PAYLOAD(payload_size, 8);
+
+    reg_ev_payload = calloc(1, payload_size);
+    if (reg_ev_payload == NULL) {
+        pthread_mutex_unlock(&graph_obj->lock);
+        AGM_LOGE("calloc failed for reg_ev_payload\n");
+        ret = -ENOMEM;
+        goto done;
+    }
+
+    shmem_push_cfg = (struct event_cfg_sh_mem_pull_push_mode_watermark_t*)
+                     ((uint8_t*)reg_ev_payload + sizeof(struct gsl_cmd_register_custom_event));
+    watermark_level = (struct event_cfg_sh_mem_pull_push_mode_watermark_level_t*)
+                      ((uint8_t*)shmem_push_cfg + sizeof(struct event_cfg_sh_mem_pull_push_mode_watermark_t));
+
+    //By default, we set water mark number to the count of buffers. Each level interval is a buffer size.
+    //We can adjust the configuration of this watermark if needed in the future.
+    shmem_push_cfg->num_water_mark_levels = sess_obj->in_buffer_config.count;
+    for (int i = 0; i < sess_obj->in_buffer_config.count; i++) {
+        watermark_level[i].watermark_level_bytes = sess_obj->in_buffer_config.size * (i + 1);
+    }
+    AGM_LOGD("Shared Memory Push Mode Endpoint module IID = %d\n", mod->miid);
+
+    reg_ev_payload->event_id = EVENT_ID_SH_MEM_PULL_PUSH_MODE_WATERMARK;
+    // Shared Memory Pull Mode Endpoint module
+    reg_ev_payload->module_instance_id = mod->miid;
+    reg_ev_payload->event_config_payload_size = config_payload_size;
+    reg_ev_payload->is_register = 1;
+
+    ret = gsl_ioctl(graph_obj->graph_handle, GSL_CMD_REGISTER_CUSTOM_EVENT,
+                    reg_ev_payload, payload_size);
+    if (ret != 0) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("Shared Memory Push Mode Endpoint event registration failed with error %d\n", ret);
+    }
+
+done:
+    if (reg_ev_payload)
+        free(reg_ev_payload);
     return ret;
 }
 
@@ -2216,6 +2345,16 @@ module_info_t stream_module_list[] = {
         .module = MODULE_STREAM_MFC,
         .tag = STREAM_MFC,
         .configure = configure_stream_mfc,
+    },
+    {
+        .module = MODULE_SHARED_MEM_PULL_MODE,
+        .tag = SHMEM_PULL_MODE,
+        .configure = configure_shared_mem_pull_ep,
+    },
+    {
+        .module = MODULE_SHARED_MEM_PUSH_MODE,
+        .tag = SHMEM_PUSH_MODE,
+        .configure = configure_shared_mem_push_ep,
     },
 };
 

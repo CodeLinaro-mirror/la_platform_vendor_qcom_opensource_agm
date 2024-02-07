@@ -474,11 +474,21 @@ enum agm_event_id {
     */
 
     AGM_EVENT_WRITE_DONE = 0x2,
-   /**
+    /**
+     * Sent in non-blocking mode only, indicates that buffer has become
+     * available for client to write to
+     */
+    AGM_EVENT_BUFFER_AVAIL = 0x3,
+    /**
     * Indicates early EOS event
     */
 
     AGM_EVENT_EARLY_EOS = 0x08001126,
+    /**
+     * Sent in pull-push mode only, indicates that data in the circular buffer
+     * reaches watermark levels
+    */
+    AGM_EVENT_PULL_PUSH_MODE_WATERMARK = 0x0800101C,
 
     AGM_EVENT_ID_MAX
 };
