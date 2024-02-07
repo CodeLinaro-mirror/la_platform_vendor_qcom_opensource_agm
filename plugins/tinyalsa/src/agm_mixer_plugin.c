@@ -28,7 +28,7 @@
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
 **
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -2443,7 +2443,7 @@ static void amp_close(struct mixer_plugin **plugin)
 struct mixer_plugin_ops amp_ops = {
     .close = amp_close,
     .subscribe_events = amp_subscribe_events,
-    .read_event = amp_read_event,
+    .read_event = (ssize_t (*)(struct mixer_plugin *, struct ctl_event *, size_t))amp_read_event,
 };
 
 MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
