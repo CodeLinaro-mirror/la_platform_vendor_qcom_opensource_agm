@@ -218,7 +218,7 @@ void client_death_notifier::binderDied(const wp<IBinder>& who)
             list_for_each_safe(sess_node, sess_tempnode,
                                              &handle->agm_client_hndl_list) {
                 hndl = node_to_item(sess_node, agm_client_session_handle, list);
-                   if (hndl->handle != NULL) {
+                   if (hndl->handle) {
                        agm_session_close(hndl->handle);
                        list_remove(sess_node);
                        free(hndl);
