@@ -363,8 +363,15 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     }
 
     /* set stream metadata mixer control */
-    if (set_agm_capture_stream_metadata(mixer, device, PCM_RECORD, CAPTURE, STREAM_PCM, dev_config->ch)) {
+    if (set_agm_capture_stream_metadata(mixer, device, PCM_RECORD, CAPTURE, STREAM_PCM, dev_config->ch, 0)) {
         printf("Failed to set pcm metadata\n");
+        goto err_close_mixer;
+    }
+
+    /* set stream device metadata mixer control */
+    if (set_agm_streamdevice_metadata(mixer, device, stream_x, CAPTURE, STREAM_PCM,
+                    intf_name, device_pp)) {
+        printf("Failed to set pcm stream device metadata\n");
         goto err_close_mixer;
     }
 

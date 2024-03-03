@@ -270,7 +270,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     else if (fmt.bits_per_sample == 16)
         config.format = PCM_FORMAT_S16_LE;
     config.start_threshold = 0;
-    config.stop_threshold = 0;
+    config.stop_threshold = INT32_MAX;
     config.silence_threshold = 0;
 
     printf("Backend %s rate ch bit : %d, %d, %d\n", name,
@@ -306,7 +306,14 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
 
     /* set stream metadata mixer control */
     if (set_agm_stream_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM, NULL, 0, 1)) {
-        printf("Failed to set pcm metadata\n");
+        printf("Failed to set pcm stream metadata\n");
+        goto err_close_mixer;
+    }
+
+    /* set stream device metadata mixer control */
+    if (set_agm_streamdevice_metadata(mixer, device, playback_value, PLAYBACK, STREAM_PCM,
+                    name, device_pp)) {
+        printf("Failed to set pcm stream device metadata\n");
         goto err_close_mixer;
     }
 
@@ -391,4 +398,3 @@ err_close_pcm:
 err_close_mixer:
     mixer_close(mixer);
 }
-
