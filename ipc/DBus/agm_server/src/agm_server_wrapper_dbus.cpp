@@ -29,7 +29,7 @@
 
 /*
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -1646,7 +1646,7 @@ static void ipc_agm_get_aif_info_list(DBusConnection *conn,
     DBusMessageIter arg_i;
     DBusMessageIter r_arg, array_i, struct_i;
     agm_module_dbus_data *mdata = (agm_module_dbus_data *)userdata;
-    size_t num_aif_info;
+    size_t num_aif_info = 0;
     struct aif_info *aifinfo = NULL;
     char *name;
     int i = 0;
