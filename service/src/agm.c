@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: API"
@@ -59,17 +59,14 @@ static void *ats_init_thread(void *obj __unused)
     int retry = 0;
 
     while(retry++ < MAX_RETRIES) {
-        if (agm_initialized) {
-            ret = ats_init();
-            if (0 != ret) {
-                AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
-                usleep(RETRY_INTERVAL_US);
-            } else {
-                AGM_LOGD("ATS initialized");
-                break;
-            }
+        ret = ats_init();
+        if (0 != ret) {
+            AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
+            usleep(RETRY_INTERVAL_US);
+        } else {
+            AGM_LOGD("ATS initialized");
+            break;
         }
-        usleep(RETRY_INTERVAL_US);
     }
     return NULL;
 }
@@ -95,17 +92,18 @@ int agm_init()
     param.sched_priority = SCHED_FIFO;
     pthread_attr_setschedparam (&tattr, &param);
 
-    ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
-                                           ats_init_thread, NULL);
-    if (ret)
-        AGM_LOGE(" ats init thread creation failed\n");
-
     ret = session_obj_init();
     if (0 != ret) {
         AGM_LOGE("Session_obj_init failed with %d", ret);
         goto exit;
     }
+
     agm_initialized = 1;
+
+    ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
+                                           ats_init_thread, NULL);
+    if (ret)
+        AGM_LOGE(" ats init thread creation failed\n");
 
 exit:
     return ret;
