@@ -329,7 +329,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
             /* Updating bitwitdh based on format to avoid mismatch between bitwidth
              * and format, as device bw will be used to configure MFC.
              */
-            dev_config[index].bits = get_pcm_bit_width(dev_config[index].format);
+            dev_config[index].bits = get_tinyalsa_pcm_bit_width(dev_config[index].format);
         }
         printf("Backend %s rate ch bit fmt : %d, %d, %d %d\n", intf_name[index],
             dev_config[index].rate, dev_config[index].ch, dev_config[index].bits,

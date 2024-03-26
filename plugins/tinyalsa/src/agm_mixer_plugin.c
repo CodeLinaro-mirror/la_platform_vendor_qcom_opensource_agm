@@ -1,6 +1,5 @@
 /*
 ** Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -26,6 +25,10 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 /* agm_mixer.c all names (variable/functions) should have
@@ -2337,6 +2340,13 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
     int be_grp_ctl_cnt = 0;
 
     AGM_LOGI("%s: enter, card %u\n", __func__, card);
+#ifdef AGM_NO_IPC
+    ret = agm_init();
+    if (ret) {
+        AGM_LOGE("%s: agm init failed\n", __func__);
+        return ret;
+    }
+#endif
 
     amp = calloc(1, sizeof(*amp));
     if (!amp) {

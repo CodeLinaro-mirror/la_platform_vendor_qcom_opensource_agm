@@ -232,7 +232,7 @@ int main(int argc, char **argv)
     }
     if (config.format != PCM_FORMAT_INVALID) {
         printf("Valid format from backend_conf %d\n", config.format);
-        config.bits = get_pcm_bit_width(config.format);
+        config.bits = get_tinyalsa_pcm_bit_width(config.format);
     }
 
     header.bits_per_sample = pcm_format_to_bits(format);
@@ -334,7 +334,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         printf("MFC not present for this graph\n");
     } else {
         if (configure_mfc(mixer, device, intf_name, TAG_STREAM_MFC,
-                     STREAM_PCM, rate, channels, get_pcm_bit_width(format), miid)) {
+                     STREAM_PCM, rate, channels, get_tinyalsa_pcm_bit_width(format), miid)) {
             printf("Failed to configure stream mfc\n");
             goto err_close_mixer;
         }
