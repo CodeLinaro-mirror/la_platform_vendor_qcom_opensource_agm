@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -26,10 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
@@ -145,7 +144,6 @@ done:
     return ret;
 }
 
-#define PULL_PUSH_SHMEM_ENDPOINT SHMEM_ENDPOINT /** Temp: till pull mode keys are defined */
 int configure_buffer_params(struct graph_obj *gph_obj,
                             struct session_obj *sess_obj)
 {
@@ -241,10 +239,14 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         buf_config.start_threshold = sess_obj->stream_config.start_threshold;
         buf_config.stop_threshold = sess_obj->stream_config.stop_threshold;
 
-        if (mode == AGM_DATA_PUSH_PULL)
-            buf_config.shmem_ep_tag = PULL_PUSH_SHMEM_ENDPOINT;
-        else
+        if (mode == AGM_DATA_PUSH_PULL) {
+            if (sess_obj->stream_config.dir == TX)
+                buf_config.shmem_ep_tag = SHMEM_PUSH_MODE;
+            else
+                buf_config.shmem_ep_tag = SHMEM_PULL_MODE;
+        } else {
             buf_config.shmem_ep_tag = SHMEM_ENDPOINT;
+        }
         /**
          *TODO:expose a flag to chose between different data passing modes
          *BLOCKING/NON-BLOCKING/SHARED_MEM.
