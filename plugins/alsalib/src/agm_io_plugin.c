@@ -133,6 +133,47 @@ static int agm_io_plugin_get_shared_pos(struct pcm_plugin_pos_buf_info *pos_buf,
     return -EAGAIN;
 }
 
+static int agm_get_session_handle(struct agmio_priv *priv,
+                                  uint64_t *handle)
+{
+    if (!priv)
+        return -EINVAL;
+
+    *handle = priv->handle;
+    if (!*handle)
+        return -EINVAL;
+    return 0;
+}
+
+static int agm_io_stop(snd_pcm_ioplug_t * io)
+{
+    struct agmio_priv *pcm = io->private_data;
+    uint64_t handle;
+    int ret;
+
+    pthread_mutex_lock(&pcm->eos_lock);
+    if (pcm->eos) {
+          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
+    }
+    pthread_mutex_unlock(&pcm->eos_lock);
+    ret = agm_get_session_handle(pcm, &handle);
+    if (ret)
+        return ret;
+    ret = agm_session_stop(handle);
+    if(DUMP_OPEN)
+        free(dump_file_name);
+    AGM_LOGD("%s: exit\n", __func__);
+    return ret;
+}
+
+static void agm_io_xrun(snd_pcm_ioplug_t * io)
+{
+    struct agmio_priv *pcm = io->private_data;
+
+    agm_io_stop(io);
+    pcm->state = AGM_IO_STATE_XRUN;
+}
+
 void agm_pcm_event_cb(uint32_t session_id __unused,
                            struct agm_event_cb_params *event_params,
                            void *client_data)
@@ -191,22 +232,16 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
         if (priv->hw_pointer > priv->boundary)
             priv->hw_pointer -= priv->boundary;
         eventfd_write(priv->event_fd, 1);
+    }  else if (event_params->event_id == AGM_EVENT_UNDERRUN) {
+        AGM_LOGE("%s: detect underrun event happen \n", __func__);
+        agm_io_xrun(&priv->io);
+    }  else if (event_params->event_id == AGM_EVENT_OVERRUN) {
+        AGM_LOGE("%s: detect overrun event happen \n", __func__);
+        agm_io_xrun(&priv->io);
     } else {
         AGM_LOGE("%s: error: Invalid event params id: %u\n", __func__,
            event_params->event_id);
     }
-}
-
-static int agm_get_session_handle(struct agmio_priv *priv,
-                                  uint64_t *handle)
-{
-    if (!priv)
-        return -EINVAL;
-
-    *handle = priv->handle;
-    if (!*handle)
-        return -EINVAL;
-    return 0;
 }
 
 static int agm_io_start(snd_pcm_ioplug_t * io)
@@ -234,27 +269,6 @@ static int agm_io_start(snd_pcm_ioplug_t * io)
             pcm->state = AGM_IO_STATE_RUNNING;
     }
 
-    AGM_LOGD("%s: exit\n", __func__);
-    return ret;
-}
-
-static int agm_io_stop(snd_pcm_ioplug_t * io)
-{
-    struct agmio_priv *pcm = io->private_data;
-    uint64_t handle;
-    int ret;
-
-    pthread_mutex_lock(&pcm->eos_lock);
-    if (pcm->eos) {
-          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
-    }
-    pthread_mutex_unlock(&pcm->eos_lock);
-    ret = agm_get_session_handle(pcm, &handle);
-    if (ret)
-        return ret;
-    ret = agm_session_stop(handle);
-    if(DUMP_OPEN)
-        free(dump_file_name);
     AGM_LOGD("%s: exit\n", __func__);
     return ret;
 }
@@ -298,14 +312,6 @@ static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t *io)
     new_hw_ptr = pcm->hw_pointer;
 
     return new_hw_ptr;
-}
-
-static void agm_io_xrun(snd_pcm_ioplug_t * io)
-{
-    struct agmio_priv *pcm = io->private_data;
-
-    agm_io_stop(io);
-    pcm->state = AGM_IO_STATE_XRUN;
 }
 
 static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
