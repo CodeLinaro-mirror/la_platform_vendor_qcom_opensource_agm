@@ -24,3 +24,9 @@ agmcap_SOURCES  = agmcap.c
 
 agmcap_la_CFLAGS = $(AM_CFLAGS)
 agmcap_LDADD    = -ltinyalsa libagmmixer.la
+
+# install xml files under /etc
+root_etcdir      = "/etc"
+root_etc_SCRIPTS = backend_conf.xml
+install-data-hook:
+	chmod  go-x $(DESTDIR)$(root_etcdir)/backend_conf.xml
