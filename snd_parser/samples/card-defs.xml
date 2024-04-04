@@ -27,7 +27,7 @@
 <defs>
 <card>
     <id>100</id>
-    <name>qcs405tdmsndcard,qcs405csrasndcard, qcs405wsasndcard</name>
+    <name>virtualsndcard</name>
 
     <pcm-device>
         <id>100</id>
@@ -74,7 +74,7 @@
         <props>
             <playback>1</playback>
             <capture>0</capture>
-            <hostless>1</hostless>
+            <session_mode>1</session_mode>
         </props>
     </pcm-device>
 
@@ -87,7 +87,7 @@
         <props>
             <playback>0</playback>
             <capture>1</capture>
-            <hostless>1</hostless>
+            <session_mode>1</session_mode>
         </props>
     </pcm-device>
 
@@ -100,7 +100,7 @@
         <props>
             <playback>1</playback>
             <capture>0</capture>
-            <hostless>0</hostless>
+            <session_mode>0</session_mode>
         </props>
     </compress-device>
 

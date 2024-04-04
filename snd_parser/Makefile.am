@@ -23,10 +23,3 @@ if USE_GLIB
 libsndcardparser_la_LIBADD += $(GLIB_LIBS)
 libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 endif
-
-# install xml files under /etc
-root_etcdir      = "/etc"
-#TODO:file path select based on target name
-root_etc_SCRIPTS = ./configs/qcm6490/card-defs.xml
-install-data-hook:
-	        chmod  go-x $(DESTDIR)$(root_etcdir)/card-defs.xml
