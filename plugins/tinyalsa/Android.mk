@@ -80,7 +80,7 @@ include $(BUILD_SHARED_LIBRARY)
 # Build libagm_compress_plugin
 include $(CLEAR_VARS)
 
-LOCAL_MODULE        := libagm_compress_plugin
+LOCAL_MODULE        := libtinycompress_module_agm
 LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
