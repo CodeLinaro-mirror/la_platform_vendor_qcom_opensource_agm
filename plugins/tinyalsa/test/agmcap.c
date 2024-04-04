@@ -305,13 +305,18 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     config.stop_threshold = 0;
     config.silence_threshold = 0;
 
+    if (NULL == intf_name) {
+        printf("No interface name mentioned, Exiting !!!\n");
+        return 0;
+    }
+
     mixer = mixer_open(card);
     if (!mixer) {
         printf("Failed to open mixer\n");
         return 0;
     }
 
-    if(intf_name != NULL && strcmp(intf_name, "USB_AUDIO-TX") == 0) {
+    if(strcmp(intf_name, "USB_AUDIO-TX") == 0) {
         dev_config->rate = rate;
         dev_config->ch = channels;
     }
@@ -355,7 +360,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
         }
     }
 
-    if (intf_name != NULL && strcmp(intf_name, "USB_AUDIO-TX") == 0) {
+    if (strcmp(intf_name, "USB_AUDIO-TX") == 0) {
         ret = agm_mixer_get_miid (mixer, device, intf_name, STREAM_PCM, DEVICE_HW_ENDPOINT_TX, &miid);
         if (ret == 0) {
             cfg.usb_token = (usb_device << 16)|0x1;
