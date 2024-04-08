@@ -38,6 +38,7 @@
 #define DUMP_OPEN 0
 #include <stdio.h>
 #include <sys/poll.h>
+#include <sys/mman.h>
 #include <sys/eventfd.h>
 #include <alsa/asoundlib.h>
 #include <alsa/pcm_external.h>
@@ -54,12 +55,29 @@
 #define DUMP_BUFFER 1024
 static char* dump_file_name;
 
+/* pull-push mode macros */
+#define AGM_PULL_PUSH_IDX_RETRY_COUNT 2
+#define AGM_PULL_PUSH_FRAME_CNT_RETRY_COUNT 5
+
 enum {
     AGM_IO_STATE_XRUN = -1,
     AGM_IO_STATE_OPEN = 1,
     AGM_IO_STATE_SETUP,
     AGM_IO_STATE_PREPARED,
     AGM_IO_STATE_RUNNING,
+};
+
+struct agmio_shared_pos_buffer {
+    volatile uint32_t frame_counter;
+    volatile uint32_t read_index;
+    volatile uint32_t wall_clock_us_lsw;
+    volatile uint32_t wall_clock_us_msw;
+};
+
+struct pcm_plugin_pos_buf_info {
+    void *pos_buf_addr;
+    snd_pcm_uframes_t circ_buf_pos;
+    snd_pcm_uframes_t hw_ptr_base;
 };
 
 struct agmio_priv {
@@ -84,14 +102,85 @@ struct agmio_priv {
     pthread_cond_t eos_cond;
     pthread_mutex_t eos_lock;
     bool eos;
+    struct agm_buf_info *buf_info;
+    struct pcm_plugin_pos_buf_info *pos_buf;
 /* add private variables here */
 };
+
+static int agm_io_plugin_get_shared_pos(struct pcm_plugin_pos_buf_info *pos_buf,
+    uint32_t *read_index)
+{
+    struct agmio_shared_pos_buffer *buf;
+    int i, j;
+    uint32_t frame_cnt1, frame_cnt2;
+
+    buf = (struct agmio_shared_pos_buffer*)pos_buf->pos_buf_addr;
+    for (i = 0; i < AGM_PULL_PUSH_IDX_RETRY_COUNT; ++i) {
+        for (j = 0; j < AGM_PULL_PUSH_FRAME_CNT_RETRY_COUNT; ++j) {
+            frame_cnt1 = buf->frame_counter;
+            if (frame_cnt1 != 0)
+                break;
+        }
+        *read_index = buf->read_index; /* 0,.... Circ_buf_size-1 */
+        frame_cnt2 = buf->frame_counter;
+
+        if (frame_cnt1 != frame_cnt2)
+            continue;
+
+        return 0;
+    }
+
+    return -EAGAIN;
+}
+
+static int agm_get_session_handle(struct agmio_priv *priv,
+                                  uint64_t *handle)
+{
+    if (!priv)
+        return -EINVAL;
+
+    *handle = priv->handle;
+    if (!*handle)
+        return -EINVAL;
+    return 0;
+}
+
+static int agm_io_stop(snd_pcm_ioplug_t * io)
+{
+    struct agmio_priv *pcm = io->private_data;
+    uint64_t handle;
+    int ret;
+
+    pthread_mutex_lock(&pcm->eos_lock);
+    if (pcm->eos) {
+          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
+    }
+    pthread_mutex_unlock(&pcm->eos_lock);
+    ret = agm_get_session_handle(pcm, &handle);
+    if (ret)
+        return ret;
+    ret = agm_session_stop(handle);
+    if(DUMP_OPEN)
+        free(dump_file_name);
+    AGM_LOGD("%s: exit\n", __func__);
+    return ret;
+}
+
+static void agm_io_xrun(snd_pcm_ioplug_t * io)
+{
+    struct agmio_priv *pcm = io->private_data;
+
+    agm_io_stop(io);
+    pcm->state = AGM_IO_STATE_XRUN;
+}
 
 void agm_pcm_event_cb(uint32_t session_id __unused,
                            struct agm_event_cb_params *event_params,
                            void *client_data)
 {
     struct agmio_priv *priv = (struct agmio_priv *)client_data;
+    snd_pcm_sframes_t new_circ_buf_pos, hw_base;
+    uint32_t read_index;
 
     if (!priv) {
         AGM_LOGE("%s: Private data is NULL\n", __func__);
@@ -127,22 +216,32 @@ void agm_pcm_event_cb(uint32_t session_id __unused,
         pthread_mutex_unlock(&priv->eos_lock);
     } else if (event_params->event_id == AGM_EVENT_EARLY_EOS) {
         AGM_LOGD("%s: Early EOS event received \n", __func__);
+    } else if (event_params->event_id == AGM_EVENT_PULL_PUSH_MODE_WATERMARK) {
+        AGM_LOGD("%s: AGM_EVENT_PULL_PUSH_MODE_WATERMARK event received \n", __func__);
+        agm_io_plugin_get_shared_pos(priv->pos_buf, &read_index);
+        new_circ_buf_pos = read_index / priv->frame_size;
+        hw_base = priv->pos_buf->hw_ptr_base;
+        if (new_circ_buf_pos < priv->pos_buf->circ_buf_pos) {
+            hw_base += priv->buffer_config->count * priv->period_size;
+            if (hw_base > priv->boundary)
+                hw_base -= priv->boundary;
+            priv->pos_buf->hw_ptr_base = hw_base;
+        }
+        priv->pos_buf->circ_buf_pos = new_circ_buf_pos;
+        priv->hw_pointer = hw_base + new_circ_buf_pos;
+        if (priv->hw_pointer > priv->boundary)
+            priv->hw_pointer -= priv->boundary;
+        eventfd_write(priv->event_fd, 1);
+    }  else if (event_params->event_id == AGM_EVENT_UNDERRUN) {
+        AGM_LOGE("%s: detect underrun event happen \n", __func__);
+        agm_io_xrun(&priv->io);
+    }  else if (event_params->event_id == AGM_EVENT_OVERRUN) {
+        AGM_LOGE("%s: detect overrun event happen \n", __func__);
+        agm_io_xrun(&priv->io);
     } else {
         AGM_LOGE("%s: error: Invalid event params id: %u\n", __func__,
            event_params->event_id);
     }
-}
-
-static int agm_get_session_handle(struct agmio_priv *priv,
-                                  uint64_t *handle)
-{
-    if (!priv)
-        return -EINVAL;
-
-    *handle = priv->handle;
-    if (!*handle)
-        return -EINVAL;
-    return 0;
 }
 
 static int agm_io_start(snd_pcm_ioplug_t * io)
@@ -174,34 +273,21 @@ static int agm_io_start(snd_pcm_ioplug_t * io)
     return ret;
 }
 
-static int agm_io_stop(snd_pcm_ioplug_t * io)
+static int agm_io_drain(snd_pcm_ioplug_t *io)
 {
     struct agmio_priv *pcm = io->private_data;
     uint64_t handle;
-    int ret;
+    int ret = 0;
 
-    pthread_mutex_lock(&pcm->eos_lock);
-    if (pcm->eos) {
-          pthread_cond_wait(&pcm->eos_cond, &pcm->eos_lock);
+    if (io->mmap_rw) {
+        AGM_LOGE("%s: No need EOS for mmap mode\n", __func__);
+        return ret;
     }
-    pthread_mutex_unlock(&pcm->eos_lock);
+
     ret = agm_get_session_handle(pcm, &handle);
     if (ret)
         return ret;
-    ret = agm_session_stop(handle);
-    if(DUMP_OPEN)
-        free(dump_file_name);
-    AGM_LOGD("%s: exit\n", __func__);
-    return ret;
-}
 
-static int agm_io_drain(snd_pcm_ioplug_t * io)
-{
-    struct agmio_priv *pcm = io->private_data;
-    uint64_t handle;
-    int ret = agm_get_session_handle(pcm, &handle);
-    if (ret)
-        return ret;
     pthread_mutex_lock(&pcm->eos_lock);
     ret = agm_session_eos(handle);
     if (ret) {
@@ -215,7 +301,7 @@ static int agm_io_drain(snd_pcm_ioplug_t * io)
     return 0;
 }
 
-static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t * io)
+static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t *io)
 {
     struct agmio_priv *pcm = io->private_data;
     snd_pcm_sframes_t new_hw_ptr;
@@ -226,14 +312,6 @@ static snd_pcm_sframes_t agm_io_pointer(snd_pcm_ioplug_t * io)
     new_hw_ptr = pcm->hw_pointer;
 
     return new_hw_ptr;
-}
-
-static void agm_io_xrun(snd_pcm_ioplug_t * io)
-{
-    struct agmio_priv *pcm = io->private_data;
-
-    agm_io_stop(io);
-    pcm->state = AGM_IO_STATE_XRUN;
 }
 
 static snd_pcm_sframes_t agm_io_transfer(snd_pcm_ioplug_t * io,
@@ -412,11 +490,14 @@ static int agm_io_sw_params(snd_pcm_ioplug_t *io, snd_pcm_sw_params_t *params)
     session_config = pcm->session_config;
 
     snd_card_def_get_int(pcm->pcm_node, "session_mode", &sess_mode);
-    snd_card_def_get_int(pcm->pcm_node, "agm_data_mode", &data_mode);
-
+    if (io->mmap_rw) {
+        session_config->data_mode = AGM_DATA_PUSH_PULL;
+    } else {
+        snd_card_def_get_int(pcm->pcm_node, "agm_data_mode", &data_mode);
+        session_config->data_mode = data_mode;
+    }
     session_config->dir = (io->stream == SND_PCM_STREAM_PLAYBACK) ? RX : TX;
     session_config->sess_mode = sess_mode;
-    session_config->data_mode = data_mode;
     snd_pcm_sw_params_get_start_threshold(params, &start_threshold);
     snd_pcm_sw_params_get_stop_threshold(params, &stop_threshold);
     snd_pcm_sw_params_get_boundary(params, &pcm->boundary);
@@ -472,6 +553,91 @@ static int agm_io_pause(snd_pcm_ioplug_t * io, int enable)
      AGM_LOGD("%s: exit\n", __func__);
      return ret;
 }
+
+static int agm_io_mmap(snd_pcm_ioplug_t *io)
+{
+    struct agmio_priv *pcm = io->private_data;
+    struct agm_buf_info* buf_info = NULL;
+    struct pcm_plugin_pos_buf_info *pos = NULL;
+    uint64_t handle;
+    int flag = DATA_BUF|POS_BUF;
+    int ret = 0;
+
+    ret = agm_get_session_handle(pcm, &handle);
+    if (ret)
+        return ret;
+
+    if (!pcm->buf_info) {
+        buf_info = calloc(1, sizeof(struct agm_buf_info));
+        if (!buf_info)
+            return -ENOMEM;
+
+        ret = agm_session_get_buf_info(pcm->session_id, buf_info, flag);
+        if (ret) {
+            free(buf_info);
+            return ret;
+        }
+        pcm->buf_info = buf_info;
+    }
+
+    if (io->mmap_rw) {
+        if (!pcm->pos_buf) {
+            pos = calloc(1, sizeof(struct pcm_plugin_pos_buf_info));
+            if (!pos) {
+                free(buf_info);
+                return -ENOMEM;
+            }
+
+            pos->pos_buf_addr = mmap(0, pcm->buf_info->pos_buf_size,
+                PROT_READ | PROT_WRITE, MAP_SHARED,
+                pcm->buf_info->pos_buf_fd, 0);
+
+            pcm->pos_buf = pos;
+        }
+    }
+
+    AGM_LOGD("%s: exit\n", __func__);
+    return ret;
+}
+
+static int agm_io_munmap(snd_pcm_ioplug_t *io)
+{
+    struct agmio_priv* pcm = io->private_data;
+    uint64_t handle;
+    int ret = 0;
+
+    if (io->mmap_rw) {
+        if (pcm->pos_buf) {
+            munmap(pcm->pos_buf->pos_buf_addr,
+                pcm->buf_info->pos_buf_size);
+            free(pcm->pos_buf);
+            pcm->pos_buf = NULL;
+        }
+        if (pcm->buf_info) {
+            if (pcm->buf_info->data_buf_fd != -1)
+                close(pcm->buf_info->data_buf_fd);
+            free(pcm->buf_info);
+       }
+    }
+
+    AGM_LOGD("%s: exit\n", __func__);
+    return ret;
+}
+
+static int agm_io_channel_info(snd_pcm_ioplug_t *io, int *fd)
+{
+    struct agmio_priv *pcm = io->private_data;
+    uint64_t handle;
+    int ret = 0;
+
+    if (io->mmap_rw) {
+        *fd = pcm->buf_info->data_buf_fd;
+    }
+
+    AGM_LOGD("%s: exit\n", __func__);
+    return ret;
+}
+
 static int agm_io_poll_desc_count(snd_pcm_ioplug_t *io) {
     (void)io;
     /* TODO : Needed for ULL usecases */
@@ -533,6 +699,9 @@ static const snd_pcm_ioplug_callback_t agm_io_callback = {
     .poll_descriptors_count = agm_io_poll_desc_count,
     .poll_descriptors = agm_io_poll_desc,
     .poll_revents = agm_io_poll_revents,
+    .mmap = agm_io_mmap,
+    .munmap = agm_io_munmap,
+    .channel_info = agm_io_channel_info,
 };
 
 static int agm_hw_constraint(struct agmio_priv* priv)

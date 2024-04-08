@@ -27,6 +27,13 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **/
 
+/*
+* * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+* *
+* * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* * SPDX-License-Identifier: BSD-3-Clause-Clear
+* */
+
 #define LOG_TAG "AGM: device"
 
 #include <errno.h>
@@ -83,6 +90,8 @@ static struct mixer *mixer = NULL;
 
 #define SYSFS_FD_PATH "/sys/kernel/aud_dev/state"
 static int sysfs_fd = -1;
+
+static int wait_for_snd_card_to_online(void);
 
 #define MAX_BUF_SIZE                 2048
 /**
@@ -1073,7 +1082,9 @@ static int wait_for_snd_card_to_online()
 int device_init()
 {
     int ret = 0;
-#if 0
+#ifdef BYPASS_SND_CARD_CHECK
+     AGM_LOGI("snd card status check skipped for Automotive Hypervisor");
+#else
     ret = wait_for_snd_card_to_online();
     if (ret) {
         AGM_LOGE("Not found any SND card online\n");
