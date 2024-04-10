@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -348,6 +348,7 @@ void ipc_callback (uint32_t session_id,
         struct listnode *sess_node = NULL;
         struct listnode *sess_tempnode = NULL;
         int input_fd = -1;
+        int fdToBeClosed = -1;
 
         rw_done_payload = (struct gsl_event_read_write_done_payload *)evt_param->event_payload;
 
@@ -365,6 +366,7 @@ void ipc_callback (uint32_t session_id,
                            hndle->shared_mem_fd_list.size());
                      if (hndle->shared_mem_fd_list[i].second == rw_done_payload->buff.alloc_info.alloc_handle) {
                          input_fd = hndle->shared_mem_fd_list[i].first;
+                         fdToBeClosed = hndle->shared_mem_fd_list[i].second;
                          it = (hndle->shared_mem_fd_list.begin() + i);
                          if (it != hndle->shared_mem_fd_list.end())
                              hndle->shared_mem_fd_list.erase(it);
@@ -424,6 +426,10 @@ void ipc_callback (uint32_t session_id,
             free(rw_done_payload->buff.metadata);
         if (allocHidlHandle)
             native_handle_delete(allocHidlHandle);
+        if (fdToBeClosed != -1) {
+            ALOGV("closing dup fd %d ", fdToBeClosed);
+            close(fdToBeClosed);
+        }
     } else {
         evt_param_l.resize(sizeof(struct agm_event_cb_params) +
                                 evt_param->event_payload_size);

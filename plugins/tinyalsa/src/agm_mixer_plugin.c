@@ -28,7 +28,7 @@
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
 **
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -2366,12 +2366,12 @@ static int amp_form_pcm_ctls(struct amp_priv *amp_priv, int ctl_idx, int ctl_cnt
 }
 
 static ssize_t amp_read_event(struct mixer_plugin *plugin,
-                              struct snd_ctl_event *ev, size_t size)
+                              struct ctl_event *ev, size_t size)
 {
     struct amp_priv *amp_priv = plugin->priv;
     ssize_t result = 0;
 
-    while (size >= sizeof(struct snd_ctl_event)) {
+    while (size >= sizeof(struct ctl_event)) {
         struct mixer_plugin_event_data *data;
 
         if (list_empty(&amp_priv->events_list))
@@ -2379,13 +2379,13 @@ static ssize_t amp_read_event(struct mixer_plugin *plugin,
 
         data = node_to_item(amp_priv->events_list.next,
                             struct mixer_plugin_event_data, node);
-        memcpy(ev, &data->ev, sizeof(struct snd_ctl_event));
+        memcpy(ev, &data->ev, sizeof(struct ctl_event));
 
         list_remove(&data->node);
         free(data);
-        ev += sizeof(struct snd_ctl_event);
-        size -= sizeof(struct snd_ctl_event);
-        result += sizeof(struct snd_ctl_event);
+        ev += sizeof(struct ctl_event);
+        size -= sizeof(struct ctl_event);
+        result += sizeof(struct ctl_event);
     }
 
     return result;
