@@ -624,9 +624,19 @@ static void graph_event_cb(struct agm_event_cb_params *event_params,
                 sess_cb->cb(sess_obj->sess_id,
                                    (struct agm_event_cb_params *)event_params,
                                     sess_cb->client_data);
+            } else if (sess_cb->evt_type == AGM_EVENT_DATA_PATH &&
+                event_params->event_id == AGM_EVENT_PULL_PUSH_MODE_WATERMARK) {
+                sess_cb->cb(sess_obj->sess_id,
+                                   (struct agm_event_cb_params *)event_params,
+                                    sess_cb->client_data);
             } else if (sess_cb->evt_type == AGM_EVENT_MODULE &&
                        event_params->source_module_id != GSL_EVENT_SRC_MODULE_ID_GSL) {
                 sess_cb->cb(sess_obj->sess_id,
+                                   (struct agm_event_cb_params *)event_params,
+                                    sess_cb->client_data);
+            } else if(event_params->event_id == AGM_EVENT_UNDERRUN ||
+                event_params->event_id  == AGM_EVENT_OVERRUN) {
+                                    sess_cb->cb(sess_obj->sess_id,
                                    (struct agm_event_cb_params *)event_params,
                                     sess_cb->client_data);
             }
