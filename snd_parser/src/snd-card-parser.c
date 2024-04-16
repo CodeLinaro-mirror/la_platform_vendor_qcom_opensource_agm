@@ -25,9 +25,9 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*  Changes from Qualcomm Innovation Center are provided under the following license:
+*  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 *
-*  Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+*  Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 *  SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -662,8 +662,10 @@ int snd_card_def_get_nodes_for_type(void *card_node, int type,
     list_for_each_safe(dev_node, temp, devs_list)
         num_devs++;
 
-    if (num_nodes > num_devs)
+    if (num_nodes > num_devs) {
+        pthread_rwlock_unlock(&snd_rwlock);
         return -EINVAL;
+    }
 
     list_for_each_safe(dev_node, temp, devs_list) {
         dev_def = node_to_item(dev_node, struct snd_dev_def, list_node);
