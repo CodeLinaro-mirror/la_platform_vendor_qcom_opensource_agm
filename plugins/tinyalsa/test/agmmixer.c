@@ -867,9 +867,9 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[3] = PCM_CHANNEL_LS;
         pcmChannel[4] = PCM_CHANNEL_RS;
         pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
         pcmChannel[9] = PCM_CHANNEL_TS;
     } else if (numChannel == 12) {
         pcmChannel[0] = PCM_CHANNEL_L;
@@ -878,9 +878,9 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[3] = PCM_CHANNEL_LS;
         pcmChannel[4] = PCM_CHANNEL_RS;
         pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
         pcmChannel[9] = PCM_CHANNEL_TS;
         pcmChannel[10] = PCM_CHANNEL_TFC;
         pcmChannel[11] = PCM_CHANNEL_MS;
@@ -891,9 +891,9 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[3] = PCM_CHANNEL_LS;
         pcmChannel[4] = PCM_CHANNEL_RS;
         pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
         pcmChannel[9] = PCM_CHANNEL_TS;
         pcmChannel[10] = PCM_CHANNEL_TFC;
         pcmChannel[11] = PCM_CHANNEL_MS;
@@ -906,9 +906,9 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[3] = PCM_CHANNEL_LS;
         pcmChannel[4] = PCM_CHANNEL_RS;
         pcmChannel[5] = PCM_CHANNEL_LFE;
-        pcmChannel[6] = PCM_CHANNEL_LB;
-        pcmChannel[7] = PCM_CHANNEL_RB;
-        pcmChannel[8] = PCM_CHANNEL_CS;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
         pcmChannel[9] = PCM_CHANNEL_TS;
         pcmChannel[10] = PCM_CHANNEL_TFC;
         pcmChannel[11] = PCM_CHANNEL_MS;
