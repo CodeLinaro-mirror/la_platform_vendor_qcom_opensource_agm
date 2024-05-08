@@ -1250,12 +1250,14 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                 if ((clbk_data_obj_tmp->session_id == clbk_data_obj->session_id) &&
                     (clbk_data_obj_tmp->client_data == clbk_data_obj->client_data)) {
                     list_remove(&clbk_data_obj_tmp->list);
+                    clbk_data_obj_tmp->cb_binder = NULL;
                     free(clbk_data_obj_tmp);
                 }
             }
             pthread_mutex_unlock(&clbk_data_list_lock);
             rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
                             NULL, evnt, clbk_data_obj->client_data);
+            clbk_data_obj->cb_binder = NULL;
             free(clbk_data_obj);
         }
 
