@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: session"
@@ -70,6 +70,7 @@ char tracestr[100] = "agm: ";
 #define GSL_EVENT_SRC_MODULE_ID_GSL 0x2001 // DO NOT CHANGE
 
 //forward declarations
+static struct session_pool *sess_pool;
 static int session_close(struct session_obj *sess_obj);
 static int session_set_loopback(struct session_obj *sess_obj,
                            uint32_t session_id, bool enable);

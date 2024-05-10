@@ -45,6 +45,7 @@
 #include <agm/device.h>
 #include <agm/metadata.h>
 #include <agm/utils.h>
+#include <fcntl.h>
 #ifdef DEVICE_USES_ALSALIB
 #include <alsa/asoundlib.h>
 #else
@@ -869,11 +870,17 @@ int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap)
     ctl = mixer_get_ctl_by_name(mixer, mixer_str);
     if (!ctl) {
         AGM_LOGE("Invalid mixer control: %s\n", mixer_str);
-        ret = -ENOENT;
-        goto err_get_ctl;
+        ctl = mixer_get_ctl_by_name_and_device(mixer, (dev_obj->hw_ep_info.dir == AUDIO_OUTPUT) ?
+                    "Playback Channel Map" : "Capture Channel Map", dev_obj->pcm_id);
+        if (!ctl) {
+            ret = -ENOENT;
+            goto err_get_ctl;
+        }
+        ret = mixer_ctl_get_array(ctl, payload, 2 * sizeof(uint32_t));
     }
-
-    ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
+    else {
+         ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
+    }
     if (ret < 0) {
         AGM_LOGE("Failed to mixer_ctl_get_array\n");
         goto err_get_ctl;
@@ -1093,12 +1100,13 @@ int device_init()
 {
     int ret = 0;
 
+#ifndef CARD_STATE_UNSUPPORTED
     ret = wait_for_snd_card_to_online();
     if (ret) {
         AGM_LOGE("Not found any SND card online\n");
         return ret;
     }
-
+#endif
     ret = parse_snd_card();
     if (ret)
         AGM_LOGE("no valid snd device found\n");
