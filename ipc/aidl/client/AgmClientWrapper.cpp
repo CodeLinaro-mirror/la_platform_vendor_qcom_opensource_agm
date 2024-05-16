@@ -343,10 +343,20 @@ int agm_session_get_params(uint32_t session_id, void *payload, size_t size) {
     ALOGV("%s  sessionId %d  size %d ", __func__, session_id, size);
     auto client = getAgm();
 
+    if (size <= 0) {
+        ALOGE("%s  sessionId %d : Invalid input size %d ", __func__, session_id, size);
+        return -EINVAL;
+    }
+
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
 
-    std::vector<uint8_t> aidlReturn(size);
+    std::vector<uint8_t> aidlReturn;
     auto status = client->ipc_agm_session_get_params(session_id, aidlPayload, &aidlReturn);
+
+    if (aidlReturn.empty()) {
+        ALOGE("%s  sessionId %d : Invalid input size %d ", __func__, session_id, size);
+        return -ENOMEM;
+    }
 
     if (status.isOk() && payload) {
         memcpy(payload, aidlReturn.data(), size);
