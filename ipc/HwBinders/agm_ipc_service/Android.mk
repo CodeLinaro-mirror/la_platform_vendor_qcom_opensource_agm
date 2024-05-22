@@ -3,7 +3,7 @@ LOCAL_PATH := $(call my-dir)
 #temporary solution for VTS test vts_treble_vintf_vendor_test failure
 #Adding Android U and target check to avoid AMS service inclusion for elite
 #on LA3.6.0
-ifneq ( ,$(filter U UpsideDownCake 14, $(PLATFORM_VERSION)))
+ifneq ( ,$(filter U UpsideDownCake 14 V VanillaIceCream 15, $(PLATFORM_VERSION)))
 ifeq (,$(filter $(PRODUCT_NAME), msmnile_au sm6150_au))
 include $(CLEAR_VARS)
 
