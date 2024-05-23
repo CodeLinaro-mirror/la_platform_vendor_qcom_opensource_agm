@@ -48,7 +48,7 @@
 #include <sound/asound.h>
 
 #include <tinyalsa/asoundlib.h>
-#include <tinyalsa/plugin.h>
+#include <tinyalsa/mixer_plugin.h>
 
 #include <agm/agm_api.h>
 #include <snd-card-def.h>
@@ -218,7 +218,7 @@ struct amp_priv {
     struct snd_value_enum tx_be_enum;
     struct snd_value_enum rx_be_enum;
 
-    mixer_event_callback event_cb;
+    event_callback event_cb;
     pthread_mutex_t lock;
 };
 
@@ -229,7 +229,7 @@ struct event_params_node {
 };
 
 struct mixer_plugin_event_data {
-    struct mixer_ctl_event ev;
+    struct ctl_event ev;
     struct listnode node;
 };
 
@@ -378,11 +378,11 @@ void amp_event_cb(uint32_t session_id, struct agm_event_cb_params *event_params,
 {
     struct mixer_plugin *plugin = client_data;
     struct amp_priv *amp_priv;
-    struct mixer_ctl_event event;
+    struct ctl_event event;
     struct mixer_plugin_event_data *data;
     char *stream = NULL;
     char *ctl_name = "event";
-    unsigned char *mixer_str = NULL;
+    char *mixer_str = NULL;
     int ctl_len, i;
     struct amp_dev_info *adi = NULL;
 
@@ -429,7 +429,7 @@ found:
     }
 
     snprintf(mixer_str, ctl_len, "%s %s", stream, ctl_name);
-    strlcpy((char*)event.data.element.id.name, mixer_str, sizeof(event.data.element.id.name));
+    strlcpy((char*)event.data.elem.id.name, mixer_str, sizeof(event.data.elem.id.name));
 
     data = calloc(1, sizeof(struct mixer_plugin_event_data));
     if (!data) {
@@ -2244,12 +2244,12 @@ static int amp_form_acdb_ctls(struct amp_priv *amp_priv, int ctl_idx)
 }
 
 static ssize_t amp_read_event(struct mixer_plugin *plugin,
-                              struct mixer_ctl_event *ev, size_t size) 
+                              struct ctl_event *ev, size_t size)
 {
     struct amp_priv *amp_priv = plugin->priv;
     ssize_t result = 0;
 
-    while (size >= sizeof(struct mixer_ctl_event)) {
+    while (size >= sizeof(struct ctl_event)) {
         struct mixer_plugin_event_data *data;
 
         pthread_mutex_lock(&amp_priv->lock);
@@ -2260,22 +2260,22 @@ static ssize_t amp_read_event(struct mixer_plugin *plugin,
 
         data = node_to_item(amp_priv->events_list.next,
                             struct mixer_plugin_event_data, node);
-        memcpy(ev, &data->ev, sizeof(struct mixer_ctl_event));
+        memcpy(ev, &data->ev, sizeof(struct ctl_event));
 
         list_remove(&data->node);
         free(data);
         pthread_mutex_unlock(&amp_priv->lock);
 
-        ev += sizeof(struct mixer_ctl_event);
-        size -= sizeof(struct mixer_ctl_event);
-        result += sizeof(struct mixer_ctl_event);
+        ev += sizeof(struct ctl_event);
+        size -= sizeof(struct ctl_event);
+        result += sizeof(struct ctl_event);
     }
 
     return result;
 }
 
 static int amp_subscribe_events(struct mixer_plugin *plugin,
-                                  mixer_event_callback event_cb)
+                                  event_callback event_cb)
 {
     struct amp_priv *amp_priv = plugin->priv;
     struct listnode *eparams_node, *ev_node, *temp, *temp2;
@@ -2324,7 +2324,13 @@ static void amp_close(struct mixer_plugin **plugin)
     plugin = NULL;
 }
 
-int amp_open(struct mixer_plugin **plugin, unsigned int card)
+struct mixer_plugin_ops amp_ops = {
+    .close = amp_close,
+    .subscribe_events = amp_subscribe_events,
+    .read_event = amp_read_event,
+};
+
+MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
 {
     struct mixer_plugin *amp;
     struct amp_priv *amp_priv;
@@ -2334,13 +2340,6 @@ int amp_open(struct mixer_plugin **plugin, unsigned int card)
     int be_grp_ctl_cnt = 0;
 
     AGM_LOGI("%s: enter, card %u\n", __func__, card);
-#ifdef AGM_NO_IPC
-    ret = agm_init();
-    if (ret) {
-        AGM_LOGE("%s: agm init failed\n", __func__);
-        return ret;
-    }
-#endif
 
     amp = calloc(1, sizeof(*amp));
     if (!amp) {
@@ -2429,6 +2428,7 @@ int amp_open(struct mixer_plugin **plugin, unsigned int card)
         amp->num_controls = amp_priv->ctl_count;
     }
 
+    amp->ops = &amp_ops;
     amp->priv = amp_priv;
     *plugin = amp;
 
@@ -2464,10 +2464,3 @@ err_priv_alloc:
     free(amp);
     return -ENOMEM;
 }
-
-struct mixer_plugin_ops mixer_plugin_ops = {
-    .open = amp_open,
-    .close = amp_close,
-    .subscribe_events = amp_subscribe_events,
-    .read_event = amp_read_event,
-};

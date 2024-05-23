@@ -74,9 +74,7 @@
 #include <agm/graph_module.h>
 #include <agm/metadata.h>
 #include <agm/utils.h>
-#ifndef AGM_MEMLOG_UNSUPPORTED
 #include <agm/agm_memlogger.h>
-#endif
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -692,9 +690,7 @@ no_config:
     ret = gsl_open((struct gsl_key_vector *)&meta_data_kv->gkv,
                    (struct gsl_key_vector *)&meta_data_kv->ckv,
                    &graph_obj->graph_handle);
-#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(GRAPH_OPEN, ret, graph_obj->graph_handle);
-#endif
     if (ret != 0) {
        ret = ar_err_get_lnx_err_code(ret);
        AGM_LOGE("Failed to open the graph with error %d\n", ret);
@@ -770,9 +766,7 @@ int graph_close(struct graph_obj *graph_obj)
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("gsl close failed error %d\n", ret);
     }
-#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(GRAPH_CLOSE, ret, graph_obj->graph_handle);
-#endif
     /*free the list of modules associated with this graph_object*/
     list_for_each_safe(node, temp_node, &graph_obj->tagged_mod_list) {
         list_remove(node);
@@ -913,9 +907,7 @@ int graph_start(struct graph_obj *graph_obj)
     graph_obj->state = STARTED;
 
 done:
-#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(GRAPH_START, ret, graph_obj->graph_handle);
-#endif
     pthread_mutex_unlock(&graph_obj->lock);
     AGM_LOGD("exit, ret %d", ret);
     return ret;
@@ -979,9 +971,7 @@ int graph_stop(struct graph_obj *graph_obj,
     }
 
 done:
-#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(GRAPH_STOP, ret, graph_obj->graph_handle);
-#endif
     pthread_mutex_unlock(&graph_obj->lock);
     AGM_LOGD("exit, ret %d", ret);
     return ret;
@@ -1041,9 +1031,7 @@ int graph_pause_resume(struct graph_obj *graph_obj, bool pause)
     }
 
 done:
-#ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_graph_enqueue(pause ? GRAPH_PAUSE : GRAPH_RESUME, ret, graph_obj->graph_handle);
-#endif
     return ret;
 }
 

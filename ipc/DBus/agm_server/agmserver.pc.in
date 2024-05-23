@@ -7,3 +7,4 @@ Name: agmserver
 Description: agmserver library
 Version: @VERSION@
 Libs: -L${libdir} -lagmserver
+Cflags: -I${includedir}/mm-audio/qti-agm-server
