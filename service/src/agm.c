@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -315,6 +315,54 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id,
     }
 
 done:
+    return ret;
+}
+
+int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
+{
+    int ret = 0;
+    struct agm_acdb_tunnel_param *payloadACDBTunnelInfo = NULL;
+    uint32_t k = 0;
+    uint32_t *ptr = NULL;
+    uint32_t tag = 0;
+    struct agm_key_vector_gsl gkv = {0, NULL};
+
+    AGM_LOGD("enter\n");
+
+    if (!payload) {
+        AGM_LOGE("payload is nullptr");
+        return -EINVAL;
+    }
+
+    payloadACDBTunnelInfo = (struct agm_acdb_tunnel_param *)payload;
+    AGM_LOGD("payload size is 0x%x", *size);
+    AGM_LOGD("tag=%x istkv=%x num_gkvs=0x%x num_kvs=0x%x blob_size=0x%x",
+        payloadACDBTunnelInfo->tag,
+        payloadACDBTunnelInfo->isTKV,
+        payloadACDBTunnelInfo->num_gkvs,
+        payloadACDBTunnelInfo->num_kvs,
+        payloadACDBTunnelInfo->blob_size);
+
+    ptr = payloadACDBTunnelInfo->blob;
+    for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
+        AGM_LOGD("%d data = 0x%x", k, *ptr++);
+    }
+
+    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    // tag is stored at miid. Convertion happens next.
+    AGM_LOGI("tag = 0x%x", *ptr);
+
+    gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
+    gkv.kv = payloadACDBTunnelInfo->blob;
+
+    ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
+    if (ret) {
+         AGM_LOGE("Error get tag list");
+         goto error;
+    }
+
+error:
     return ret;
 }
 
