@@ -2443,7 +2443,7 @@ static void amp_close(struct mixer_plugin **plugin)
 struct mixer_plugin_ops amp_ops = {
     .close = amp_close,
     .subscribe_events = amp_subscribe_events,
-    .read_event = amp_read_event,
+    .read_event = (ssize_t (*)(struct mixer_plugin *, struct ctl_event *, size_t))amp_read_event,
 };
 
 MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
