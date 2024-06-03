@@ -128,6 +128,11 @@ done:
 
 int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie)
 {
+    if (!checkBinderServiceReady()) {
+        ALOGE("%s: skip callback register for rbvm",__func__);
+        /* skip callback register for rbvm audio sessions */
+        return 0;
+    }
     int ret = 0;
     pthread_mutex_lock(&agmclient_init_lock);
     if (agm_client == NULL) {

@@ -20,10 +20,14 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libhardware \
     libbase \
-    vendor.qti.hardware.AGMIPC@1.0 \
-    libagmsocket_client
+    vendor.qti.hardware.AGMIPC@1.0
 
-LOCAL_HEADER_LIBRARIES := libagm_headers \
-    libagmsocket_client_headers
+LOCAL_HEADER_LIBRARIES := libagm_headers
+
+ifeq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),$(TARGET_BOARD_DERIVATIVE_SUFFIX))
+LOCAL_CFLAGS += -DAR_EARLY_CHIME
+LOCAL_SHARED_LIBRARIES += libagmsocket_client
+LOCAL_HEADER_LIBRARIES += libagmsocket_client_headers
+endif
 
 include $(BUILD_SHARED_LIBRARY)

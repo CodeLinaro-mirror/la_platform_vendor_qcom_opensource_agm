@@ -36,7 +36,7 @@
 #include <vendor/qti/hardware/AGMIPC/1.0/IAGM.h>
 #include <hidl/LegacySupport.h>
 #include "inc/agm_server_wrapper.h"
-#ifdef PLATFORM_MSMNILE_AU
+#if defined(AR_EARLY_CHIME) || defined(PLATFORM_MSMNILE_AU)
 #include <android-base/properties.h>
 #endif
 #include <system/thread_defs.h>

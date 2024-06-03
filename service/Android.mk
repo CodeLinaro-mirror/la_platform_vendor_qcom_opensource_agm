@@ -74,6 +74,10 @@ LOCAL_SHARED_LIBRARIES := \
     libats \
     libcutils
 
+ifeq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),$(TARGET_BOARD_DERIVATIVE_SUFFIX))
+LOCAL_SHARED_LIBRARIES :=$(filter-out libaudioroute,$(LOCAL_SHARED_LIBRARIES))
+endif
+
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
