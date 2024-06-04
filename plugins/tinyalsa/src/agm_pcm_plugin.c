@@ -1,32 +1,38 @@
 /*
-** Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
-** Copyright (c) 2022, 2023 Qualcomm Innovation Center, Inc. All rights reserved.
-**
-** Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above
-**     copyright notice, this list of conditions and the following
-**     disclaimer in the documentation and/or other materials provided
-**     with the distribution.
-**   * Neither the name of The Linux Foundation nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-** THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
-** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-** MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
-** ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
-** BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
-** BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**/
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of The Linux Foundation nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+ * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
+ */
+
 #define LOG_TAG "PLUGIN: pcm"
 
 #include <agm/agm_api.h>
@@ -324,6 +330,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
     int ret = 0;
     uint32_t period_size = priv->period_size; /** in frames */
     uint32_t crossed_boundary = 0;
+    snd_pcm_uframes_t boundary = 0;
     uint32_t old_frame_counter = priv->pos_buf->frame_counter;
 
     do {
@@ -339,8 +346,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
         // Update new_hw_ptr
         __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-        __builtin_uaddl_overflow(new_hw_ptr,
-            priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+        __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+        __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
 
         // Set delta_wall_clk_us only if cached wall clk is non-zero
         if (priv->pos_buf->wall_clk_msw || priv->pos_buf->wall_clk_lsw) {
@@ -357,9 +365,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // hw ptr has jumped through by checking wall clock time delta
         // and assuming read ptr moved at a constant rate
         if (delta_wall_clk_us > 0 ) {
-            delta_wall_clk_frames = ((delta_wall_clk_us / 1000000)
-                                        * (priv->media_config->rate)
-                                        * priv->media_config->channels);
+            __builtin_mul_overflow(delta_wall_clk_us / 1000000,
+                (priv->media_config->rate * priv->media_config->channels),
+                 &delta_wall_clk_frames);
             crossed_boundary = delta_wall_clk_frames / priv->total_size_frames;
         }
 
@@ -390,8 +398,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                     priv->pos_buf->crossed_boundary_cnt += 1;
                 }
                 __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-                __builtin_uaddl_overflow(new_hw_ptr,
-                    priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+                __builtin_umull_overflow(priv->pos_buf->boundary,
+                                         priv->pos_buf->crossed_boundary_cnt, &boundary);
+                __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
                 priv->pos_buf->hw_ptr_base = hw_base;
             }
         }
