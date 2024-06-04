@@ -321,6 +321,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
     int ret = 0;
     uint32_t period_size = priv->period_size; /** in frames */
     uint32_t crossed_boundary = 0;
+    snd_pcm_uframes_t boundary = 0;
 
     do {
         ret = agm_pcm_plugin_get_shared_pos(priv->pos_buf,
@@ -335,8 +336,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
 
         // Update new_hw_ptr
         __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-        __builtin_uaddl_overflow(new_hw_ptr,
-            priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+        __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+        __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
 
         // Set delta_wall_clk_us only if cached wall clk is non-zero
         if (priv->pos_buf->wall_clk_msw || priv->pos_buf->wall_clk_lsw) {
@@ -352,9 +354,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // hw ptr has jumped through by checking wall clock time delta
         // and assuming read ptr moved at a constant rate
         if (delta_wall_clk_us > 0 ) {
-            delta_wall_clk_frames = ((delta_wall_clk_us / 1000000)
-                                        * (priv->media_config->rate)
-                                        * priv->media_config->channels);
+            __builtin_mul_overflow(delta_wall_clk_us / 1000000,
+                (priv->media_config->rate * priv->media_config->channels),
+                 &delta_wall_clk_frames);
             crossed_boundary = delta_wall_clk_frames / priv->total_size_frames;
         }
 
@@ -385,8 +387,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                     priv->pos_buf->crossed_boundary_cnt += 1;
                 }
                 __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-                __builtin_uaddl_overflow(new_hw_ptr,
-                    priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+                __builtin_umull_overflow(priv->pos_buf->boundary,
+                                         priv->pos_buf->crossed_boundary_cnt, &boundary);
+                __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
                 priv->pos_buf->hw_ptr_base = hw_base;
             }
         }
