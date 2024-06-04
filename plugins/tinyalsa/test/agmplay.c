@@ -26,7 +26,7 @@
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
 ** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
@@ -352,6 +352,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
             dev_config[index].rate = rate;
             dev_config[index].ch = channels;
             dev_config[index].bits = bits;
+            dev_config[index].format = PCM_FORMAT_INVALID;
         } else {
             ret = get_device_media_config(BACKEND_CONF_FILE, intf_name[index], &dev_config[index]);
             if (ret) {
