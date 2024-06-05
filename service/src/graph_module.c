@@ -67,6 +67,8 @@ struct param_id_mfc_output_media_fmt_t
    int16_t num_channels;
    uint16_t channel_type[0];
 };
+/*The capture buffer size should be multiple of 5ms(low-power)*/
+#define LOW_POWER_MODE_BUFFER_SAMPLE_TIME_MS 5
 
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
@@ -1329,7 +1331,7 @@ int configure_pcm_encoder_params(struct module_info *mod,
                         (channels * bits);
 
         if (samples_per_msec &&
-            (((frame_size * 1000) % sess_obj->in_media_config.rate) != 0)) {
+        (((frame_size * 1000) % (sess_obj->in_media_config.rate * LOW_POWER_MODE_BUFFER_SAMPLE_TIME_MS)) != 0)) {
             AGM_LOGD("pcm encoder: frame_size %d\n", frame_size);
             ret = configure_pcm_encoder_frame_size(mod, graph_obj, frame_size);
         }
