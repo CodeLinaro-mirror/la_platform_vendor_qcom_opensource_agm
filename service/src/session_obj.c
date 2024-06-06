@@ -634,6 +634,11 @@ static void graph_event_cb(struct agm_event_cb_params *event_params,
                 sess_cb->cb(sess_obj->sess_id,
                                    (struct agm_event_cb_params *)event_params,
                                     sess_cb->client_data);
+            } else if(event_params->event_id == AGM_EVENT_UNDERRUN ||
+                event_params->event_id  == AGM_EVENT_OVERRUN) {
+                                    sess_cb->cb(sess_obj->sess_id,
+                                   (struct agm_event_cb_params *)event_params,
+                                    sess_cb->client_data);
             }
         }
     }
