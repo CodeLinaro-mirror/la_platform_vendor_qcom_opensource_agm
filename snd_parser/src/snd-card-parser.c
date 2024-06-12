@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <agm/agm_list.h>
 #include <cutils/properties.h>
@@ -107,6 +108,24 @@ struct xml_userdata {
 
 static void snd_process_data_buf(struct xml_userdata *data, const XML_Char *tag_name);
 static void snd_dev_def_init(struct xml_userdata *data, const XML_Char *tag_name, enum snd_node_type node_type);
+
+static bool is_valid_file(const char *file)
+{
+    const char* extension = strrchr(file, '.');
+    if (extension == NULL || strcmp(extension, ".xml") != 0)
+        return false;
+
+    if ((file[0] != '/') || (strstr(file, "../") != NULL))
+        return false;
+
+    if (strlen(file) > MAX_PATH)
+        return false;
+
+    if (access(file, F_OK) < 0)
+        return false;
+
+    return true;
+}
 
 static void snd_reset_data_buf(struct xml_userdata *data)
 {
@@ -495,6 +514,12 @@ void *snd_card_def_get_card(unsigned int card)
 
     /* read XML */
     property_get("vendor.audio.card.def", card_def_file, CARD_DEF_FILE);
+    if (!is_valid_file(card_def_file)) {
+        pthread_rwlock_unlock(&snd_rwlock);
+        free(snd_card_name);
+        return NULL;
+    }
+
     file = fopen(card_def_file, "r");
     if (!file) {
         pthread_rwlock_unlock(&snd_rwlock);

@@ -485,6 +485,17 @@ enum agm_event_id {
 
     AGM_EVENT_EARLY_EOS = 0x08001126,
     /**
+    * Indicates underrun event
+    */
+
+    AGM_EVENT_UNDERRUN = 0x080011E6,
+
+    /**
+    * Indicates overrun event
+    */
+
+    AGM_EVENT_OVERRUN = 0x08001A98,
+    /**
      * Sent in pull-push mode only, indicates that data in the circular buffer
      * reaches watermark levels
     */

@@ -33,9 +33,9 @@ LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
 ifeq ($(ENABLE_HYP),true)
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+LOCAL_HEADER_LIBRARIES := libar-gsl_fe_headers
 else
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
+LOCAL_EXPORT_SHARED_LIBRARY_HEADERS := libar-gsl
 LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
 endif
 
@@ -57,7 +57,7 @@ LOCAL_SRC_FILES  := \
     src/utils.c \
     src/device_hw_ep.c
 
-LOCAL_HEADER_LIBRARIES := \
+LOCAL_HEADER_LIBRARIES += \
     libspf-headers \
     libutils_headers \
     libacdb_headers
@@ -71,6 +71,7 @@ LOCAL_SHARED_LIBRARIES := \
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
+LOCAL_CFLAGS += -DBYPASS_SND_CARD_CHECK
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
