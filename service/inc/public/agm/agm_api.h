@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -227,6 +227,7 @@ struct agm_session_aac_enc_cfg {
 };
 struct agm_session_aac_enc {
     uint32_t aac_bit_rate;
+    uint32_t global_cutoff_freq;
     struct agm_session_aac_enc_cfg enc_cfg;
 };
 
@@ -748,6 +749,17 @@ int agm_session_get_params(uint32_t session_id,
     void* payload, size_t size);
 
 /**
+ * \brief Get parameters for modules at acdb without session
+ *
+
+ * \param[in] payload - payload with tag and calibration date
+ * \param[in] size - size of payload
+ *
+ *  \return 0 on success, error code on failure.
+ */
+int agm_get_params_from_acdb_tunnel(void *payload, size_t *size);
+
+/**
  * \brief Set parameters for modules in b/w stream and audio interface
  *
  * \param[in] session_id - Valid audio session id
@@ -779,7 +791,7 @@ int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id,
                                 void *payload, size_t size);
 
 /**
- * \brief Set parameters for modules at acd without session
+ * \brief Set parameters for modules at acdb without session
  *
 
  * \param[in] payload - payload with tag and calibration date
