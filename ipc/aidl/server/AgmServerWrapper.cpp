@@ -426,7 +426,17 @@ AgmServerWrapper::~AgmServerWrapper() {
     memcpy(agmLegacyPayload.get(), in_buffer.data(), in_buffer.size());
 
     int ret = agm_session_get_params(in_sessionId, agmLegacyPayload.get(), in_buffer.size());
-    if (!ret) memcpy(_aidl_return->data(), agmLegacyPayload.get(), in_buffer.size());
+    if (!ret) {
+        _aidl_return->resize(in_buffer.size());
+
+        if (_aidl_return->size() != in_buffer.size()) {
+            ALOGE("%s could not resize: required size %d, resized size %d ", __func__,
+                    in_buffer.size(), _aidl_return->size());
+            return status_tToBinderResult(-ENOMEM);
+        }
+
+        memcpy(_aidl_return->data(), agmLegacyPayload.get(), in_buffer.size());
+    }
     return status_tToBinderResult(ret);
 }
 
