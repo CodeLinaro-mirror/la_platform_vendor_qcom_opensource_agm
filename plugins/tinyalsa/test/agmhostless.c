@@ -136,12 +136,20 @@ int main(int argc, char **argv)
                 card = atoi(*argv);
         } else if (strcmp(*argv, "-i") == 0) {
             argv++;
-            if (*argv)
+            if (*argv) {
                 c_intf_name = *argv;
+            } else {
+                usage();
+                return 1;
+            }
         } else if (strcmp(*argv, "-o") == 0) {
             argv++;
-            if (*argv)
+            if (*argv) {
                 p_intf_name = *argv;
+            } else {
+                usage();
+                return 1;
+            }
         } else if (strcmp(*argv, "-l") == 0) {
             do_loopback = 1;
         } else if (strcmp(*argv, "-skv") == 0) {
