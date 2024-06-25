@@ -3,7 +3,7 @@ LOCAL_PATH := $(call my-dir)
 #temporary solution for VTS test vts_treble_vintf_vendor_test failure
 #Adding Android U and target check to avoid AMS service inclusion for elite
 #on LA3.6.0
-ifneq ( ,$(filter U UpsideDownCake 14, $(PLATFORM_VERSION)))
+ifneq ( ,$(filter U UpsideDownCake 14 V VanillaIceCream 15, $(PLATFORM_VERSION)))
 ifeq (,$(filter $(PRODUCT_NAME), msmnile_au sm6150_au))
 include $(CLEAR_VARS)
 
@@ -15,8 +15,7 @@ LOCAL_CFLAGS        += -v -Wall
 LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/ar_osal
+LOCAL_EXPORT_SHARED_LIBRARY_HEADERS := libar-gsl
 LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     libutils \
@@ -27,8 +26,11 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     libagm
 
+LOCAL_HEADER_LIBRARIES := libarosal_headers
+
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
@@ -93,8 +95,7 @@ LOCAL_CFLAGS        += -v -Wall
 LOCAL_C_INCLUDES    := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES     := src/agm_server_wrapper.cpp
 
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/gsl
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/ar/ar_osal
+LOCAL_EXPORT_SHARED_LIBRARY_HEADERS := libar-gsl
 LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     libutils \
@@ -105,8 +106,11 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0 \
     libagm
 
+LOCAL_HEADER_LIBRARIES := libarosal_headers
+
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 LOCAL_CFLAGS += -DAGM_HW_RSC_CFG_EN
