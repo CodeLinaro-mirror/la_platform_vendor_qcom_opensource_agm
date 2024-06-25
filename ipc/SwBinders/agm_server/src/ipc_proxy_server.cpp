@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted (subject to the limitations in the
@@ -135,6 +135,7 @@ enum {
     GET_AIF_LIST,
     REG_EVENT,
     REG_CB,
+    UNREG_CB,
     GET_TAG_MODULE_INFO,
     SESSION_AIF_SET_PARAMS,
     SESSION_SET_PARAMS,
@@ -533,7 +534,13 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
           android::ProcessState::self()->startThreadPool();
           sp<ICallback> clbk = interface_cast<ICallback>(binder);
           data.writeStrongBinder(IInterface::asBinder(clbk));
-          remote()->transact(REG_CB, data, &reply);
+
+          if(cb != NULL){
+             remote()->transact(REG_CB, data, &reply);
+          }
+          else{
+             remote()->transact(UNREG_CB, data, &reply);
+          }
           return reply.readInt32();
      }
 
@@ -1205,7 +1212,26 @@ android::status_t BnAgmService::onTransact(uint32_t code,
                         &ipc_cb, evnt, clbk_data_obj->client_data);
         reply->writeInt32(rc);
         break ; }
+    case UNREG_CB : {
+        enum event_type evnt;
+        clbk_data *clbk_data_obj = NULL;
 
+        clbk_data_obj = (clbk_data *)calloc(1, sizeof(clbk_data));
+        if (clbk_data_obj == NULL) {
+            AGM_LOGE("calloc failed\n");
+            return -ENOMEM;
+        }
+
+        clbk_data_obj->session_id = data.readUint32();
+        data.read(&clbk_data_obj->cb_func, sizeof(agm_event_cb));
+        evnt = (event_type) data.readUint32();
+        clbk_data_obj->client_data = (void *)data.readInt64();
+
+        rc = ipc_agm_session_register_cb(clbk_data_obj->session_id,
+                        NULL, evnt, clbk_data_obj->client_data);
+        free(clbk_data_obj);
+        reply->writeInt32(rc);
+        break ; }
     case GET_TAG_MODULE_INFO: {
         uint32_t rc, pcm_idx, be_idx;
         size_t count = 0;
