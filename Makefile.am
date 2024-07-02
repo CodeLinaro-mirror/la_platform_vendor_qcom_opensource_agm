@@ -1,1 +1,1 @@
-SUBDIRS = service snd_parser plugins/tinyalsa plugins/tinyalsa/test
+SUBDIRS = snd_parser service plugins/tinyalsa plugins/tinyalsa/test
