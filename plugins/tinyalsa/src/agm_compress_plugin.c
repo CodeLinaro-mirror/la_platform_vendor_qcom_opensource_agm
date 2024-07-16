@@ -26,9 +26,9 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
 **/
@@ -715,16 +715,18 @@ static int agm_compress_partial_drain(struct compress_plugin *plugin)
         return ret;
 
     // Send EOS command and wait for EARLY EOS event
-    pthread_mutex_lock(&priv->early_eos_lock);
-    priv->early_eos = true;
     ret = agm_session_eos(handle);
-    if (ret) {
-        AGM_LOGE("%s: EOS fail\n", __func__);
-        pthread_mutex_unlock(&priv->early_eos_lock);
-        return ret;
+    pthread_mutex_lock(&priv->early_eos_lock);
+    if (!priv->eos_received) {
+        priv->early_eos = true;
+        if (ret) {
+            AGM_LOGE("%s: EOS fail\n", __func__);
+            pthread_mutex_unlock(&priv->early_eos_lock);
+            return ret;
+        }
+        pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
+        AGM_LOGD("%s: out of early eos wait\n", __func__);
     }
-    pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
-    AGM_LOGD("%s: out of early eos wait\n", __func__);
     pthread_mutex_unlock(&priv->early_eos_lock);
 
     AGM_LOGV("%s: exit\n", __func__);
