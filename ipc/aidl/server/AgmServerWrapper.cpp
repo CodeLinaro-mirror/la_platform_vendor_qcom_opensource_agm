@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -154,7 +154,8 @@ void ClientInfo::clearCallbacks() {
     for (const auto &callback : mCallbackInfo) {
         // unregister at agm level..
         agm_session_register_cb(callback->getSessionId(), NULL,
-                                (enum event_type)callback->getEventType(), (void *)callback.get());
+                                (enum event_type)callback->getEventType(),
+                                (void *)callback->getCallback().get());
     }
     mCallbackInfo.clear();
 }
