@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -927,7 +927,7 @@ static struct device_group_data* device_get_group_data_by_name(char *dev_name)
 
     memset(group_name, 0, MAX_DEV_NAME_LEN);
 
-    ptr = strstr(dev_name, "-VIRT");
+    ptr = strstr(dev_name, "-VT");
     pos = ptr - dev_name + 1;
     strlcpy(group_name, dev_name, pos);
 

@@ -317,8 +317,8 @@ static int populate_cdc_dma_i2s_tdm_pcm_ep_info(hw_ep_info_t *hw_ep_info, char *
     sscanf(value, "%20[^-]-%60s", arg, value);
     strlcpy(intf_idx, arg, strlen(arg)+1);
 
-    if(strstr(value, "VIRT-")) {
-        /* with below statement, arg = VIRT, value = "x-codec" */
+    if(strstr(value, "VT-")) {
+        /* with below statement, arg = VT, value = "x-codec" */
         sscanf(value, "%20[^-]-%60s", arg, value);
         /* with below statement, arg = x, value = "codec" */
         sscanf(value, "%20[^-]-%60s", arg, value);
@@ -360,10 +360,10 @@ static void update_virtual_device_name(struct device_obj *dev_obj, int num)
     char *ptr = NULL;
     int pos = 0;
 
-    ptr = strstr(dev_obj->name, "VIRT-");
+    ptr = strstr(dev_obj->name, "VT-");
     pos = ptr - dev_obj->name;
-    pos += strlen("VIRT-");
-    ptr += strlen("VIRT-") + 1;
+    pos += strlen("VT-");
+    ptr += strlen("VT-") + 1;
     snprintf(&dev_obj->name[pos], DEV_ARG_SIZE, "%d%s", num, ptr);
 }
 
