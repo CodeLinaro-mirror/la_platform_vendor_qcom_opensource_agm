@@ -28,7 +28,7 @@
 **/
 
 /* Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -369,7 +369,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
 
     if (pcm_start(pcm) < 0) {
         printf("start error\n");
-        goto err_close_pcm;
+        goto err_free_buffer;
     }
 
     /* catch ctrl-c to shutdown cleanly */
@@ -392,7 +392,11 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     /* connect pcm stream to audio intf */
     connect_agm_audio_intf_to_stream(mixer, device, name, STREAM_PCM, false);
 
-    free(buffer);
+err_free_buffer:
+    if (buffer != NULL) {
+        free(buffer);
+        buffer = NULL;
+    }
 err_close_pcm:
     pcm_close(pcm);
 err_close_mixer:

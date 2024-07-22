@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "agm_client_wrapper"
@@ -679,6 +679,8 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
         sp<IAGMCallback> ClbkBinder = NULL;
         ClntClbk *cl_clbk_data = NULL;
         uint64_t cl_clbk_data_add = 0;
+        struct client_cb_data *cb_data = NULL;
+        struct listnode *node = NULL, *tempnode = NULL;
         android::sp<IAGM> agm_client = get_agm_server();
         if (!is_cb_registered) {
             ClbkBinder = new AGMCallback();
@@ -691,7 +693,7 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
         }
         if (cb != NULL) {
             cl_clbk_data = new ClntClbk(session_id, cb, evt_type, client_data);
-            struct client_cb_data *cb_data = (struct client_cb_data *)calloc(1, sizeof(struct client_cb_data));
+            cb_data = (struct client_cb_data *)calloc(1, sizeof(struct client_cb_data));
             if (!cb_data) {
                 delete cl_clbk_data;
                 return -ENOMEM;
@@ -702,8 +704,6 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
             list_add_tail(&client_clbk_data_list, &cb_data->node);
             pthread_mutex_unlock(&clbk_data_list_lock);
         } else {
-            struct listnode *node = NULL, *tempnode = NULL;
-            struct client_cb_data *cb_data = NULL;
             pthread_mutex_lock(&clbk_data_list_lock);
             list_for_each_safe(node, tempnode, &client_clbk_data_list) {
                 cb_data = node_to_item(node, struct client_cb_data, node);
@@ -711,10 +711,7 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
                 if ((cl_clbk_data->session_id == session_id) &&
                     (cl_clbk_data->event == evt_type) &&
                     (cl_clbk_data->clnt_data == client_data)) {
-                    list_remove(node);
-                    delete cl_clbk_data;
-                    cl_clbk_data = NULL;
-                    free(cb_data);
+                    cl_clbk_data_add = 0;
                     break;
                 }
             }
@@ -725,6 +722,12 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
                                                         evt_type,
                                                         cl_clbk_data_add,
                                                         (uint64_t )client_data);
+        if (!cb && node) {
+            list_remove(node);
+            delete cl_clbk_data;
+            cl_clbk_data = NULL;
+            free(cb_data);
+        }
         return ret;
     }
     return -EINVAL;

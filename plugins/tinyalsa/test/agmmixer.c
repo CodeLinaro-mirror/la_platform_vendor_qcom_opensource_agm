@@ -28,7 +28,7 @@
 **/
 
 /* Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1097,9 +1097,10 @@ int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t va
     if (dpp_kv) {
         gkv[index].key = DEVICEPP_TX;
         gkv[index].value = gDevice_pp;
+        index++;
     }
 
-    for (int i = 0; i < index + 1; i++) {
+    for (int i = 0; i < index; i++) {
         printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
@@ -1273,13 +1274,15 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
         if (usecase == PLAYBACK  && val != HAPTICS_PLAYBACK && dpp_kv) {
             gkv[index].key = DEVICEPP_RX;
             gkv[index].value = gDevice_pp;
+            index++;
         } else if (val != HAPTICS_PLAYBACK && dpp_kv) {
             gkv[index].key = DEVICEPP_TX;
             gkv[index].value = gDevice_pp;
+            index++;
         }
     }
 
-    for (int i = 0; i < index + 1; i++) {
+    for (int i = 0; i < index; i++) {
         printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
