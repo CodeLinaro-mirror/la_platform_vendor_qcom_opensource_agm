@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "agm_client_wrapper"
@@ -701,7 +701,13 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
             cb_data->data = cl_clbk_data_add;
             list_add_tail(&client_clbk_data_list, &cb_data->node);
             pthread_mutex_unlock(&clbk_data_list_lock);
-        } else {
+        }
+        int ret = agm_client->ipc_agm_session_register_callback(
+                                                        session_id,
+                                                        evt_type,
+                                                        cl_clbk_data_add,
+                                                        (uint64_t )client_data);
+        if (!cb) {
             struct listnode *node = NULL, *tempnode = NULL;
             struct client_cb_data *cb_data = NULL;
             pthread_mutex_lock(&clbk_data_list_lock);
@@ -720,11 +726,6 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
             }
             pthread_mutex_unlock(&clbk_data_list_lock);
         }
-        int ret = agm_client->ipc_agm_session_register_callback(
-                                                        session_id,
-                                                        evt_type,
-                                                        cl_clbk_data_add,
-                                                        (uint64_t )client_data);
         return ret;
     }
     return -EINVAL;
