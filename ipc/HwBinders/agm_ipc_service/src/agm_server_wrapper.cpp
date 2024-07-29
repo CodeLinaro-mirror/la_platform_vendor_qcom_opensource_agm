@@ -4,7 +4,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -113,6 +113,7 @@ void client_death_notifier::serviceDied(uint64_t cookie,
                 session_handle = NULL;
             }
             list_remove(node);
+            handle->clbk_binder = NULL;
             free(handle);
         }
     }
@@ -868,6 +869,7 @@ Return<int32_t> AGM::ipc_agm_session_close(uint64_t hndl) {
                pthread_mutex_destroy(&session_handle->handle_lock);
                list_remove(sess_node);
                free(session_handle);
+               session_handle = NULL;
                goto done;
             }
            pthread_mutex_unlock(&session_handle->handle_lock);
