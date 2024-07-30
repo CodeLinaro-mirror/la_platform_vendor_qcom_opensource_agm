@@ -1314,6 +1314,8 @@ int configure_pcm_encoder_params(struct module_info *mod,
     struct session_obj *sess_obj = graph_obj->sess_obj;
     uint32_t samples_per_msec = 0, frame_size = 0;
     uint32_t channels = MONO, bits = 16;
+    uint32_t m_max_init = 1;
+    uint32_t m_max_final = 1;
 
     /* configure output media format */
     ret = configure_output_media_format(mod, graph_obj);
@@ -1330,10 +1332,19 @@ int configure_pcm_encoder_params(struct module_info *mod,
         frame_size = (sess_obj->in_buffer_config.size * 8) /
                         (channels * bits);
 
+        //determines the maximum possible value of m_max
+        m_max_init = (frame_size * 1000) / (sess_obj->in_media_config.rate * LOW_POWER_MODE_BUFFER_SAMPLE_TIME_MS);
+        for (uint32_t m_val = m_max_init; m_val > 1; m_val--) {
+             if (0 == (frame_size % m_val)) {
+                AGM_LOGD("m_max_final %d", m_val);
+                m_max_final = m_val;
+                break;
+             }
+        }
         if (samples_per_msec &&
         (((frame_size * 1000) % (sess_obj->in_media_config.rate * LOW_POWER_MODE_BUFFER_SAMPLE_TIME_MS)) != 0)) {
             AGM_LOGD("pcm encoder: frame_size %d\n", frame_size);
-            ret = configure_pcm_encoder_frame_size(mod, graph_obj, frame_size);
+            ret = configure_pcm_encoder_frame_size(mod, graph_obj, frame_size/m_max_final);
         }
     }
 
