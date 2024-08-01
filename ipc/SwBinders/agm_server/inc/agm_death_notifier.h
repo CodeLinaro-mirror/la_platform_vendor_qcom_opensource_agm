@@ -39,6 +39,8 @@
 #include <cutils/list.h>
 #include "utils.h"
 
+extern struct listnode clbk_data_list;
+
 using namespace android;
 
 class IAGMClient : public ::android::IInterface
