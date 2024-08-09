@@ -76,16 +76,13 @@ client_info *get_client_handle_from_list(pid_t pid)
     struct listnode *node = NULL;
     client_info *handle = NULL;
 
-    pthread_mutex_lock(&g_client_list_lock);
     list_for_each(node, &g_client_list) {
         handle = node_to_item(node, client_info, list);
         if (handle->pid == pid) {
             AGM_LOGV("%s: Found handle %p\n", __func__, handle);
-            pthread_mutex_unlock(&g_client_list_lock);
             return handle;
         }
     }
-    pthread_mutex_unlock(&g_client_list_lock);
     return NULL;
 }
 
@@ -134,22 +131,18 @@ void agm_add_session_obj_handle(uint64_t handle)
           get_client_handle_from_list(IPCThreadState::self()->getCallingPid());
     if (client_handle == NULL) {
         AGM_LOGE("%s: Could not find client handle\n", __func__);
-        goto exit;
+        return;
     }
 
-    pthread_mutex_lock(&g_client_list_lock);
     hndl = (agm_client_session_handle *)calloc(1,
                                             sizeof(agm_client_session_handle));
     if (hndl == NULL) {
         AGM_LOGE("%s: Cannot allocate memory to store agm session handle\n",
                                                                   __func__);
-        goto exit;
+        return;
     }
     hndl->handle = handle;
     list_add_tail(&client_handle->agm_client_hndl_list, &hndl->list);
-
-exit:
-    pthread_mutex_unlock(&g_client_list_lock);
 }
 
 void agm_remove_session_obj_handle(uint64_t handle)
@@ -163,10 +156,8 @@ void agm_remove_session_obj_handle(uint64_t handle)
           get_client_handle_from_list(IPCThreadState::self()->getCallingPid());
     if (client_handle == NULL) {
         AGM_LOGE("%s: Could not find client handle\n", __func__);
-        return;
     }
 
-    pthread_mutex_lock(&g_client_list_lock);
     list_for_each_safe(node, tempnode, &client_handle->agm_client_hndl_list) {
         hndl = node_to_item(node, agm_client_session_handle, list);
         if (hndl->handle == handle) {
@@ -176,7 +167,6 @@ void agm_remove_session_obj_handle(uint64_t handle)
             break;
         }
     }
-    pthread_mutex_unlock(&g_client_list_lock);
 }
 
 void agm_unregister_client(sp<IBinder> binder)
@@ -242,11 +232,11 @@ void client_death_notifier::binderDied(const wp<IBinder>& who)
                        list_remove(sess_node);
                        free(hndl);
                    }
-                }
-                list_remove(node);
-                handle->binder = NULL;
-                handle->Client_death_notifier = NULL;
-                free(handle);
+            }
+            list_remove(node);
+            handle->binder = NULL;
+            handle->Client_death_notifier = NULL;
+            free(handle);
         }
     }
     pthread_mutex_unlock(&g_client_list_lock);
