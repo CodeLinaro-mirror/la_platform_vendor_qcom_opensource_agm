@@ -109,6 +109,7 @@
 struct listnode clbk_data_list;
 pthread_mutex_t clbk_data_list_lock;
 bool clbk_data_list_init = false;
+extern pthread_mutex_t g_client_list_lock;
 
 android::sp<IAGMClient> clt_binder;
 
@@ -864,11 +865,13 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         uint32_t session_id;
         enum agm_session_mode sess_mode;
         uint64_t handle = 0;
+        pthread_mutex_lock(&g_client_list_lock);
         session_id = data.readUint32();
         sess_mode = (enum agm_session_mode)data.readUint32();
         rc = ipc_agm_session_open(session_id, sess_mode, &handle);
         if (handle != 0)
             agm_add_session_obj_handle(handle);reply->writeInt64((long)handle);
+        pthread_mutex_unlock(&g_client_list_lock);
         reply->writeInt32(rc);
         break; }
 
@@ -983,9 +986,12 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         break; }
 
     case CLOSE : {
-        uint64_t handle = (uint64_t )data.readInt64();
+        uint64_t handle = 0;
+        pthread_mutex_lock(&g_client_list_lock);
+        handle = (uint64_t )data.readInt64();
         rc = ipc_agm_session_close(handle);
         agm_remove_session_obj_handle(handle);
+        pthread_mutex_unlock(&g_client_list_lock);
         reply->writeInt32(rc);
         break; }
 
