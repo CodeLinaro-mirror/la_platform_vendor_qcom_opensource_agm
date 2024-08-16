@@ -47,6 +47,7 @@ if ALSALIB_SUPPORT
     libagm_la_LIBADD += -lasound
 else
     libagm_la_LIBADD += -ltinyalsa
+    libagm_la_CFLAGS += -DBYPASS_ALSA_HW
 endif
 
 if VENDOR_PARTITION
