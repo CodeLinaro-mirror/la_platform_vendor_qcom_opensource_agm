@@ -28,7 +28,7 @@
 **
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
 **/
@@ -216,6 +216,16 @@ void agm_compress_event_cb(uint32_t session_id __unused,
         if (priv->early_eos) {
             priv->early_eos = false;
             pthread_cond_signal(&priv->early_eos_cond);
+        }
+        pthread_mutex_unlock(&priv->early_eos_lock);
+    } else if (event_params->event_id == AGM_EVENT_EARLY_EOS_INTERNAL) {
+        AGM_LOGD("%s: Early EOS event received from internal unblock\n", __func__);
+        /* Unblock early eos wait */
+        pthread_mutex_lock(&priv->early_eos_lock);
+        if (priv->early_eos) {
+            priv->early_eos = false;
+            pthread_cond_signal(&priv->early_eos_cond);
+            priv->internal_unblock_early_eos = true;
         }
         pthread_mutex_unlock(&priv->early_eos_lock);
     } else {
