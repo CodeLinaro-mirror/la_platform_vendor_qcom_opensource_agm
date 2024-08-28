@@ -93,6 +93,9 @@ struct agm_compress_priv {
     bool eos;
     bool early_eos;
     bool eos_received;
+    bool internal_unblock_eos;
+    bool internal_unblock_early_eos;
+    bool internal_unblock_write;
 
     enum agm_gapless_silence_type type;   /* Silence Type (Initial/Trailing) */
     uint32_t silence;  /* Samples to remove */
@@ -784,6 +787,7 @@ static int agm_compress_stop(void *data)
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
         pthread_cond_signal(&priv->eos_cond);
+        priv->internal_unblock_eos = true;
         priv->eos = false;
     }
     priv->eos_received = true;
@@ -793,6 +797,7 @@ static int agm_compress_stop(void *data)
     pthread_mutex_lock(&priv->early_eos_lock);
     if (priv->early_eos) {
         pthread_cond_signal(&priv->early_eos_cond);
+        priv->internal_unblock_early_eos = true;
         priv->early_eos = false;
     }
     pthread_mutex_unlock(&priv->early_eos_lock);
@@ -800,6 +805,7 @@ static int agm_compress_stop(void *data)
     /* Signal Poll */
     pthread_mutex_lock(&priv->poll_lock);
     pthread_cond_signal(&priv->poll_cond);
+    priv->internal_unblock_write = true;
     pthread_mutex_unlock(&priv->poll_lock);
 
     ret = agm_session_stop(handle);
@@ -876,11 +882,17 @@ static int agm_compress_drain(void *data)
         }
         pthread_cond_wait(&priv->eos_cond, &priv->eos_lock);
         AGM_LOGD("%s: out of eos wait\n", __func__);
+        if (priv->internal_unblock_eos) {
+            AGM_LOGD("%s: out of eos wait, internally unblocked\n", __func__);
+            priv->internal_unblock_eos = false;
+            ret = -ECANCELED;
+            errno = ret;
+        }
     }
     priv->eos_received = false;
     pthread_mutex_unlock(&priv->eos_lock);
 
-    return 0;
+    return ret;
 }
 
 static int agm_compress_partial_drain(void *data)
@@ -908,6 +920,12 @@ static int agm_compress_partial_drain(void *data)
         }
         pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
         AGM_LOGD("%s: out of early eos wait\n", __func__);
+        if (priv->internal_unblock_early_eos) {
+            AGM_LOGD("%s: out of early eos wait, internally unblocked\n", __func__);
+            priv->internal_unblock_early_eos = false;
+            ret = -ECANCELED;
+            errno = ret;
+        }
     }
     pthread_mutex_unlock(&priv->early_eos_lock);
 
@@ -982,6 +1000,16 @@ static int agm_compress_poll(struct agm_compress_priv *priv,
         ret = pthread_cond_wait(&priv->poll_cond, &priv->poll_lock);
     else
         ret = pthread_cond_timedwait(&priv->poll_cond, &priv->poll_lock, &poll_ts);
+
+    if (priv->internal_unblock_write) {
+        AGM_LOGD("%s: out of early eos wait, internally unblocked\n", __func__);
+        priv->internal_unblock_write = false;
+        ret = -ECANCELED;
+        errno = ret;
+        pthread_mutex_unlock(&priv->poll_lock);
+        goto exit;
+    }
+
     pthread_mutex_unlock(&priv->poll_lock);
 
     if (ret == ETIMEDOUT) {
@@ -990,6 +1018,7 @@ static int agm_compress_poll(struct agm_compress_priv *priv,
     } else {
         ret = POLLOUT;
     }
+exit :
     return ret;
 }
 
@@ -1055,6 +1084,7 @@ void agm_compress_close(void *data)
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
         pthread_cond_signal(&priv->eos_cond);
+        priv->internal_unblock_eos = true;
         priv->eos = false;
     }
     pthread_mutex_unlock(&priv->eos_lock);
@@ -1063,6 +1093,7 @@ void agm_compress_close(void *data)
     pthread_mutex_lock(&priv->early_eos_lock);
     if (priv->early_eos) {
         pthread_cond_signal(&priv->early_eos_cond);
+        priv->internal_unblock_early_eos = true;
         priv->early_eos = false;
     }
     pthread_mutex_unlock(&priv->early_eos_lock);
@@ -1070,6 +1101,7 @@ void agm_compress_close(void *data)
     /* Signal Poll */
     pthread_mutex_lock(&priv->poll_lock);
     pthread_cond_signal(&priv->poll_cond);
+    priv->internal_unblock_write = true;
     pthread_mutex_unlock(&priv->poll_lock);
 
     /* Make sure callbacks are not running at this point */
