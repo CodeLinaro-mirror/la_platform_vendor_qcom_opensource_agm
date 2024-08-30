@@ -6,6 +6,7 @@ h_sources = ./inc/agm-dbus-utils.h \
             ./inc/agm_server_wrapper_dbus.h
 
 AM_CPPFLAGS = -I $(srcdir)/inc -I $(top_srcdir)/service/inc/public
+AM_CPPFLAGS += -I $(top_srcdir)/service/inc/public/agm
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
 
 lib_LTLIBRARIES = libagmserverwrapper.la
