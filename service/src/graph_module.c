@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -462,7 +462,7 @@ static int configure_tdm_ep(struct module_info *mod,
     hw_ep_info_t hw_ep_info = dev_obj->hw_ep_info;
     struct gsl_key_vector tag_key_vect;
     struct apm_module_param_data_t *header;
-    struct param_id_tdm_intf_cfg_t* tdm_config;
+    struct param_id_tdm_intf_cfg_t *tdm_config;
     size_t payload_sz, ret_payload_sz = 0;
     uint8_t *payload = NULL;
     struct agm_media_config media_config = (dev_obj->group_data) ?
@@ -535,6 +535,25 @@ static int configure_tdm_ep(struct module_info *mod,
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
+        if (ret == AR_EALREADY) {
+            void *payload_copy = calloc(1, sizeof(param_id_tdm_intf_cfg_t));
+            struct param_id_tdm_intf_cfg_t *tdm_config_copy = (struct  param_id_tdm_intf_cfg_t*) payload_copy;
+            if (!payload_copy) {
+                AGM_LOGE("Not enough memory for payload_copy");
+                ret = -ENOMEM;
+                goto free_kvp;
+            }
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
+            memcpy(tdm_config_copy, tdm_config, sizeof(param_id_tdm_intf_cfg_t));
+            int gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_sz);
+            bool is_same = (0 == gsl_ret) && compare_tdm_custom_config(tdm_config_copy, tdm_config);
+            free(payload_copy);
+            if (is_same) {
+                ret = 0;
+                AGM_LOGI("config is the same, bypass EALREADY");
+                goto free_kvp;
+            }
+        }
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config for module %d failed with error %d",
                       mod->tag, ret);
@@ -548,6 +567,28 @@ done:
     return ret;
 }
 
+bool compare_tdm_custom_config(param_id_tdm_intf_cfg_t *tdm_config_p1, param_id_tdm_intf_cfg_t *tdm_config_p2) {
+    bool result = false;
+
+    if (!tdm_config_p1 || !tdm_config_p2)
+        goto done;
+
+    if (tdm_config_p1->lpaif_type != tdm_config_p2->lpaif_type) goto done;
+    if (tdm_config_p1->intf_idx != tdm_config_p2->intf_idx) goto done;
+    if (tdm_config_p1->sync_src != tdm_config_p2->sync_src) goto done;
+    if (tdm_config_p1->ctrl_data_out_enable != tdm_config_p2->ctrl_data_out_enable) goto done;
+    if (tdm_config_p1->slot_mask != tdm_config_p2->slot_mask) goto done;
+    if (tdm_config_p1->nslots_per_frame != tdm_config_p2->nslots_per_frame) goto done;
+    if (tdm_config_p1->slot_width != tdm_config_p2->slot_width) goto done;
+    if (tdm_config_p1->sync_mode != tdm_config_p2->sync_mode) goto done;
+    if (tdm_config_p1->ctrl_invert_sync_pulse != tdm_config_p2->ctrl_invert_sync_pulse) goto done;
+
+    /* all fields are are the same, return true */
+    result = true;
+
+done:
+    return result;
+}
 
 static int configure_aux_pcm_ep(struct module_info *mod,
                            struct graph_obj *graph_obj)
@@ -724,7 +765,7 @@ int configure_hw_ep_media_config(struct module_info *mod,
     size_t payload_size = 0;
     struct device_obj *dev_obj = mod->dev_obj;
     struct apm_module_param_data_t* header;
-    struct param_id_hw_ep_mf_t* hw_ep_media_conf;
+    struct param_id_hw_ep_mf_t *hw_ep_media_conf;
     struct agm_media_config media_config = (dev_obj->group_data) ?
                           dev_obj->group_data->media_config.config :dev_obj->media_config;
 
@@ -762,14 +803,54 @@ int configure_hw_ep_media_config(struct module_info *mod,
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
+        if (ret == AR_EALREADY) {
+            void *payload_copy = calloc(1, sizeof(param_id_hw_ep_mf_t));
+            struct param_id_hw_ep_mf_t *hw_ep_media_conf_copy = (struct param_id_hw_ep_mf_t*) payload_copy;
+            if (!payload_copy) {
+                AGM_LOGE("No memory to allocate for payload_copy");
+                ret = -ENOMEM;
+                goto free_payload;
+            }
+            AGM_LOGI("Getting AR_EALREADY, check if Custom_config is the same");
+            memcpy(hw_ep_media_conf_copy, hw_ep_media_conf, sizeof(param_id_hw_ep_mf_t));
+            AGM_LOGI("payload after set: %p", payload);
+            int gsl_ret = gsl_get_custom_config(graph_obj->graph_handle, payload, payload_size);
+            bool is_same = (0 == gsl_ret) && compare_hw_ep_media_config(hw_ep_media_conf_copy, hw_ep_media_conf);
+            free(payload_copy);
+            if (is_same) {
+                ret = 0;
+                AGM_LOGI("config is the same, bypass EALREADY");
+                goto free_payload;
+            }
+        }
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("custom_config command for module %d failed with error %d",
                       mod->tag, ret);
     }
+
+free_payload:
     free(payload);
 done:
     AGM_LOGD("exit, ret %d", ret);
     return ret;
+}
+
+bool compare_hw_ep_media_config(param_id_hw_ep_mf_t *hw_ep_media_conf_p1, param_id_hw_ep_mf_t *hw_ep_media_conf_p2) {
+    bool result = false;
+
+    if (!hw_ep_media_conf_p1 || !hw_ep_media_conf_p2)
+        goto done;
+
+    if (hw_ep_media_conf_p1->sample_rate != hw_ep_media_conf_p2->sample_rate) goto done;
+    if (hw_ep_media_conf_p1->bit_width != hw_ep_media_conf_p2->bit_width) goto done;
+    if (hw_ep_media_conf_p1->num_channels != hw_ep_media_conf_p2->num_channels) goto done;
+    if (hw_ep_media_conf_p1->data_format != hw_ep_media_conf_p2->data_format) goto done;
+
+    /* all fields are are the same, return true */
+    result = true;
+
+done:
+    return result;
 }
 
 int configure_hw_ep(struct module_info *mod,
