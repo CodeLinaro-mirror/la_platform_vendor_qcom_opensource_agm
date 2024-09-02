@@ -23,8 +23,13 @@ LOCAL_SHARED_LIBRARIES := \
     libbase \
     libcutils \
     libutils \
-    libar-gsl \
     vendor.qti.hardware.agm-V1-ndk
+
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+else
+LOCAL_SHARED_LIBRARIES += libar-gsl
+endif
 
 LOCAL_HEADER_LIBRARIES := libagm_headers
 

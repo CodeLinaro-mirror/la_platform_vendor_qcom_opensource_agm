@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -1281,7 +1281,17 @@ bool get_file_path_extn(char* file_path_extn, char* file_path_extn_wo_variant)
         snd_card_found = update_snd_card_info(snd_card_name);
 
         if (snd_card_found) {
-            split_snd_card_name(snd_card_name, file_path_extn, file_path_extn_wo_variant);
+            if (strstr(snd_card_name, "gvmauto")) {
+                if (strstr(snd_card_name, "8255")) {
+                    strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
+                } else {
+                    AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s", snd_card_name);
+                    snd_card_found = false;
+                    break;
+                }
+            } else {
+                split_snd_card_name(snd_card_name, file_path_extn, file_path_extn_wo_variant);
+            }
             AGM_LOGV("Found Codec sound card");
             break;
         } else {

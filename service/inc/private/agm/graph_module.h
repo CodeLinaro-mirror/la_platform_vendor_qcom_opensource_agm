@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
  */
@@ -166,5 +166,7 @@ struct graph_obj {
 
 void get_stream_module_list_array(module_info_t **info, size_t *size);
 void get_hw_ep_module_list_array(module_info_t **info, size_t *size);
+bool compare_tdm_custom_config(param_id_tdm_intf_cfg_t *tdm_config_p1, param_id_tdm_intf_cfg_t *tdm_config_p2);
+bool compare_hw_ep_media_config(param_id_hw_ep_mf_t *hw_ep_media_conf_p1, param_id_hw_ep_mf_t *hw_ep_media_conf_p2);
 
 #endif /*GPH_MODULE_H*/

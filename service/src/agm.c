@@ -48,6 +48,11 @@
 #include <log_utils.h>
 #endif
 
+#ifdef BYPASS_ATS_INIT
+#else
+#include "ats.h"
+#endif
+
 #define RETRY_INTERVAL_US 500 * 1000
 static bool agm_initialized = 0;
 static pthread_t ats_thread;
@@ -58,6 +63,9 @@ static void *ats_init_thread(void *obj __unused)
     int ret = 0;
     int retry = 0;
 
+#ifdef BYPASS_ATS_INIT
+    AGM_LOGD("ATS init skipped for Automotive Hypervisor");
+#else
     while(retry++ < MAX_RETRIES) {
         ret = ats_init();
         if (0 != ret) {
@@ -68,6 +76,7 @@ static void *ats_init_thread(void *obj __unused)
             break;
         }
     }
+#endif
     return NULL;
 }
 
@@ -86,7 +95,7 @@ int agm_init()
     log_utils_init();
 #endif
 
-    agm_memlog_init();
+//    agm_memlog_init();
     pthread_attr_init (&tattr);
     pthread_attr_getschedparam (&tattr, &param);
     param.sched_priority = SCHED_FIFO;
@@ -114,9 +123,13 @@ int agm_deinit()
     //close all sessions first
     if (agm_initialized) {
         AGM_LOGD("Deinitializing ATS...");
+#ifdef BYPASS_ATS_INIT
+        AGM_LOGD("ATS deinit skipped for Automotive Hypervisor");
+#else
         ats_deinit();
+#endif
         session_obj_deinit();
-        agm_memlog_deinit();
+//        agm_memlog_deinit();
         agm_initialized = 0;
     }
 
@@ -328,7 +341,7 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
     gkv.kv = payloadACDBTunnelInfo->blob;
 
-    ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
+    ret = session_dummy_rw_acdb_tunnel(payload, false);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;
@@ -546,7 +559,7 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size)
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
-    ret = session_dummy_rw_acdb_tunnel(payload, TRUE);
+    ret = session_dummy_rw_acdb_tunnel(payload, true);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;

@@ -42,13 +42,20 @@ LOCAL_HEADER_LIBRARIES := \
     libarmemlog_headers
 
 LOCAL_SHARED_LIBRARIES := \
-    libar-gsl \
     liblog \
     liblx-osal \
     libaudioroute \
     libats \
     libarmemlog \
     libcutils
+
+ifeq ($(ENABLE_HYP), true)
+LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
+LOCAL_CFLAGS += -DBYPASS_SND_CARD_CHECK
+else
+LOCAL_SHARED_LIBRARIES += libar-gsl
+endif
 
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
