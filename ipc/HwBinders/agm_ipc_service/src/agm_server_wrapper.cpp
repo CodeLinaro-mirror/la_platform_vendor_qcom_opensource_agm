@@ -1126,6 +1126,7 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
                 break;
             }
         }
+        list_remove(node);
         pthread_mutex_unlock(&clbk_data_list_lock);
         ipc_cb = NULL;
     }
@@ -1142,7 +1143,6 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
      * Free client data after deregister
      */
     if (!ipc_client_data) {
-        list_remove(node);
         free(clbk_data_obj);
         delete sr_clbk_data;
         clbk_data_obj = NULL;
