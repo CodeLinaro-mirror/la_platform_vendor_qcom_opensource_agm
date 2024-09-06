@@ -13,5 +13,5 @@ agmclient_sources = ${top_srcdir}/src/agm_client_wrapper_dbus.cpp
 lib_LTLIBRARIES = libagmclientwrapper.la
 libagmclientwrapper_la_SOURCES = $(agmclient_sources)
 libagmclientwrapper_la_CPPFLAGS := $(AM_CPPFLAGS) $(DBUS_CFLAGS)
-libagmclientwrapper_la_LIBADD = -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lar_osal
+libagmclientwrapper_la_LIBADD = -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lar-osal
 libagmclientwrapper_la_LDFLAGS = -ldl -shared -avoid-version -lpthread -lrt $(DBUS_LIBS)
