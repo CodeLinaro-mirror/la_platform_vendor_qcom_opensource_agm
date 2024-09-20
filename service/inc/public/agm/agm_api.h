@@ -512,6 +512,12 @@ enum agm_event_id {
     */
 
     AGM_EVENT_WRITE_DONE = 0x2,
+    /**
+    * Indicates early EOS event flagged internally by AGM in case
+    * flush
+    */
+
+    AGM_EVENT_EARLY_EOS_INTERNAL = 0x5,
    /**
     * Indicates early EOS event
     */
