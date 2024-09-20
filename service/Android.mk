@@ -28,6 +28,11 @@ LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH_WRITABLE="/data/vendor/audio/acdbd
 else
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS        += -DAR_EARLY_CHIME
+# LOCAL_CFLAGS        += -DACDB_ES_PATH=\"/vendor_early_services/etc/acdbdata\"
+# LOCAL_CFLAGS        += -DACDB_DELTA_FILE_ES_PATH=\"/vendor_early_services/etc/acdbdata/delta\"
+endif
 
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
@@ -66,7 +71,8 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     liblx-osal \
     libaudioroute \
-    libats
+    libats \
+    libcutils
 
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe

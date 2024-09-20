@@ -44,6 +44,10 @@ LOCAL_SRC_FILES     := agmplay.c
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS        += -DAR_EARLY_CHIME
+# LOCAL_CFLAGS        += -DBACKEND_CONF_ES_FILE=\"/vendor_early_services/vendor/etc/backend_conf.xml\"
+endif
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
@@ -78,6 +82,10 @@ LOCAL_SRC_FILES     := agmplay.c
 
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS        += -DPLATFORM_MSMNILE_AU
+endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS        += -DAR_EARLY_CHIME
+# LOCAL_CFLAGS        += -DBACKEND_CONF_ES_FILE=\"/vendor_early_services/vendor/etc/backend_conf.xml\"
 endif
 
 LOCAL_HEADER_LIBRARIES := \
