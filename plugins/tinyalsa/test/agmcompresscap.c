@@ -56,7 +56,7 @@
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #include <stdint.h>
@@ -480,7 +480,7 @@ int main(int argc, char **argv)
     unsigned int rate = DEFAULT_RATE, channels = DEFAULT_CHANNELS;
     unsigned int bits = 16;
     unsigned int format = DEFAULT_FORMAT;
-    char* intf_name;
+    char* intf_name = NULL;
     int ret = 0;
     unsigned int devicepp_kv = DEVICEPP_TX_AUDIO_FLUENCE_SMECNS;
     unsigned int stream_kv = 0;
