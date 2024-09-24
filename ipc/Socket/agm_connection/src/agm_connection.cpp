@@ -102,7 +102,8 @@ int AgmSocket::Send(uint16_t cmd,
 
     p = reinterpret_cast<struct AgmPacketCom*>(prepareBuffForPayload(size));
     if (nullptr == p) {
-        ALOGE("SHOULD NOT!");
+        ALOGE("AgmPacketCom malloc failed %s", strerror(errno));
+        return -ENOMEM;
     }
 
     p->pkt.hdr.msg_id = getUniqueId();
@@ -138,7 +139,6 @@ int AgmSocket::Receive(const agmCmdHandler& handler) const
     memset(&iov, 0, sizeof(iov));
     memset(&hdr, 0, sizeof(hdr));
 
-
     iov.iov_base = &hdr;
     iov.iov_len = sizeof(struct AgmPacketHdr);
     msg.msg_iov = &iov;
@@ -167,7 +167,8 @@ int AgmSocket::Receive(const agmCmdHandler& handler) const
 
     p = reinterpret_cast<struct AgmPacketCom*>(prepareBuffForPayload(size));
     if (nullptr == p) {
-        ALOGE("SHOULD NOT!");
+        ALOGE("AgmPacketCom malloc failed %s", strerror(errno));
+        return -ENOMEM;
     }
 
     memset(&msg, 0, sizeof(msg));
