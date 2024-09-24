@@ -149,7 +149,7 @@ int agm_aif_set_metadata(uint32_t aif_id, uint32_t size, uint8_t *metadata)
     int32_t ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
                                          ret, aif_id);
         goto done;
@@ -173,7 +173,7 @@ int agm_aif_set_media_config(uint32_t aif_id,
     int ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d, retrieving device obj with audio_intf id=%d\n",
                                                         ret, aif_id);
         goto done;
@@ -372,7 +372,7 @@ int agm_aif_set_params(uint32_t aif_id,
     int32_t ret = 0;
 
     ret = device_get_obj(aif_id, &obj);
-    if (ret) {
+    if (ret || !obj) {
         AGM_LOGE("Error:%d retrieving device obj with audio_intf id=%d\n",
                                          ret, aif_id);
         goto done;
