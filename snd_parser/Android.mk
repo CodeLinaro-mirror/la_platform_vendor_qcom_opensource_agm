@@ -7,6 +7,12 @@ LOCAL_MODULE_TAGS    := optional
 LOCAL_VENDOR_MODULE  := true
 
 LOCAL_CFLAGS         := -Wno-unused-parameter -Wall
+
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS         += -DCARD_DEF_FILE_ES=\"/vendor_early_services/vendor/etc/card-defs.xml\"
+# LOCAL_CFLAGS         += -DAR_EARLY_CHIME
+endif
+
 LOCAL_CFLAGS         += -DCARD_DEF_FILE=\"/vendor/etc/card-defs.xml\"
 
 LOCAL_C_INCLUDES            := $(LOCAL_PATH)/inc

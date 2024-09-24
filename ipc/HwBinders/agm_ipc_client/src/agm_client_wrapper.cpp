@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "agm_client_wrapper"
@@ -43,6 +43,12 @@
 #include <agm/agm_api.h>
 #include "inc/AGMCallback.h"
 #include <mutex>
+
+#include <agm_conn_client.h>
+#ifdef AR_EARLY_CHIME
+#include <chrono>
+#include <cutils/properties.h>
+#endif
 
 using android::hardware::Return;
 using android::hardware::hidl_vec;
@@ -68,6 +74,26 @@ struct client_cb_data {
    struct listnode node;
    uint64_t data;
 };
+
+static inline bool checkBinderServiceReady() {
+#ifdef AR_EARLY_CHIME
+    static bool flag = false;
+    if (flag) {
+        /* return true if servicemanager online once */
+        return true;
+    } else {
+        char state[PROPERTY_VALUE_MAX] = {0};
+        char default_state[] = "\0";
+        property_get("hwservicemanager.ready", state, default_state);
+        if (!strcmp(state, "true")) {
+            flag = true;
+        }
+    }
+    return flag;
+#else
+    return true;
+#endif
+}
 
 void server_death_notifier::serviceDied(uint64_t cookie,
                    const android::wp<::android::hidl::base::V1_0::IBase>& who __unused)
@@ -127,6 +153,9 @@ done:
 int agm_aif_set_media_config(uint32_t audio_intf,
                                 struct agm_media_config *media_config) {
     ALOGV("%s called audio_intf = %d \n", __func__, audio_intf);
+    if (!checkBinderServiceReady()) {
+        return agm_aif_set_media_config_socket(audio_intf, media_config);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         hidl_vec<AgmMediaConfig> media_config_hidl;
@@ -146,6 +175,12 @@ int agm_session_set_config(uint64_t handle,
                             struct agm_media_config *media_config,
                             struct agm_buffer_config *buffer_config) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long)handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_set_config_socket(handle,
+                                            session_config,
+                                            media_config,
+                                            buffer_config);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         hidl_vec<AgmSessionConfig> session_config_hidl;
@@ -187,6 +222,9 @@ int agm_deinit(){
 
 int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata){
     ALOGV("%s called aif = %d, size =%d \n", __func__, audio_intf, size);
+    if (!checkBinderServiceReady()) {
+        return agm_aif_set_metadata_socket(audio_intf, size, metadata);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         hidl_vec<uint8_t> metadata_hidl;
@@ -203,6 +241,9 @@ int agm_session_set_metadata(uint32_t session_id,
                              uint32_t size,
                              uint8_t *metadata){
     ALOGV("%s called sess_id = %d, size = %d\n", __func__, session_id, size);
+    if (!checkBinderServiceReady()) {
+        return agm_session_set_metadata_socket(session_id, size, metadata);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         hidl_vec<uint8_t> metadata_hidl;
@@ -220,6 +261,12 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf,
                                  uint32_t size, uint8_t *metadata){
     ALOGV("%s called with sess_id = %d, aif = %d, size = %d\n", __func__,
                                                  session_id, audio_intf, size);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_set_metadata_socket(session_id,
+                                                    audio_intf,
+                                                    size,
+                                                    metadata);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         hidl_vec<uint8_t> metadata_hidl;
@@ -236,6 +283,9 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf,
 
 int agm_session_close(uint64_t handle){
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_close_socket(handle);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         return agm_client->ipc_agm_session_close(handle);
@@ -245,6 +295,9 @@ int agm_session_close(uint64_t handle){
 
 int agm_session_prepare(uint64_t handle){
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_prepare_socket(handle);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         return agm_client->ipc_agm_session_prepare(handle);
@@ -254,6 +307,9 @@ int agm_session_prepare(uint64_t handle){
 
 int agm_session_start(uint64_t handle){
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_start_socket(handle);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         return agm_client->ipc_agm_session_start(handle);
@@ -263,6 +319,9 @@ int agm_session_start(uint64_t handle){
 
 int agm_session_stop(uint64_t handle){
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_stop_socket(handle);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         return agm_client->ipc_agm_session_stop(handle);
@@ -309,6 +368,9 @@ int agm_session_suspend(uint64_t handle){
 int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode ,
                      uint64_t *handle) {
     ALOGD("%s called with handle = %x , *handle = %x\n", __func__, handle, *handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_open_socket(session_id, sess_mode, handle);
+    }
     int ret = -EINVAL;
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
@@ -331,6 +393,9 @@ int  agm_session_aif_connect(uint32_t session_id,
                              bool state) {
     ALOGV("%s called with sess_id = %d, aif = %d, state = %s\n", __func__,
            session_id, audio_intf, state ? "true" : "false" );
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_connect_socket(session_id, audio_intf, state);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         return agm_client->ipc_agm_session_aif_connect(session_id,
@@ -367,6 +432,9 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count){
 
 int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_write_socket(handle, buf, byte_count);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         int ret = -EINVAL;
@@ -421,6 +489,9 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir) {
 
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     ALOGV("%s called \n", __func__);
+    if (!checkBinderServiceReady()) {
+        return agm_get_aif_info_list_socket(aif_list, num_aif_info);
+    }
     if (!agm_server_died) {
         uint32_t num = (uint32_t) *num_aif_info;
         int ret = -EINVAL;
@@ -456,6 +527,9 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id,
                                         void *payload, size_t *size)
 {
     ALOGV("%s : sess_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_get_tag_module_info_socket(session_id, aif_id, payload, size);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
         uint32_t size_hidl = (uint32_t) *size;
@@ -531,6 +605,9 @@ int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id,
                                                     void *payload, size_t size)
 {
     ALOGV("%s : sess_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_set_params_socket(session_id, aif_id, payload, size);
+    }
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
 
@@ -674,6 +751,10 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
     std::lock_guard<std::mutex> lck(agm_session_register_cb_mutex);
     ALOGV("%s : sess_id = %d, evt_type = %d, client_data = %p \n", __func__,
            session_id, evt_type, client_data);
+    if (!checkBinderServiceReady()) {
+        /* skip callback register for early audio sessions */
+        return 0;
+    }
     int32_t ret = 0;
     if (!agm_server_died) {
         sp<IAGMCallback> ClbkBinder = NULL;
@@ -701,7 +782,13 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
             cb_data->data = cl_clbk_data_add;
             list_add_tail(&client_clbk_data_list, &cb_data->node);
             pthread_mutex_unlock(&clbk_data_list_lock);
-        } else {
+        }
+        int ret = agm_client->ipc_agm_session_register_callback(
+                                                        session_id,
+                                                        evt_type,
+                                                        cl_clbk_data_add,
+                                                        (uint64_t )client_data);
+        if (!cb) {
             struct listnode *node = NULL, *tempnode = NULL;
             struct client_cb_data *cb_data = NULL;
             pthread_mutex_lock(&clbk_data_list_lock);
@@ -720,11 +807,6 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
             }
             pthread_mutex_unlock(&clbk_data_list_lock);
         }
-        int ret = agm_client->ipc_agm_session_register_callback(
-                                                        session_id,
-                                                        evt_type,
-                                                        cl_clbk_data_add,
-                                                        (uint64_t )client_data);
         return ret;
     }
     return -EINVAL;
@@ -1021,6 +1103,9 @@ int agm_aif_group_set_media_config(uint32_t group_id,
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups)
 {
     ALOGV("%s called \n", __func__);
+    if (!checkBinderServiceReady()) {
+        return agm_get_group_aif_info_list_socket(aif_list, num_groups);
+    }
     if (!agm_server_died) {
         uint32_t num = (uint32_t) *num_groups;
         int ret = -EINVAL;
@@ -1144,6 +1229,9 @@ int agm_hw_rsc_config(enum agm_hw_config_type type, uint8_t *cfg,
                     uint32_t cfg_len, uint8_t *outbuff,
                     uint32_t *out_len)
 {
+    if (!checkBinderServiceReady()) {
+        return agm_hw_rsc_config_socket(type, cfg, cfg_len, outbuff, out_len);
+    }
     int ret = -EINVAL;
     hidl_vec<uint8_t> cfg_hidl;
     if (!agm_server_died) {
