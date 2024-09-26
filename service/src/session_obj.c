@@ -428,8 +428,16 @@ static int session_set_loopback(struct session_obj *sess_obj,
         goto done;
     }
 
-    if (enable)
+    if (enable) {
+        /*
+         * Update sess_id and loopback state of cap session to playback session object
+         * So that loopback state/session can be fetched to update cal parameters on
+         * loopback graph along with individual playback session to view it in RTC mode.
+         */
+        pb_obj->loopback_sess_id = sess_obj->sess_id;
+        pb_obj->loopback_state = sess_obj->loopback_state;
         ret = graph_add(sess_obj->graph, merged_metadata, NULL);
+    }
     else
         ret = graph_remove(sess_obj->graph, merged_metadata);
 
@@ -1671,7 +1679,10 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
     struct aif *aif_obj = NULL;
     struct agm_meta_data_gsl *merged_metadata = NULL;
     struct agm_meta_data_gsl *capture_metadata = NULL;
+    struct agm_meta_data_gsl *playback_metadata = NULL;
     struct agm_key_vector_gsl ckv;
+    struct session_obj *pb_obj = NULL;
+    struct session_obj *cp_obj = NULL;
     struct device_obj *ec_ref_dev_obj = NULL;
 
     pthread_mutex_lock(&sess_obj->lock);
@@ -1711,6 +1722,49 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
         if (ret) {
             AGM_LOGE("Error:%d setting calibration on sess_id:%d, aif_id:%d\n",
                     ret, sess_obj->sess_id, aif_obj->aif_id);
+        }
+        // update CKV values for loopback path as well
+        if (sess_obj->loopback_state == true) {
+            AGM_LOGD("entered loopback state session  true\n");
+            ret = session_obj_get(sess_obj->sess_id, &pb_obj);
+            if (ret || !pb_obj) {
+                AGM_LOGE("Error:%d getting session object with aif id:%d\n",
+                        ret, sess_obj->sess_id);
+                goto done;
+            }
+            ret = session_obj_get(sess_obj->loopback_sess_id, &cp_obj);
+            if (ret || !cp_obj) {
+                AGM_LOGE("Error:%d getting session object with aif id:%d\n",
+                        ret, sess_obj->loopback_sess_id);
+                goto done;
+            }
+            capture_metadata = session_get_merged_metadata(cp_obj);
+            if (!capture_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with session id=%d\n",
+                                             ret, sess_obj->sess_id);
+                goto done;
+            }
+            playback_metadata = session_get_merged_metadata(pb_obj);
+            if (!playback_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with session id=%d\n",
+                                                            ret, sess_obj->loopback_sess_id);
+                goto done;
+            }
+            merged_metadata = metadata_merge(2, capture_metadata, playback_metadata);
+            if (!merged_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with playback"
+                           "session id=%d and capture session id=%d\n",
+                             ret, sess_obj->sess_id);
+                goto done;
+            }
+            ret = graph_set_cal(cp_obj->graph, merged_metadata);
+            if (ret) {
+                AGM_LOGE("Error:%d setting calibration for loopback on sess_id:%d\n",
+                        ret, sess_obj->sess_id);
+            }
         }
         // update CKV values for EC path as well
         if (sess_obj->ec_ref_state == true) {
@@ -1771,6 +1825,10 @@ done:
     if (merged_metadata) {
         metadata_free(merged_metadata);
         free(merged_metadata);
+    }
+    if (playback_metadata) {
+        metadata_free(playback_metadata);
+        free(playback_metadata);
     }
 
     pthread_mutex_unlock(&sess_obj->lock);
