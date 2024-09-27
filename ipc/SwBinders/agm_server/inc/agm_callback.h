@@ -72,6 +72,7 @@ private:
 typedef struct {
     struct listnode list;
     uint32_t session_id;
+    enum event_type evnt;
     sp<ICallback> cb_binder;
     agm_event_cb cb_func;
     void * client_data;

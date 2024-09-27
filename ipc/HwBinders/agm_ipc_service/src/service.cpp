@@ -34,6 +34,7 @@
 #ifdef PLATFORM_MSMNILE_AU
 #include <cutils/properties.h>
 #endif
+#include <system/thread_defs.h>
 
 using vendor::qti::hardware::AGMIPC::V1_0::IAGM;
 using vendor::qti::hardware::AGMIPC::V1_0::implementation::AGM;
@@ -63,6 +64,7 @@ int main() {
 #endif
     sp<IAGM> service = new AGM();
     AGM *temp = static_cast<AGM *>(service.get());
+    setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_URGENT_AUDIO);
     if (temp->is_agm_initialized()) {
         configureRpcThreadpool(16, true /*callerWillJoin*/);
         if(android::OK !=  service->registerAsService()) {
