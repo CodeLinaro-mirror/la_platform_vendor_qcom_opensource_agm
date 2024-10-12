@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -79,6 +79,10 @@ static void read_event_data(struct mixer *mixer, char *mixer_str)
     num_values = mixer_ctl_get_num_values(ctl);
     printf("%s - %d\n", __func__, num_values);
     buf = calloc(1, num_values);
+    if (!buf) {
+        printf("Failed to allocate memory for buffer\n");
+        return;
+    }
 
     ret = mixer_ctl_get_array(ctl, buf, num_values);
     if (ret < 0) {
@@ -218,6 +222,11 @@ static void* merge_payload(uint32_t miid, int num, int *sum,  ...)
     void *payload = NULL;
     uint8_t *buf;
     uint32_t *module_instance_id = NULL;
+
+    if (!size || !temp) {
+        printf("Failed to allocate memory for size and temp\n");
+        return NULL;
+    }
 
     va_start(valist, num);
     for (i = 0; i < num; i++) {
@@ -408,12 +417,12 @@ int main(int argc, char **argv)
             if (*argv)
                 device = atoi(*argv);
         }
-        if (strcmp(*argv, "-D") == 0) {
+        if (*argv && strcmp(*argv, "-D") == 0) {
             argv++;
             if (*argv)
                 card = atoi(*argv);
         }
-        if (strcmp(*argv, "-i") == 0) {
+        if (*argv && strcmp(*argv, "-i") == 0) {
             argv++;
             if (*argv)
                 audio_intf = atoi(*argv);
@@ -422,7 +431,7 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-e") == 0) {
+        if (*argv && strcmp(*argv, "-e") == 0) {
             argv++;
             if (*argv)
                 ec_aif = atoi(*argv);
@@ -431,23 +440,23 @@ int main(int argc, char **argv)
                 return 1;
             }
         }
-        if (strcmp(*argv, "-T") == 0) {
+        if (*argv && strcmp(*argv, "-T") == 0) {
             argv++;
             if (*argv)
                 cap_time = atoi(*argv);
-        } else if (strcmp(*argv, "-dkv") == 0) {
+        } else if (*argv && strcmp(*argv, "-dkv") == 0) {
             argv++;
             if (*argv)
                 device_kv = convert_char_to_hex(*argv);
-        } else if (strcmp(*argv, "-skv") == 0) {
+        } else if (*argv && strcmp(*argv, "-skv") == 0) {
             argv++;
             if (*argv)
                 stream_kv = convert_char_to_hex(*argv);
-        } else if (strcmp(*argv, "-ikv") == 0) {
+        } else if (*argv && strcmp(*argv, "-ikv") == 0) {
             argv++;
             if (*argv)
                 instance_kv = atoi(*argv);
-        } else if (strcmp(*argv, "-dppkv") == 0) {
+        } else if (*argv && strcmp(*argv, "-dppkv") == 0) {
             argv++;
             if (*argv)
                 devicepp_kv = convert_char_to_hex(*argv);
