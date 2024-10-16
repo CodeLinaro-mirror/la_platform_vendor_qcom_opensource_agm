@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -45,6 +45,7 @@
 #include <agm/device.h>
 #include <agm/metadata.h>
 #include <agm/utils.h>
+#include <fcntl.h>
 #ifdef DEVICE_USES_ALSALIB
 #include <alsa/asoundlib.h>
 #else
@@ -1093,12 +1094,13 @@ int device_init()
 {
     int ret = 0;
 
+#ifndef CARD_STATE_UNSUPPORTED
     ret = wait_for_snd_card_to_online();
     if (ret) {
         AGM_LOGE("Not found any SND card online\n");
         return ret;
     }
-
+#endif
     ret = parse_snd_card();
     if (ret)
         AGM_LOGE("no valid snd device found\n");
