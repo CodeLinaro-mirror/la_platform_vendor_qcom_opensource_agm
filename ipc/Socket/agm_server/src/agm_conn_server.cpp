@@ -80,6 +80,10 @@ static void agm_session_aif_set_params_socket(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
                 const AgmSocket& conn);
+static int agm_session_aif_set_cal_socket(uint16_t cmd,
+                uint32_t args_payload_size,
+                uint8_t* args_payload,
+                const AgmSocket& conn);
 static void agm_session_write_socket(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
@@ -118,6 +122,7 @@ static unordered_map<uint16_t, agmServerWrapper> functionTable = {
     {static_cast<uint16_t>(AGM_CMD_SESSION_SET_METADATA), &agm_session_set_metadata_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_AIF_GET_TAG_MODULE_INFO), &agm_session_aif_get_tag_module_info_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_AIF_SET_PARAMS), &agm_session_aif_set_params_socket},
+    {static_cast<uint16_t>(AGM_CMD_SESSION_AIF_SET_CAL), &agm_session_aif_set_cal_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_WRITE), &agm_session_write_socket},
     {static_cast<uint16_t>(AGM_CMD_HW_SRC_CONFIG), &agm_hw_rsc_config_socket}
 };
@@ -931,6 +936,69 @@ static void agm_session_aif_set_params_socket(uint16_t cmd,
 
     /* 6. call Send to get IPC reply */
     conn.Send(cmd, AGM_CMD_TYPE_REPLY, reply_size, payloadWriter);
+}
+
+static int agm_session_aif_set_cal_socket(uint16_t cmd,
+                uint32_t args_payload_size,
+                uint8_t* args_payload,
+                const AgmSocket& conn)
+{
+    uint32_t* session_id = nullptr;
+    uint32_t* aif_id = nullptr;
+    struct AgmCalConfig_Socket* cal_config = nullptr;
+
+    uint8_t* pos = args_payload;
+    int32_t ret = 0;
+    uint32_t reply_size = 0;
+
+    /* 1. validate the payload size */
+    if (args_payload_size <
+                (sizeof(uint32_t) +sizeof(uint32_t) + sizeof(struct AgmCalConfig_Socket))) {
+        ALOGE("Invalid payload size %llu", args_payload_size);
+        auto errorWriter = [&ret](uint8_t* payload) {
+            ret = -1;
+            memcpy(payload, &ret, sizeof(int32_t));
+        };
+        conn.Send(cmd, AGM_CMD_TYPE_REPLY, sizeof(int32_t), errorWriter);
+        return -1;
+    }
+    /* 2. extract args from request's payload */
+    session_id = reinterpret_cast<uint32_t*>(pos);
+    pos += sizeof(uint32_t);
+    aif_id = reinterpret_cast<uint32_t*>(pos);
+    pos += sizeof(uint32_t);
+    cal_config = reinterpret_cast<struct AgmCalConfig_Socket*>(pos);
+    ALOGD("Debug  session_id %u aif_id %u num_ckvs %u", *session_id, *aif_id, cal_config->num_ckvs);
+
+    /* 3. call agm service interface */
+    struct agm_cal_config *cConfig = (struct agm_cal_config*)malloc(sizeof(struct agm_cal_config) +
+            (cal_config->num_ckvs * sizeof(struct agm_key_value)));
+
+    if(!cConfig)
+            return -ENOMEM;
+
+    cConfig->num_ckvs = cal_config->num_ckvs;
+
+    for (int i=0 ; i < cal_config->num_ckvs ; i++ ) {
+        cConfig->kv[i].key = cal_config->kv[i].key;
+        cConfig->kv[i].value = cal_config->kv[i].value;
+    }
+    ret = agm_session_aif_set_cal(*session_id, *aif_id, cConfig);
+
+    /* 4. calculate reply's payload size */
+    reply_size += sizeof(ret);
+
+    /* 5. define function obj to write reply's payload */
+    auto payloadWriter = [&ret](uint8_t* payload) {
+        memcpy(payload, &ret, sizeof(int32_t));
+    };
+
+    /* 6. call Send to get IPC reply */
+    conn.Send(cmd, AGM_CMD_TYPE_REPLY, reply_size, payloadWriter);
+
+    /* 7. Free allocated memory and return */
+    free(cConfig);
+    return 0;
 }
 
 static void agm_session_write_socket(uint16_t cmd,

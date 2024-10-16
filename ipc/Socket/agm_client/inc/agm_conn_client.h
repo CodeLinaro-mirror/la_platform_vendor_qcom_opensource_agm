@@ -30,6 +30,9 @@ int agm_session_aif_set_params_socket(uint32_t session_id,
                             void* payload,
                             size_t size);
 
+int agm_session_aif_set_cal_socket(uint32_t session_id, uint32_t aif_id,
+                            struct agm_cal_config *cal_config);
+
 int agm_aif_set_media_config_socket(uint32_t aif_id,
                             struct agm_media_config *media_config);
 

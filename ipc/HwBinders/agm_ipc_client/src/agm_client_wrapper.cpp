@@ -716,6 +716,10 @@ int agm_session_aif_set_cal(uint32_t session_id ,uint32_t aif_id ,
                                               struct agm_cal_config *cal_config)
 {
     ALOGV("%s : sess_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_set_cal_socket(session_id, aif_id, cal_config);
+    }
+
     if (!agm_server_died) {
         android::sp<IAGM> agm_client = get_agm_server();
 

@@ -227,6 +227,63 @@ int agm_session_aif_set_params_socket(uint32_t session_id,
     return ret;
 }
 
+int agm_session_aif_set_cal_socket(uint32_t session_id,uint32_t aif_id,
+                            struct agm_cal_config *cal_config)
+{
+    int32_t ret = 0;
+    struct AgmCalConfig_Socket *cconfig = nullptr;
+    ALOGD("%s", __func__);
+    /* 1. get socket client */
+    AgmSocketClient* conn = AgmSocketClient::getInstance();
+    /* 2. get whole payload size */
+    uint32_t payload_size = sizeof(uint32_t) + sizeof(uint32_t) +
+                            sizeof(struct AgmCalConfig_Socket);
+    /* 3. define function obj to write payload */
+    auto payloadFiller = [&](uint8_t* payload) {
+        memcpy(payload, &session_id, sizeof(uint32_t));
+        payload += sizeof(uint32_t);
+        memcpy(payload, &aif_id, sizeof(uint32_t));
+        payload += sizeof(uint32_t);
+
+        struct AgmCalConfig_Socket *cconfig =
+                  (struct AgmCalConfig_Socket*)malloc(sizeof(struct AgmCalConfig_Socket) +
+                               (cal_config->num_ckvs * sizeof(struct AgmKeyValue_Socket)));
+
+        cconfig->num_ckvs = cal_config->num_ckvs;
+
+        for (int i=0 ; i < cal_config->num_ckvs ; i++ ) {
+            cconfig->kv[i].key = cal_config->kv[i].key;
+            cconfig->kv[i].value = cal_config->kv[i].value;
+            ALOGV("Debug  session_id %u aif_id %u num_ckvs %u,key %u value %u",
+                            session_id, aif_id, cal_config->num_ckvs,
+                            cal_config->kv[i].key, cal_config->kv[i].value);
+        }
+
+        memcpy(payload, cconfig, sizeof(struct AgmCalConfig_Socket));
+
+    };
+    ALOGD("Debug  session_id %u aif_id %u num_ckvs %u", session_id, aif_id, cal_config->num_ckvs);
+
+    /* 4. call Send for IPC */
+    conn->Send(AGM_CMD_SESSION_AIF_SET_CAL,
+            AGM_CMD_TYPE_REQUEST,
+            payload_size,
+            payloadFiller);
+    /* 5. define function obj to extract reply from payload */
+    auto replyhandler = [&ret](uint16_t cmd,uint16_t msg_type,uint32_t size,
+                    uint8_t* payload, const AgmSocket& socket) {
+        if (AGM_CMD_SESSION_AIF_SET_CAL == cmd && AGM_CMD_TYPE_REPLY == msg_type) {
+            memcpy(&ret, payload, sizeof(int32_t));
+        }
+    };
+    /* 6. call Receive to get IPC reply */
+    conn->Receive(replyhandler);
+
+    /* 7. Free allocated memory and return */
+    free(cconfig);
+    return ret;
+}
+
 int agm_aif_set_media_config_socket(uint32_t aif_id,
                 struct agm_media_config *media_config)
 {

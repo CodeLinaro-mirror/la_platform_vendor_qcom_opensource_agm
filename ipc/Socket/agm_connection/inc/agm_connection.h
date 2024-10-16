@@ -22,6 +22,7 @@ enum AGM_CMD {
     AGM_CMD_SESSION_SET_METADATA,
     AGM_CMD_SESSION_AIF_GET_TAG_MODULE_INFO,
     AGM_CMD_SESSION_AIF_SET_PARAMS,
+    AGM_CMD_SESSION_AIF_SET_CAL,
     AGM_CMD_HW_SRC_CONFIG,
     AGM_CMD_AIF_SET_MEDIA_CONFIG,
     AGM_CMD_AIF_SET_METADATA,
@@ -51,6 +52,16 @@ enum AGM_CMD_TYPE {
 struct AifInfo_Socket {
     char aif_name[AIF_NAME_MAX_LEN];          /**< AIF name  */
     uint32_t dir;               /**< direction */
+};
+
+struct AgmKeyValue_Socket {
+    uint32_t key;                  /**<key */
+    uint32_t value;                /**<value */
+};
+
+struct AgmCalConfig_Socket {
+    uint32_t num_ckvs;               /**<number of ckvs */
+    struct AgmKeyValue_Socket kv[];  /**<Array of key-value pairs */
 };
 
 struct AgmMediaConfig_Socket {
