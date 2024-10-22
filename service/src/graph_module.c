@@ -113,6 +113,9 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[5] = PCM_CHANNEL_RB;
          channel_map[6] = PCM_CHANNEL_LS;
          channel_map[7] = PCM_CHANNEL_RS;
+         break;
+    default:
+        AGM_LOGE("Unsupport channels: %d", channels);
     }
 }
 
@@ -232,7 +235,7 @@ static int configure_codec_dma_ep(struct module_info *mod,
     }
 
     if (chmap[0] < media_config.channels) {
-        AGM_LOGE("Mismatch in num channels, expected %d, received %d",
+        AGM_LOGE("Mismatch in num channels, expected %u, received %u",
                   media_config.channels, chmap[0]);
         ret = -EINVAL;
         goto done;
@@ -255,7 +258,7 @@ static int configure_codec_dma_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config for module %d failed with error %d",
+        AGM_LOGE("custom_config for module %u failed with error %d",
                       mod->tag, ret);
     }
 done:
@@ -346,7 +349,7 @@ static int configure_i2s_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config for module %d failed with error %d",
+        AGM_LOGE("custom_config for module %u failed with error %d",
                       mod->tag, ret);
     }
 free_kvp:
@@ -465,7 +468,7 @@ static int configure_tdm_ep(struct module_info *mod,
             }
         }
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config for module %d failed with error %d",
+        AGM_LOGE("custom_config for module %u failed with error %d",
                       mod->tag, ret);
     }
 free_kvp:
@@ -577,7 +580,7 @@ static int configure_aux_pcm_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config for module %d failed with error %d",
+        AGM_LOGE("custom_config for module %u failed with error %d",
                       mod->tag, ret);
     }
 free_kvp:
@@ -599,13 +602,13 @@ static int configure_slimbus_ep(struct module_info *mod,
     struct param_id_slimbus_cfg_t* slimbus_cfg;
     size_t payload_sz;
     uint8_t *payload = NULL;
-    int i = 0;
+    uint32_t i = 0;
     uint32_t *chmap = NULL;
 
     AGM_LOGD("entry mod tag %x miid %x mid %x", mod->tag, mod->miid, mod->mid);
 
     if (dev_obj->media_config.channels > SB_MAX_CHAN_CNT) {
-        AGM_LOGE("device channels %d exceed max supported ch %d for Slimbus",
+        AGM_LOGE("device channels %u exceed max supported ch %d for Slimbus",
                   dev_obj->media_config.channels, SB_MAX_CHAN_CNT);
         ret = -EINVAL;
         goto done;
@@ -633,7 +636,7 @@ static int configure_slimbus_ep(struct module_info *mod,
     }
 
     if (chmap[0] < dev_obj->media_config.channels) {
-        AGM_LOGE("Mismatch in num channels, expected %d, received %d",
+        AGM_LOGE("Mismatch in num channels, expected %u, received %u",
                  dev_obj->media_config.channels, chmap[0]);
         ret = -EINVAL;
         goto done;
@@ -645,7 +648,7 @@ static int configure_slimbus_ep(struct module_info *mod,
     header->param_size = sizeof(struct param_id_slimbus_cfg_t);
     slimbus_cfg->slimbus_dev_id = hw_ep_info.ep_config.slim_config.dev_id;
 
-    AGM_LOGD("slimbus intf cfg dev id %d ch %d", slimbus_cfg->slimbus_dev_id,
+    AGM_LOGD("slimbus intf cfg dev id %u ch %u", slimbus_cfg->slimbus_dev_id,
              dev_obj->media_config.channels);
     for (i = 0; i < dev_obj->media_config.channels; i++) {
         slimbus_cfg->shared_channel_mapping[i] = chmap[i + 1];
@@ -655,7 +658,7 @@ static int configure_slimbus_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_sz);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config for module %d failed with error %d",
+        AGM_LOGE("custom_config for module %u failed with error %d",
                       mod->tag, ret);
     }
 done:
@@ -740,7 +743,7 @@ int configure_hw_ep_media_config(struct module_info *mod,
             }
         }
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
 
@@ -810,12 +813,12 @@ int configure_hw_ep(struct module_info *mod,
     case AUDIOSS_DMA:
     case PCM_DUMMY:
     case BTFM_PROXY:
-        AGM_LOGD("no ep configuration for %d\n",  dev_obj->hw_ep_info.intf);
+        AGM_LOGD("no ep configuration for %u\n",  dev_obj->hw_ep_info.intf);
         break;
     default:
-         AGM_LOGE("hw intf %d not enabled yet", dev_obj->hw_ep_info.intf);
-         ret = -EINVAL;
-         break;
+        AGM_LOGE("hw intf %u not enabled yet", dev_obj->hw_ep_info.intf);
+        ret = -EINVAL;
+        break;
     }
     return ret;
 }
@@ -974,7 +977,7 @@ int configure_output_media_format(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
 done:
@@ -1016,7 +1019,7 @@ static int configure_pcm_encoder_frame_size(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("pcm encoder frame size config for module %d failed with error %d",
+        AGM_LOGE("pcm encoder frame size config for module %u failed with error %d",
                       mod->tag, ret);
     }
     free(payload);
@@ -1304,7 +1307,8 @@ int configure_placeholder_dec(struct module_info *mod,
     struct session_obj *sess_obj = NULL;
     size_t payload_size = 0, real_fmt_id = 0;
 
-    AGM_LOGE("enter");
+    tkv.kvp =  NULL;
+    AGM_LOGD("enter");
     memset(&tkv, 0, sizeof(struct gsl_key_vector));
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object");
@@ -1353,7 +1357,7 @@ int configure_placeholder_dec(struct module_info *mod,
 done:
     if (tkv.kvp)
         free(tkv.kvp);
-    AGM_LOGE("exit, ret %d", ret);
+    AGM_LOGD("exit, ret %d", ret);
     return ret;
 }
 
@@ -1650,7 +1654,7 @@ int configure_compress_shared_mem_ep(struct module_info *mod,
 
     if (is_format_bypassed(sess_obj->out_media_config.format) ||
         sess_obj->stream_config.sess_mode == AGM_SESSION_NON_TUNNEL) {
-        AGM_LOGI("bypass shared mem ep config for format %x or sess_mode %d",
+        AGM_LOGI("bypass shared mem ep config for format %x or sess_mode %u",
                  sess_obj->out_media_config.format, sess_obj->stream_config.sess_mode);
         return 0;
     }
@@ -1704,7 +1708,7 @@ int configure_compress_shared_mem_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
 
@@ -1726,7 +1730,7 @@ static int configure_compress_shared_mem_ep_datapath(struct module_info *mod,
 
     if (is_format_bypassed(sess_obj->out_media_config.format) ||
         sess_obj->stream_config.sess_mode == AGM_SESSION_NON_TUNNEL) {
-        AGM_LOGI("bypass shared mem ep config for format %x or sess_mode %d",
+        AGM_LOGI("bypass shared mem ep config for format %x or sess_mode %u",
                  sess_obj->out_media_config.format, sess_obj->stream_config.sess_mode);
         return 0;
     }
@@ -1769,7 +1773,7 @@ static int configure_compress_shared_mem_ep_datapath(struct module_info *mod,
     ret = graph_write(graph_obj, &buffer, &consumed_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
 
@@ -1860,7 +1864,7 @@ int configure_pcm_shared_mem_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
 done:
@@ -1973,7 +1977,7 @@ int configure_rd_shared_mem_ep(struct module_info *mod,
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
+        AGM_LOGE("custom_config command for module %u failed with error %d",
                       mod->tag, ret);
     }
     free(payload);
@@ -2079,7 +2083,6 @@ done:
         free(reg_ev_payload);
     return ret;
 }
-
 
 module_info_t stream_module_list[] = {
     {

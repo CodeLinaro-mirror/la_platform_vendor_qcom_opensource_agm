@@ -354,7 +354,7 @@ int LegacyToAidl::getDupedFdFromAgmEventParams(struct agm_event_cb_params *event
 void LegacyToAidl::cleanUpMetadataMemory(struct agm_event_cb_params *eventParams) {
     struct gsl_event_read_write_done_payload *gslReadWritePayload =
             (struct gsl_event_read_write_done_payload *)eventParams->event_payload;
-    if (gslReadWritePayload->buff.metadata) {
+    if (gslReadWritePayload->buff.metadata && gslReadWritePayload->buff.metadata_size > 0) {
         free(gslReadWritePayload->buff.metadata);
     }
 }

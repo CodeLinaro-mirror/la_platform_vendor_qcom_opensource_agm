@@ -41,9 +41,14 @@
 #endif
 
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#ifdef AGM_LOG_DEBUG_ENABLE
+#define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#else
+#define AGM_LOGD(arg,...) do {} while (0)
+#define AGM_LOGV(arg,...) do {} while (0)
+#endif
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
