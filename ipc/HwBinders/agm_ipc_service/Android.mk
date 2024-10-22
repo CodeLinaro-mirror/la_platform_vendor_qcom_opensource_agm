@@ -76,9 +76,10 @@ LOCAL_SHARED_LIBRARIES := \
     libselinux \
     libagmsocket_server
 
+LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
+
 ifeq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),$(TARGET_BOARD_DERIVATIVE_SUFFIX))
 LOCAL_CFLAGS  += -DAR_EARLY_CHIME
-LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
 endif
 
 include $(BUILD_EXECUTABLE)
