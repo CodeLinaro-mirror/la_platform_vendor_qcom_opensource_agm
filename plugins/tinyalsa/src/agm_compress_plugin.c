@@ -536,6 +536,24 @@ int agm_compress_get_caps(void *data,
     return 0;
 }
 
+static enum agm_media_format alsa_to_agm_format(int format)
+{
+    switch (format) {
+    case SNDRV_PCM_FORMAT_S32_LE:
+        return AGM_FORMAT_PCM_S32_LE;
+    case SNDRV_PCM_FORMAT_S8:
+        return AGM_FORMAT_PCM_S8;
+    case SNDRV_PCM_FORMAT_S24_3LE:
+        return AGM_FORMAT_PCM_S24_3LE;
+    case SNDRV_PCM_FORMAT_S24_LE:
+        return AGM_FORMAT_PCM_S24_LE;
+    default:
+    case SNDRV_PCM_FORMAT_S16_LE:
+        return AGM_FORMAT_PCM_S16_LE;
+    };
+}
+
+
 int agm_session_update_codec_config(struct agm_compress_priv *priv,
                                     struct snd_compr_params *params)
 {
@@ -617,6 +635,9 @@ int agm_session_update_codec_config(struct agm_compress_priv *priv,
                 sess_cfg->codec.opus_dec.num_channels = params->codec.ch_in;
                 sess_cfg->codec.opus_dec.sample_rate = media_cfg->rate;
             }
+            break;
+        case SND_AUDIOCODEC_PCM:
+            media_cfg->format = alsa_to_agm_format(params->codec.format);
             break;
         default:
             break;
