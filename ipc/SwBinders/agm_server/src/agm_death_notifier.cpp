@@ -156,6 +156,7 @@ void agm_remove_session_obj_handle(uint64_t handle)
           get_client_handle_from_list(IPCThreadState::self()->getCallingPid());
     if (client_handle == NULL) {
         AGM_LOGE("%s: Could not find client handle\n", __func__);
+        return;
     }
 
     list_for_each_safe(node, tempnode, &client_handle->agm_client_hndl_list) {

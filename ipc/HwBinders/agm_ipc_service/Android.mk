@@ -53,6 +53,9 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS  += -DPLATFORM_MSMNILE_AU
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS  += -DAR_EARLY_CHIME
+endif
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
@@ -69,7 +72,11 @@ LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     vendor.qti.hardware.AGMIPC@1.0 \
     vendor.qti.hardware.AGMIPC@1.0-impl \
-    libagm
+    libagm \
+    libselinux \
+    libagmsocket_server
+
+LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
 
 include $(BUILD_EXECUTABLE)
 
@@ -133,6 +140,9 @@ endif
 ifeq ($(TARGET_BOARD_PLATFORM)$(TARGET_BOARD_SUFFIX), msmnile_au)
 LOCAL_CFLAGS  += -DPLATFORM_MSMNILE_AU
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS  += -DAR_EARLY_CHIME
+endif
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
@@ -149,7 +159,11 @@ LOCAL_SHARED_LIBRARIES := \
     libhidlbase \
     vendor.qti.hardware.AGMIPC@1.0 \
     vendor.qti.hardware.AGMIPC@1.0-impl \
-    libagm
+    libagm \
+    libselinux \
+    libagmsocket_server
+
+LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
 
 include $(BUILD_EXECUTABLE)
 
