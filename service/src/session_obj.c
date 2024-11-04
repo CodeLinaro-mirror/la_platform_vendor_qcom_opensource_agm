@@ -2259,6 +2259,13 @@ int session_obj_set_config(struct session_obj *sess_obj,
         /*Capture session config*/
         sess_obj->in_media_config = *media_config;
         sess_obj->in_buffer_config = *buffer_config;
+
+        ret = graph_set_pcm_encoder_params(sess_obj->graph);
+        if (ret < 0)
+            AGM_LOGE("Failed to set pcm_encoder_params ret %d",  ret);
+        ret = graph_set_stream_mfc_config(sess_obj->graph);
+        if (ret < 0)
+            AGM_LOGE("Failed to set stream mfc config ret %d", ret);
     } else {
         /*Playback session config*/
         sess_obj->out_media_config = *media_config;

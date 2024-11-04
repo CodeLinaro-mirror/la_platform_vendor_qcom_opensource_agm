@@ -86,12 +86,13 @@ typedef enum module
     MODULE_STREAM_SPR,
     MODULE_STREAM_GAPLESS,
     MODULE_RD_SHARED_MEM,
+    MODULE_STREAM_MFC,
     /*
      *Ensure that whenever a new stream module is added it
      *is added in the end of stream module list and the end
      *is updated with the same entry.
      */
-    MODULE_STREAM_END = MODULE_RD_SHARED_MEM,
+    MODULE_STREAM_END = MODULE_STREAM_MFC,
     MODULE_DEVICE_START = 0,
     MODULE_HW_EP_RX = MODULE_DEVICE_START,
     MODULE_HW_EP_TX,
@@ -113,6 +114,11 @@ enum  channel_num{
     CHANNEL_6,
     CHANNEL_7,
     CHANNEL_8,
+    CHANNEL_10 = 10,
+    CHANNEL_12 = 12,
+    CHANNEL_14 = 14,
+    CHANNEL_16 = 16,
+    CHANNEL_32 = 32,
 };
 
 struct module_info {

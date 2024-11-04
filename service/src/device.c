@@ -63,9 +63,6 @@
 #include <log_utils.h>
 #endif
 
-#define TRUE 1
-#define FALSE 0
-
 #define BUF_SIZE 1024
 #define FILE_PATH_EXTN_MAX_SIZE 80
 #define MAX_RETRY_CNT 20
@@ -82,6 +79,8 @@ static snd_ctl_t *mixer;
 #else
 static struct mixer *mixer = NULL;
 #endif
+
+static int wait_for_snd_card_to_online(void);
 
 #define MAX_BUF_SIZE                 2048
 /**
@@ -237,12 +236,13 @@ int device_open(struct device_obj *dev_obj)
     period_size = (MAX_PERIOD_BUFFER)/(channels *
                           (get_pcm_bits_per_sample(media_config->format)/8));
     period_count = DEFAULT_PERIOD_COUNT;
-
+#ifndef BYPASS_ALSA_HW
     ret = snd_pcm_open(&pcm, pcm_name, stream, 0);
     if (ret < 0) {
         AGM_LOGE("%s: Unable to open PCM device %s", __func__, pcm_name);
         goto done;
     }
+#endif
 
     snd_pcm_hw_params_alloca(&hwparams);
 
@@ -369,6 +369,7 @@ int device_open(struct device_obj *dev_obj)
     config.stop_threshold = INT_MAX;
 
     pcm_flags = (obj->hw_ep_info.dir == AUDIO_OUTPUT) ? PCM_OUT : PCM_IN;
+#ifndef BYPASS_ALSA_HW
     pcm = pcm_open(obj->card_id, obj->pcm_id, pcm_flags,
                 &config);
     if (!pcm || !pcm_is_ready(pcm)) {
@@ -379,6 +380,7 @@ int device_open(struct device_obj *dev_obj)
         ret = -EIO;
         goto done;
     }
+#endif
     obj->pcm = pcm;
     obj->state = DEV_OPENED;
     obj->refcnt.open++;
@@ -417,11 +419,13 @@ int device_prepare(struct device_obj *dev_obj)
         pthread_mutex_unlock(&obj->lock);
         return ret;
     }
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
     ret = snd_pcm_prepare(obj->pcm);
 #else
     ret = pcm_prepare(obj->pcm);
 #endif
+#endif // BYPASS_ALSA_HW
     if (ret) {
         AGM_LOGE("PCM device %u prepare failed, ret = %d\n",
               obj->pcm_id, ret);
@@ -506,11 +510,13 @@ int device_stop(struct device_obj *dev_obj)
 
     obj->refcnt.start--;
     if (obj->refcnt.start == 0) {
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_drop(obj->pcm);
 #else
         ret = pcm_stop(obj->pcm);
 #endif
+#endif // BYPASS_ALSA_HW
         if (ret) {
             AGM_LOGE("PCM device %u stop failed, ret = %d\n",
                     obj->pcm_id, ret);
@@ -552,11 +558,13 @@ int device_close(struct device_obj *dev_obj)
     }
 
     if (--obj->refcnt.open == 0) {
+#ifndef BYPASS_ALSA_HW
 #ifdef DEVICE_USES_ALSALIB
         ret = snd_pcm_close(obj->pcm);
 #else
         ret = pcm_close(obj->pcm);
 #endif
+#endif //BYPASS_ALSA_HW
         if (ret) {
             AGM_LOGE("PCM device %u close failed, ret = %d\n",
                      obj->pcm_id, ret);
@@ -1095,13 +1103,15 @@ static int wait_for_snd_card_to_online()
 int device_init()
 {
     int ret = 0;
-
+#ifdef BYPASS_SND_CARD_CHECK
+     AGM_LOGI("snd card status check skipped for Automotive Hypervisor");
+#else
     ret = wait_for_snd_card_to_online();
     if (ret) {
         AGM_LOGE("Not found any SND card online\n");
         return ret;
     }
-
+#endif
     ret = parse_snd_card();
     if (ret)
         AGM_LOGE("no valid snd device found\n");
@@ -1284,13 +1294,15 @@ bool get_file_path_extn(char* file_path_extn, char* file_path_extn_wo_variant)
         snd_card_found = update_snd_card_info(snd_card_name);
         if (snd_card_found) {
             if (strstr(snd_card_name, "gvmauto")) {
-                if ((strstr(snd_card_name, "8255")) || (strstr(snd_card_name, "8295"))) {
+                if ((strstr(snd_card_name, "8255")) ||(strstr(snd_card_name, "8775")) || (strstr(snd_card_name, "8295"))) {
                     strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
                 } else {
                     AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s", snd_card_name);
                     snd_card_found = false;
                     break;
                 }
+            } else if (strstr(snd_card_name,"8255") || strstr(snd_card_name,"8775") || strstr(snd_card_name,"8295")) {
+                strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
             } else {
                 split_snd_card_name(snd_card_name, file_path_extn, file_path_extn_wo_variant);
             }

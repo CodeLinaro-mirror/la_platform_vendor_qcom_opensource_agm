@@ -2299,6 +2299,47 @@ static bool is_media_config_needed_on_datapath(enum agm_media_format format)
     return ret;
 }
 
+
+int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct listnode *node = NULL;
+    module_info_t *mod = NULL;
+
+    list_for_each(node, &graph_obj->tagged_mod_list) {
+        mod = node_to_item(node, module_info_t, list);
+        if (mod->tag == STREAM_PCM_ENCODER) {
+            ret = mod->configure(mod, graph_obj);
+            if (ret != 0) {
+                AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+                          mod->miid, mod->mid, mod->tag, ret);
+            }
+        }
+    }
+    return ret;
+}
+
+int graph_set_stream_mfc_config(struct graph_obj *graph_obj)
+{
+      int ret = 0;
+      struct listnode *node = NULL;
+      module_info_t *mod = NULL;
+      struct session_obj *sess_obj = graph_obj->sess_obj;
+
+      list_for_each(node, &graph_obj->tagged_mod_list) {
+      mod = node_to_item(node, module_info_t, list);
+      if (mod->tag == MODULE_STREAM_MFC) {
+          ret = mod->configure(mod, graph_obj);
+          if (ret != 0) {
+          AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+               mod->miid, mod->mid, mod->tag, ret);
+          }
+      }
+      }
+
+      return ret;
+}
+
 int graph_set_media_config_datapath(struct graph_obj *graph_obj)
 {
     int ret = 0;

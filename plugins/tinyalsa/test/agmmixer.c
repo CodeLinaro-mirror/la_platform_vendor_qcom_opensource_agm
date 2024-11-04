@@ -31,6 +31,7 @@
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
+#include <errno.h>
 #include <expat.h>
 #include <tinyalsa/asoundlib.h>
 #include <sound/asound.h>
@@ -48,6 +49,11 @@
 
 #define PARAM_ID_DETECTION_ENGINE_GENERIC_EVENT_CFG 0x0800104E
 #define PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT            0x08001024
+#define PARAM_ID_PCM_OUTPUT_FORMAT_CFG              0x08001008
+#define MEDIA_FMT_ID_PCM                            0x09001000
+#define PCM_LITTLE_ENDIAN                           1
+#define PCM_DEINTERLEAVED_UNPACKED                  3
+#define PCM_LSB_ALIGNED                             1
 
 #define PARAM_ID_USB_AUDIO_INTF_CFG 0x080010D6
 
@@ -58,17 +64,46 @@ enum {
 
 enum pcm_channel_map
 {
-   PCM_CHANNEL_L = 1,
-   PCM_CHANNEL_R = 2,
-   PCM_CHANNEL_C = 3,
-   PCM_CHANNEL_LS = 4,
-   PCM_CHANNEL_RS = 5,
-   PCM_CHANNEL_LFE = 6,
-   PCM_CHANNEL_CS = 7,
-   PCM_CHANNEL_CB = PCM_CHANNEL_CS,
-   PCM_CHANNEL_LB = 8,
-   PCM_CHANNEL_RB = 9,
+    PCM_CHANNEL_L = 1,
+    PCM_CHANNEL_R = 2,
+    PCM_CHANNEL_C = 3,
+    PCM_CHANNEL_LS = 4,
+    PCM_CHANNEL_RS = 5,
+    PCM_CHANNEL_LFE = 6,
+    PCM_CHANNEL_CS = 7,
+    PCM_CHANNEL_CB = PCM_CHANNEL_CS,
+    PCM_CHANNEL_LB = 8,
+    PCM_CHANNEL_RB = 9,
+    PCM_CHANNEL_TS = 10,
+    PCM_CHANNEL_CVH = 11,
+    PCM_CHANNEL_TFC = PCM_CHANNEL_CVH,
+    PCM_CHANNEL_MS = 12,
+    PCM_CHANNEL_FLC = 13,
+    PCM_CHANNEL_FRC = 14,
+    PCM_CHANNEL_RLC = 15,
+    PCM_CHANNEL_RRC = 16,
+    PCM_CHANNEL_LFE2 = 17,
+    PCM_CHANNEL_SL = 18,
+    PCM_CHANNEL_SR = 19,
+    PCM_CHANNEL_TFL = 20,
+    PCM_CHANNEL_LVH = PCM_CHANNEL_TFL,
+    PCM_CHANNEL_TFR = 21,
+    PCM_CHANNEL_RVH = PCM_CHANNEL_TFR,
+    PCM_CHANNEL_TC = 22,
+    PCM_CHANNEL_TBL = 23,
+    PCM_CHANNEL_TBR = 24,
+    PCM_CHANNEL_TSL = 25,
+    PCM_CHANNEL_TSR = 26,
+    PCM_CHANNEL_TBC = 27,
+    PCM_CHANNEL_BFC = 28,
+    PCM_CHANNEL_BFL = 29,
+    PCM_CHANNEL_BFR = 30,
+    PCM_CHANNEL_LW = 31,
+    PCM_CHANNEL_RW = 32,
+    PCM_CHANNEL_LSD = 33,
+    PCM_CHANNEL_RSD = 34,
 };
+
 /* Payload of the PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT parameter in the
  Media Format Converter Module. Following this will be the variable payload for channel_map. */
 struct param_id_mfc_output_media_fmt_t
@@ -98,6 +133,31 @@ struct param_id_usb_audio_intf_cfg_t
          @h2xmle_range      {125..3276800}
          @h2xmle_default {125}
    */
+};
+
+struct media_format_t
+{
+   uint32_t data_format;
+   uint32_t fmt_id;
+   uint32_t payload_size;
+#if defined(__H2XML__)
+   uint8_t  payload[0];
+#endif
+};
+
+struct payload_pcm_output_format_cfg_t
+{
+   int16_t bit_width;
+   int16_t alignment;
+   int16_t bits_per_sample;
+   int16_t q_factor;
+   int16_t endianness;
+   int16_t interleaved;
+   int16_t reserved;
+   int16_t num_channels;
+#if defined(__H2XML__)
+   uint8_t channel_mapping[0];
+#endif
 };
 
 struct detection_engine_generic_event_cfg {
@@ -678,7 +738,7 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
 
     ret = mixer_ctl_set_enum_by_string(ctl, val);
     free(mixer_str);
-    if (p_device < 0)
+    if (p_device >= 0)
         free(val);
 
     return ret;
@@ -765,7 +825,7 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
     struct prop_data *prop = NULL;
     uint8_t *metadata = NULL;
     uint32_t num_gkv = 1, num_ckv = 3, num_props = 0;
-    uint32_t gkv_size, ckv_size, prop_size, ckv_index = 0;
+    uint32_t gkv_size, ckv_size, prop_size, ckv_index = 0, index = 0;
     int ctl_len = 0, offset = 0;
     int ret = 0;
 
@@ -794,16 +854,25 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
     if (usecase == PLAYBACK) {
         gkv[0].key = DEVICERX;
         gkv[0].value = dkv ? dkv : SPEAKER;
+        index++;
     } else if (usecase == HAPTICS) {
         gkv[0].key = DEVICERX;
         gkv[0].value = HAPTICS_DEVICE;
+        index++;
     } else if (val == VOICE_UI) {
         gkv[0].key = DEVICETX;
         gkv[0].value = dkv ? dkv : HANDSETMIC_VA;
+        index++;
     } else {
         gkv[0].key = DEVICETX;
         gkv[0].value = dkv ? dkv : HANDSETMIC;
+        index++;
     }
+
+    for (int i = 0; i < index; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
+    }
+
     ckv[ckv_index].key = SAMPLINGRATE;
     ckv[ckv_index].value = rate;
 
@@ -812,7 +881,7 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, unsigned i
     ckv[ckv_index].value = bitwidth;
 
     ckv_index++;
-    ckv[ckv_index].key = GAIN;;
+    ckv[ckv_index].key = GAIN;
     ckv[ckv_index].value = 0;
 
     prop->prop_id = 0;  //Update prop_id here
@@ -907,20 +976,20 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_LB;
         pcmChannel[3] = PCM_CHANNEL_RB;
-    }  else if (numChannel == 5) {
+    } else if (numChannel == 5) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_C;
         pcmChannel[3] = PCM_CHANNEL_LB;
         pcmChannel[4] = PCM_CHANNEL_RB;
-    }  else if (numChannel == 6) {
+    } else if (numChannel == 6) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_C;
         pcmChannel[3] = PCM_CHANNEL_LFE;
         pcmChannel[4] = PCM_CHANNEL_LB;
         pcmChannel[5] = PCM_CHANNEL_RB;
-    }  else if (numChannel == 7) {
+    } else if (numChannel == 7) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_C;
@@ -928,7 +997,7 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[4] = PCM_CHANNEL_LB;
         pcmChannel[5] = PCM_CHANNEL_RB;
         pcmChannel[6] = PCM_CHANNEL_CS;
-    }  else if (numChannel == 8) {
+    } else if (numChannel == 8) {
         pcmChannel[0] = PCM_CHANNEL_L;
         pcmChannel[1] = PCM_CHANNEL_R;
         pcmChannel[2] = PCM_CHANNEL_C;
@@ -937,6 +1006,95 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[5] = PCM_CHANNEL_RB;
         pcmChannel[6] = PCM_CHANNEL_LS;
         pcmChannel[7] = PCM_CHANNEL_RS;
+    } else if (numChannel == 10) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_LFE;
+        pcmChannel[3] = PCM_CHANNEL_C;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TFL;
+        pcmChannel[9] = PCM_CHANNEL_TFR;
+    } else if (numChannel == 12) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TFL;
+        pcmChannel[9] = PCM_CHANNEL_TFR;
+        pcmChannel[10] = PCM_CHANNEL_TSL;
+        pcmChannel[11] = PCM_CHANNEL_TSR;
+    } else if (numChannel == 14) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_LFE;
+        pcmChannel[3] = PCM_CHANNEL_C;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TFL;
+        pcmChannel[9] = PCM_CHANNEL_TFR;
+        pcmChannel[10] = PCM_CHANNEL_TSL;
+        pcmChannel[11] = PCM_CHANNEL_TSR;
+        pcmChannel[12] = PCM_CHANNEL_FLC;
+        pcmChannel[13] = PCM_CHANNEL_FRC;
+    } else if (numChannel == 16) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LFE;
+        pcmChannel[4] = PCM_CHANNEL_LB;
+        pcmChannel[5] = PCM_CHANNEL_RB;
+        pcmChannel[6] = PCM_CHANNEL_LS;
+        pcmChannel[7] = PCM_CHANNEL_RS;
+        pcmChannel[8] = PCM_CHANNEL_TFL;
+        pcmChannel[9] = PCM_CHANNEL_TFR;
+        pcmChannel[10] = PCM_CHANNEL_TSL;
+        pcmChannel[11] = PCM_CHANNEL_TSR;
+        pcmChannel[12] = PCM_CHANNEL_FLC;
+        pcmChannel[13] = PCM_CHANNEL_FRC;
+        pcmChannel[14] = PCM_CHANNEL_RLC;
+        pcmChannel[15] = PCM_CHANNEL_RRC;
+    } else if (numChannel == 32) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_LFE;
+        pcmChannel[3] = PCM_CHANNEL_C;
+        pcmChannel[4] = PCM_CHANNEL_LS;
+        pcmChannel[5] = PCM_CHANNEL_RS;
+        pcmChannel[6] = PCM_CHANNEL_LB;
+        pcmChannel[7] = PCM_CHANNEL_RB;
+        pcmChannel[8] = PCM_CHANNEL_CS;
+        pcmChannel[9] = PCM_CHANNEL_TS;
+        pcmChannel[10] = PCM_CHANNEL_CVH;
+        pcmChannel[11] = PCM_CHANNEL_MS;
+        pcmChannel[12] = PCM_CHANNEL_FLC;
+        pcmChannel[13] = PCM_CHANNEL_FRC;
+        pcmChannel[14] = PCM_CHANNEL_RLC;
+        pcmChannel[15] = PCM_CHANNEL_RRC;
+        pcmChannel[16] = PCM_CHANNEL_LFE2;
+        pcmChannel[17] = PCM_CHANNEL_SL;
+        pcmChannel[18] = PCM_CHANNEL_SR;
+        pcmChannel[19] = PCM_CHANNEL_TFL;
+        pcmChannel[20] = PCM_CHANNEL_TFR;
+        pcmChannel[21] = PCM_CHANNEL_TC;
+        pcmChannel[22] = PCM_CHANNEL_TBL;
+        pcmChannel[23] = PCM_CHANNEL_TBR;
+        pcmChannel[24] = PCM_CHANNEL_TSL;
+        pcmChannel[25] = PCM_CHANNEL_TSR;
+        pcmChannel[26] = PCM_CHANNEL_TBC;
+        pcmChannel[27] = PCM_CHANNEL_BFC;
+        pcmChannel[28] = PCM_CHANNEL_BFL;
+        pcmChannel[29] = PCM_CHANNEL_BFR;
+        pcmChannel[30] = PCM_CHANNEL_LW;
+        pcmChannel[31] = PCM_CHANNEL_RW;
     }
 }
 
@@ -981,6 +1139,98 @@ int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
 
     ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
     free(payloadInfo);
+
+    return ret;
+}
+
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
+                  enum stream_type stype, unsigned int rate,
+                  unsigned int channels, unsigned int bits)
+{
+
+    struct apm_module_param_data_t* header = NULL;
+    struct media_format_t *mediaFmtHdr;
+    struct payload_pcm_output_format_cfg_t *mediaFmtPayload;
+    uint8_t* payloadInfo = NULL;
+    size_t payloadSize = 0, padBytes = 0, size;
+    uint8_t *pcmChannel = NULL;
+    uint16_t *temp = NULL;
+    int ret = 0;
+    uint32_t miid = 0;
+
+    ret = agm_mixer_get_miid(mixer, device, intf_name, stype, tag, &miid);
+    if (ret) {
+        printf("%s Get MIID from tag data failed\n", __func__);
+        return ret;
+    }
+
+    payloadSize = sizeof(struct apm_module_param_data_t) +
+                  sizeof(struct media_format_t) +
+                  sizeof(struct payload_pcm_output_format_cfg_t) +
+                  sizeof(uint8_t)*channels;
+
+    padBytes = PADDING_8BYTE_ALIGN(payloadSize);
+
+    payloadInfo = (uint8_t*) calloc(1, payloadSize + padBytes);
+    if (!payloadInfo) {
+        return -ENOMEM;
+    }
+
+    header          = (struct apm_module_param_data_t*)payloadInfo;
+    mediaFmtHdr     = (struct media_format_t*)(payloadInfo +
+                      sizeof(struct apm_module_param_data_t));
+    mediaFmtPayload = (struct payload_pcm_output_format_cfg_t*)(payloadInfo +
+                      sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct media_format_t));
+    pcmChannel      = (uint8_t*)(payloadInfo + sizeof(struct apm_module_param_data_t) +
+                      sizeof(struct media_format_t) +
+                      sizeof(struct payload_pcm_output_format_cfg_t));
+
+    header->module_instance_id = miid;
+    header->param_id           = PARAM_ID_PCM_OUTPUT_FORMAT_CFG;
+    header->error_code         = 0x0;
+    header->param_size         = payloadSize - sizeof(struct apm_module_param_data_t);
+
+    mediaFmtHdr->data_format  = AGM_DATA_FORMAT_FIXED_POINT;
+    mediaFmtHdr->fmt_id       = MEDIA_FMT_ID_PCM;
+    mediaFmtHdr->payload_size = sizeof(struct payload_pcm_output_format_cfg_t) +
+                                sizeof(uint8_t) * channels;
+
+    mediaFmtPayload->endianness = PCM_LITTLE_ENDIAN;
+    mediaFmtPayload->bit_width = 16;
+
+    mediaFmtPayload->alignment = PCM_LSB_ALIGNED;
+    mediaFmtPayload->num_channels = channels;
+
+    mediaFmtPayload->bits_per_sample = 16;
+    mediaFmtPayload->q_factor = 15;
+
+    mediaFmtPayload->interleaved = PCM_DEINTERLEAVED_UNPACKED;
+
+
+    /* populateChannelMap will populate the temp buffer with uint16_t
+     * Remove the Most Significan Byte from each element of the array
+     * then copy back to pcmChannel.
+     */
+
+    temp = (uint16_t*) calloc(channels, sizeof(uint16_t));
+    if (!temp) {
+        free(payloadInfo);
+        return -ENOMEM;
+    }
+
+    populateChannelMap(temp, channels);
+
+    for(uint8_t i = 0; i < channels; i++){
+        pcmChannel[i]  = (uint8_t) (temp[i] & 0xFF);
+    }
+
+    size = payloadSize + padBytes;
+
+    ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
+    free(payloadInfo);
+    free(temp);
+
     return ret;
 }
 
@@ -1031,9 +1281,14 @@ int set_agm_capture_stream_metadata(struct mixer *mixer, int device, uint32_t va
     index++;
 
     if (instance_kv != 0) {
+        printf("Instance key is added\n");
         gkv[index].key = INSTANCE;
         gkv[index].value = instance_kv;
         index++;
+    }
+
+    for (int i = 0; i < index; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
     index = 0;
@@ -1089,9 +1344,10 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
     char *mixer_str;
     struct mixer_ctl *ctl;
     uint8_t *metadata = NULL;
-    struct agm_key_value *gkv = NULL;
-    uint32_t num_gkv = 2;
-    uint32_t gkv_size, index = 0;
+    struct agm_key_value *gkv = NULL, *ckv = NULL;
+    struct prop_data *prop = NULL;
+    uint32_t num_gkv = 2, num_ckv = 1, num_props = 0;
+    uint32_t gkv_size, ckv_size, prop_size, index = 0;
     int ctl_len = 0, ret = 0, offset = 0;
     char *type = intf_name;
 
@@ -1103,13 +1359,23 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
         stream = "COMPRESS";
 
     gkv_size = num_gkv * sizeof(struct agm_key_value);
+    ckv_size = num_ckv * sizeof(struct agm_key_value);
+    prop_size = sizeof(struct prop_data) + (num_props * sizeof(uint32_t));
 
-    metadata = calloc(1, sizeof(num_gkv) +  gkv_size);
+    metadata = calloc(1, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
     if (!metadata)
         return -ENOMEM;
 
     gkv = calloc(num_gkv, sizeof(struct agm_key_value));
-    if (!gkv) {
+    ckv = calloc(num_ckv, sizeof(struct agm_key_value));
+    prop = calloc(1, prop_size);
+    if (!gkv || !ckv || !prop) {
+        if (ckv)
+            free(ckv);
+        if (gkv)
+            free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -1140,15 +1406,34 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
         index++;
     }
 
+    for (int i = 0; i < index; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
+    }
+
+    index = 0;
+    ckv[index].key = GAIN;
+    ckv[index].value = LEVEL_0;
+
+    prop->prop_id = 0;  //Update prop_id here
+    prop->num_values = num_props;
+
     memcpy(metadata, &num_gkv, sizeof(num_gkv));
     offset += sizeof(num_gkv);
     memcpy(metadata + offset, gkv, gkv_size);
     offset += gkv_size;
+    memcpy(metadata + offset, &num_ckv, sizeof(num_ckv));
+
+    offset += sizeof(num_ckv);
+    memcpy(metadata + offset, ckv, ckv_size);
+    offset += ckv_size;
+    memcpy(metadata + offset, prop, prop_size);
 
     ctl_len = strlen(stream) + 4 + strlen(control) + 1;
     mixer_str = calloc(1, ctl_len);
     if (!mixer_str) {
         free(gkv);
+        free(ckv);
+        free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -1157,14 +1442,18 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
     if (!ctl) {
         printf("Invalid mixer control: %s\n", mixer_str);
         free(gkv);
+        free(ckv);
+        free(prop);
         free(metadata);
         free(mixer_str);
         return ENOENT;
     }
 
-    ret = mixer_ctl_set_array(ctl, metadata, sizeof(num_gkv) + gkv_size);
+    ret = mixer_ctl_set_array(ctl, metadata, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
 
     free(gkv);
+    free(ckv);
+    free(prop);
     free(metadata);
     free(mixer_str);
     return ret;
@@ -1192,7 +1481,7 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     if (stype == STREAM_COMPRESS)
         stream = "COMPRESS";
 
-    if (instance_kv != 0)
+    if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK || instance_kv != 0)
        num_gkv += 1;
 
     if (val == VOICE_UI) {
@@ -1236,9 +1525,9 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     } else if (usecase == PLAYBACK) {
         gkv[index].key = STREAMRX;
         gkv[index].value = val;
-
         index++;
-        if (instance_kv != 0) {
+
+        if (val == PCM_LL_PLAYBACK || val == COMPRESSED_OFFLOAD_PLAYBACK || instance_kv != 0) {
             printf("Instance key is added\n");
             gkv[index].key = INSTANCE;
             gkv[index].value = instance_kv;
@@ -1247,6 +1536,11 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
     } else if (usecase == LOOPBACK) {
         gkv[index].key = STREAMRX;
         gkv[index].value = val;
+        index++;
+    }
+
+    for (int i = 0; i < index; i++) {
+        printf("gkv[%d]: key: = 0x%x, value: = 0x%x\n", i, gkv[i].key, gkv[i].value);
     }
 
     index = 0;
