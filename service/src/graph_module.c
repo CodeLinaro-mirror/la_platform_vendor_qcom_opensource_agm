@@ -174,6 +174,40 @@ static void get_default_channel_map(uint8_t *channel_map, int channels)
          channel_map[14] = PCM_CHANNEL_RLC;
          channel_map[15] = PCM_CHANNEL_RRC;
          break;
+    case CHANNELS_32:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         channel_map[16] = PCM_CHANNEL_LFE2;
+         channel_map[17] = PCM_CHANNEL_SL;
+         channel_map[18] = PCM_CHANNEL_SR;
+         channel_map[19] = PCM_CHANNEL_TFL;
+         channel_map[20] = PCM_CHANNEL_TFR;
+         channel_map[21] = PCM_CHANNEL_TC;
+         channel_map[22] = PCM_CHANNEL_TBL;
+         channel_map[23] = PCM_CHANNEL_TBR;
+         channel_map[24] = PCM_CHANNEL_TSL;
+         channel_map[25] = PCM_CHANNEL_TSR;
+         channel_map[26] = PCM_CHANNEL_TBC;
+         channel_map[27] = PCM_CHANNEL_BFC;
+         channel_map[28] = PCM_CHANNEL_BFL;
+         channel_map[29] = PCM_CHANNEL_BFR;
+         channel_map[30] = PCM_CHANNEL_LW;
+         channel_map[31] = PCM_CHANNEL_RW;
+         break;
     }
 }
 
