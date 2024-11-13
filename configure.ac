@@ -22,6 +22,12 @@ AC_ARG_WITH([syslog],
     [with_syslog=no])
 AM_CONDITIONAL([USE_SYSLOG], [test "x${with_syslog}" = "xyes"])
 
+AC_ARG_WITH([are_on_apps],
+    AS_HELP_STRING([--with-are-on-apps],[Enable ARE (SPF) on APPS support (default is no)]),
+    [with_are_on_apps=$withval],
+    [with_are_on_apps=no])
+AM_CONDITIONAL([USE_ARE_ON_APPS], [test "x${with_are_on_apps}" = "xyes"])
+
 AC_ARG_WITH([glib],
       AC_HELP_STRING([--with-glib],
          [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
