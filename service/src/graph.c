@@ -26,10 +26,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ *
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
@@ -50,6 +50,9 @@
 #include <agm/graph_module.h>
 #include <agm/metadata.h>
 #include <agm/utils.h>
+#ifdef AR_EARLY_CHIME
+#include <cutils/properties.h>
+#endif
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -301,7 +304,13 @@ int graph_init()
 
     snd_card_found = get_file_path_extn(file_path_extn);
     if (snd_card_found) {
-        snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s/%s", ACDB_PATH, file_path_extn);
+
+#ifdef AR_EARLY_CHIME
+        if (!property_get_bool("vendor.audio.feature.mdf.enable", false))
+            snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s/%s", ACDB_ES_PATH, file_path_extn);
+        else
+#endif
+            snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s/%s", ACDB_PATH, file_path_extn);
     } else {
         ret = -ENOENT;
         goto err;
@@ -316,7 +325,12 @@ int graph_init()
     }
 
 #ifdef ACDB_DELTA_FILE_PATH
-    delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH);
+#ifdef AR_EARLY_CHIME
+    if (!property_get_bool("vendor.audio.feature.mdf.enable", false))
+        delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_ES_PATH);
+    else
+#endif
+        delta_file_path = CONV_TO_STRING(ACDB_DELTA_FILE_PATH);
     if ((strlen(delta_file_path) + 1) > sizeof(delta_file.fileName)) {
        AGM_LOGE("path is big than what gsl handles");
        ret = -EINVAL;
