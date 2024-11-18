@@ -151,7 +151,6 @@ static void agm_aif_set_media_config_socket(uint16_t cmd,
 {
     uint32_t* aif_id = nullptr;
     struct AgmMediaConfig_Socket* media_config = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -204,7 +203,6 @@ static void agm_aif_set_metadata_socket(uint16_t cmd,
     uint32_t* aif_id = nullptr;
     uint32_t* size = nullptr;
     uint8_t* metadata = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -263,7 +261,6 @@ static void agm_session_aif_set_metadata_socket(uint16_t cmd,
     uint32_t* aif_id = nullptr;
     uint32_t* size = nullptr;
     uint8_t* metadata = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -323,7 +320,6 @@ static void agm_session_aif_connect_socket(uint16_t cmd,
     uint32_t* session_id = nullptr;
     uint32_t* aif_id = nullptr;
     bool* state = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -370,7 +366,6 @@ static void agm_session_open_socket(uint16_t cmd,
 {
     uint32_t* session_id = nullptr;
     uint32_t* sess_mode = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint64_t handle = 0; /* return to client */
@@ -423,7 +418,6 @@ static void agm_session_set_config_socket(uint16_t cmd,
     struct AgmSessionConfig_Socket *session_config = nullptr;
     struct AgmMediaConfig_Socket *media_config = nullptr;
     struct AgmBufferConfig_Socket *buffer_config = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -495,7 +489,6 @@ static void agm_session_prepare_socket(uint16_t cmd,
                 const AgmSocket& conn)
 {
     uint64_t* handle = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -536,7 +529,6 @@ static void agm_session_start_socket(uint16_t cmd,
                 const AgmSocket& conn)
 {
     uint64_t* handle = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -577,7 +569,6 @@ static void agm_session_stop_socket(uint16_t cmd,
                 const AgmSocket& conn)
 {
     uint64_t* handle = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -618,7 +609,6 @@ static void agm_session_close_socket(uint16_t cmd,
                 const AgmSocket& conn)
 {
     uint64_t* handle = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -701,7 +691,6 @@ static void agm_get_aif_info_list_socket(uint16_t cmd,
         if (aif_list) {
             memcpy(payload, aif_list, (sizeof(struct AifInfo_Socket) * temp_num_aif_info));
             free(aif_list);
-            aif_list = nullptr;
         }
     };
 
@@ -757,7 +746,6 @@ static void agm_get_group_aif_info_list_socket(uint16_t cmd,
         if (aif_list) {
             memcpy(payload, aif_list, (sizeof(struct AifInfo_Socket) * temp_num_groups));
             free(aif_list);
-            aif_list = nullptr;
         }
     };
 
@@ -773,7 +761,6 @@ static void agm_session_set_metadata_socket(uint16_t cmd,
     uint32_t* session_id = nullptr;
     uint32_t* size = nullptr;
     uint8_t* metadata = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -830,11 +817,9 @@ static void agm_session_aif_get_tag_module_info_socket(uint16_t cmd,
 {
     uint32_t* session_id = nullptr;
     uint32_t* aif_id = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     void* ret_payload = nullptr;
-
     uint32_t temp_size = 0; /* cast to reply format */
     size_t size = 0;
     uint32_t reply_size = 0;
@@ -880,7 +865,6 @@ static void agm_session_aif_get_tag_module_info_socket(uint16_t cmd,
         if (ret_payload) {
             memcpy(payload, ret_payload, temp_size);
             free(ret_payload);
-            ret_payload = nullptr;
         }
     };
 
@@ -896,7 +880,6 @@ static void agm_session_aif_set_params_socket(uint16_t cmd,
     uint32_t* session_id = nullptr;
     uint32_t* aif_id = nullptr;
     uint32_t* size = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     void* input_payload = nullptr;
@@ -959,7 +942,6 @@ static void agm_session_write_socket(uint16_t cmd,
     size_t temp_count = 0; /* cast to agm function needed arg */
     uint32_t* count = nullptr;
     void* buff = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint32_t reply_size = 0;
@@ -1025,7 +1007,6 @@ static void agm_hw_rsc_config_socket(uint16_t cmd,
     uint32_t* cfg_len = nullptr;
     uint8_t* cfg = nullptr;
     uint32_t* buff_size = nullptr;
-
     uint8_t* pos = args_payload;
     int32_t ret = 0;
     uint8_t* buff = nullptr;

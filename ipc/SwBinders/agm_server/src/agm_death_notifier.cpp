@@ -219,10 +219,12 @@ void client_death_notifier::binderDied(const wp<IBinder>& who)
         if (IInterface::asBinder(handle->binder).get() == who.unsafe_get()) {
             list_for_each_safe(clbk_node, next, &clbk_data_list) {
                 clbk_data_obj_tmp = node_to_item(clbk_node, clbk_data, list);
-                agm_session_register_cb(clbk_data_obj_tmp->session_id, NULL, clbk_data_obj_tmp->evnt, clbk_data_obj_tmp->client_data);
-                list_remove(&clbk_data_obj_tmp->list);
-                clbk_data_obj_tmp->cb_binder = NULL;
-                free(clbk_data_obj_tmp);
+                if (clbk_data_obj_tmp->pid == handle->pid) {
+                    agm_session_register_cb(clbk_data_obj_tmp->session_id, NULL, clbk_data_obj_tmp->evnt, clbk_data_obj_tmp->client_data);
+                    list_remove(&clbk_data_obj_tmp->list);
+                    clbk_data_obj_tmp->cb_binder = NULL;
+                    free(clbk_data_obj_tmp);
+                }
             }
 
             list_for_each_safe(sess_node, sess_tempnode,
