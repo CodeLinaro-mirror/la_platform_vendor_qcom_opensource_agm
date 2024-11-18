@@ -5,6 +5,10 @@ LOCAL_MODULE := libagmclient
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+# LOCAL_CFLAGS += -DAR_EARLY_CHIME
+endif
+
 LOCAL_SRC_FILES := \
     src/agm_client_wrapper.cpp\
     src/AGMCallback.cpp
@@ -16,8 +20,10 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libhardware \
     libbase \
-    vendor.qti.hardware.AGMIPC@1.0
+    vendor.qti.hardware.AGMIPC@1.0 \
+    libagmsocket_client
 
-LOCAL_HEADER_LIBRARIES := libagm_headers
+LOCAL_HEADER_LIBRARIES := libagm_headers \
+    libagmsocket_client_headers
 
 include $(BUILD_SHARED_LIBRARY)
