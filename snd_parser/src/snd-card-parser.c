@@ -25,7 +25,11 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-**/
+**
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+*/
 
 #include <errno.h>
 #include <expat.h>
@@ -513,7 +517,13 @@ void *snd_card_def_get_card(unsigned int card)
     }
 
     /* read XML */
-    property_get("vendor.audio.card.def", card_def_file, CARD_DEF_FILE);
+#ifdef AR_EARLY_CHIME
+    if(!property_get_bool("vendor.audio.feature.mdf.enable", false))
+        snprintf(card_def_file, MAX_PATH, "%s", CARD_DEF_FILE_ES);
+    else
+#endif
+        property_get("vendor.audio.card.def", card_def_file, CARD_DEF_FILE);
+
     if (!is_valid_file(card_def_file)) {
         pthread_rwlock_unlock(&snd_rwlock);
         free(snd_card_name);
