@@ -28,6 +28,12 @@ AC_ARG_WITH([are_on_apps],
     [with_are_on_apps=no])
 AM_CONDITIONAL([USE_ARE_ON_APPS], [test "x${with_are_on_apps}" = "xyes"])
 
+AC_ARG_WITH([use_default_acdb_path],
+    AS_HELP_STRING([--with-use-default-acdb-path],[ Use default ACDB path specified by ACDB_PATH macro. (default is no)]),
+    [with_use_default_acdb_path=$withval],
+    [with_use_default_acdb_path=no])
+AM_CONDITIONAL([USE_DEFAULT_ACDB_PATH], [test "x${with_use_default_acdb_path}" = "xyes"])
+
 AC_ARG_WITH([glib],
       AC_HELP_STRING([--with-glib],
          [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
