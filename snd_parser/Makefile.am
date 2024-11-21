@@ -21,5 +21,8 @@ libsndcardparser_la_LDFLAGS   = -avoid-version -shared
 libsndcardparser_la_CFLAGS = $(AM_CFLAGS)
 if USE_GLIB
 libsndcardparser_la_LIBADD += $(GLIB_LIBS)
-libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -include glib.h
+endif
+if USE_G_STR_FUNC
+libsndcardparser_la_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif

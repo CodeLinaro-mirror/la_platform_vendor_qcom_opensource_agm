@@ -6,7 +6,10 @@ library_includedir = $(includedir)
 
 AM_CFLAGS = -Wno-unused-parameter
 AM_CFLAGS += -I $(top_srcdir)/service/inc/public -I $(top_srcdir)/snd_parser/inc
-AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
+AM_CFLAGS += $(GLIB_CFLAGS) -include glib.h
+if USE_G_STR_FUNC
+AM_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
+endif
 AM_CFLAGS += -DAGM_USE_SYSLOG
 AM_CFLAGS += @KVH2XML_CFLAGS@
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
