@@ -18,6 +18,7 @@ LOCAL_SRC_FILES     :=  \
 
 LOCAL_STATIC_LIBRARIES := libagmaidltypeconverter libaidlcommonsupport
 
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \

@@ -17,6 +17,8 @@ LOCAL_SRC_FILES     := \
 
 LOCAL_STATIC_LIBRARIES := libaidlcommonsupport
 
+LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+
 LOCAL_SHARED_LIBRARIES := \
     liblog \
     libbinder_ndk \
