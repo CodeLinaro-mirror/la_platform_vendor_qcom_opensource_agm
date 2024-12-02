@@ -1,31 +1,9 @@
 /*
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *     * Neither the name of The Linux Foundation nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: session"
 
@@ -428,8 +406,16 @@ static int session_set_loopback(struct session_obj *sess_obj,
         goto done;
     }
 
-    if (enable)
+    if (enable) {
+        /*
+         * Update sess_id and loopback state of cap session to playback session object
+         * So that loopback state/session can be fetched to update cal parameters on
+         * loopback graph along with individual playback session to view it in RTC mode.
+         */
+        pb_obj->loopback_sess_id = sess_obj->sess_id;
+        pb_obj->loopback_state = sess_obj->loopback_state;
         ret = graph_add(sess_obj->graph, merged_metadata, NULL);
+    }
     else
         ret = graph_remove(sess_obj->graph, merged_metadata);
 
@@ -465,7 +451,7 @@ static int session_set_ec_ref(struct session_obj *sess_obj, uint32_t aif_id,
 
 
     ret = device_get_obj(aif_id, &dev_obj);
-    if (ret) {
+    if (ret || !dev_obj) {
         AGM_LOGE("Error:%d, unable to get dev_obj with aif_id=%d\n",
                                                  ret, aif_id);
         goto done;
@@ -1062,7 +1048,7 @@ static int session_start(struct session_obj *sess_obj)
              */
             if (sess_obj->ec_ref_state == true) {
                 ret = device_get_obj(sess_obj->ec_ref_aif_id, &ec_ref_dev_obj);
-                if (ret) {
+                if (ret || !ec_ref_dev_obj) {
                     AGM_LOGE("Error:%d getting device object with aif id:%d\n",
                             ret, sess_obj->ec_ref_aif_id);
                     goto done;
@@ -1670,7 +1656,12 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
     int ret = 0;
     struct aif *aif_obj = NULL;
     struct agm_meta_data_gsl *merged_metadata = NULL;
+    struct agm_meta_data_gsl *capture_metadata = NULL;
+    struct agm_meta_data_gsl *playback_metadata = NULL;
     struct agm_key_vector_gsl ckv;
+    struct session_obj *pb_obj = NULL;
+    struct session_obj *cp_obj = NULL;
+    struct device_obj *ec_ref_dev_obj = NULL;
 
     pthread_mutex_lock(&sess_obj->lock);
     if (aif_id < UINT_MAX) {
@@ -1710,6 +1701,82 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
             AGM_LOGE("Error:%d setting calibration on sess_id:%d, aif_id:%d\n",
                     ret, sess_obj->sess_id, aif_obj->aif_id);
         }
+        // update CKV values for loopback path as well
+        if (sess_obj->loopback_state == true) {
+            AGM_LOGD("entered loopback state session  true\n");
+            ret = session_obj_get(sess_obj->sess_id, &pb_obj);
+            if (ret || !pb_obj) {
+                AGM_LOGE("Error:%d getting session object with aif id:%d\n",
+                        ret, sess_obj->sess_id);
+                goto done;
+            }
+            ret = session_obj_get(sess_obj->loopback_sess_id, &cp_obj);
+            if (ret || !cp_obj) {
+                AGM_LOGE("Error:%d getting session object with aif id:%d\n",
+                        ret, sess_obj->loopback_sess_id);
+                goto done;
+            }
+            capture_metadata = session_get_merged_metadata(cp_obj);
+            if (!capture_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with session id=%d\n",
+                                             ret, sess_obj->sess_id);
+                goto done;
+            }
+            playback_metadata = session_get_merged_metadata(pb_obj);
+            if (!playback_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with session id=%d\n",
+                                                            ret, sess_obj->loopback_sess_id);
+                goto done;
+            }
+            merged_metadata = metadata_merge(2, capture_metadata, playback_metadata);
+            if (!merged_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with playback"
+                           "session id=%d and capture session id=%d\n",
+                             ret, sess_obj->sess_id);
+                goto done;
+            }
+            ret = graph_set_cal(cp_obj->graph, merged_metadata);
+            if (ret) {
+                AGM_LOGE("Error:%d setting calibration for loopback on sess_id:%d\n",
+                        ret, sess_obj->sess_id);
+            }
+        }
+        // update CKV values for EC path as well
+        if (sess_obj->ec_ref_state == true) {
+            ret = device_get_obj(sess_obj->ec_ref_aif_id, &ec_ref_dev_obj);
+            if (ret || !ec_ref_dev_obj) {
+                AGM_LOGE("Error:%d getting device object with aif id:%d\n",
+                        ret, sess_obj->ec_ref_aif_id);
+                goto done;
+            }
+            capture_metadata = session_get_merged_metadata_without_aif(sess_obj);
+            if (!capture_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with session id=%d\n",
+                                             ret, sess_obj->sess_id);
+                goto done;
+            }
+            metadata_free(merged_metadata);
+            free(merged_metadata);
+            pthread_mutex_lock(&ec_ref_dev_obj->lock);
+            merged_metadata = metadata_merge(2, capture_metadata, &ec_ref_dev_obj->metadata);
+            pthread_mutex_unlock(&ec_ref_dev_obj->lock);
+            if (!merged_metadata) {
+                ret = -ENOMEM;
+                AGM_LOGE("Error:%d, merging metadata with capture \
+                           session id=%d ec aif_id:%d \n",
+                           ret, sess_obj->sess_id, sess_obj->ec_ref_aif_id);
+                goto done;
+            }
+            ret = graph_set_cal(sess_obj->graph, merged_metadata);
+            if (ret) {
+                AGM_LOGE("Error:%d setting EC calibration on sess_id:%d, aif_id:%d\n",
+                        ret, sess_obj->sess_id, sess_obj->ec_ref_aif_id);
+            }
+        }
     } else {
         if (sess_obj->state == SESSION_CLOSED) {
             AGM_LOGE("Invalid state on sess_id:%d\n", sess_obj->sess_id);
@@ -1729,9 +1796,17 @@ int session_obj_set_sess_aif_cal(struct session_obj *sess_obj,
     }
 
 done:
+    if (capture_metadata) {
+        metadata_free(capture_metadata);
+        free(capture_metadata);
+    }
     if (merged_metadata) {
         metadata_free(merged_metadata);
         free(merged_metadata);
+    }
+    if (playback_metadata) {
+        metadata_free(playback_metadata);
+        free(playback_metadata);
     }
 
     pthread_mutex_unlock(&sess_obj->lock);
