@@ -45,8 +45,12 @@ LOCAL_INIT_RC              := vendor.qti.hardware.AGMIPC@1.0-service.rc
 LOCAL_VENDOR_MODULE        := true
 
 ifeq ($(TARGET_GVMGH_SPECIFIC), false)
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _cdcsdv),)
+LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service-v2.rc
+else
 LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service-v2.rc
 LOCAL_VINTF_FRAGMENTS := vendor.qti.hardware.AGMIPC@1.0-service-v2.xml
+endif
 else
 LOCAL_INIT_RC := vendor.qti.hardware.AGMIPC@1.0-service.rc
 endif
@@ -78,7 +82,7 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_HEADER_LIBRARIES := libagmsocket_server_headers
 
-ifeq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),$(TARGET_BOARD_DERIVATIVE_SUFFIX))
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
 LOCAL_CFLAGS  += -DAR_EARLY_CHIME
 endif
 

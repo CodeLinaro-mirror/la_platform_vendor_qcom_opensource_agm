@@ -40,10 +40,10 @@
 #include <android-base/properties.h>
 #endif
 #include <system/thread_defs.h>
+#include <selinux/android.h>
 
 #ifdef AR_EARLY_CHIME
 #include <agm_conn_server.h>
-#include <selinux/android.h>
 #include <chrono>
 #include <errno.h>
 #endif
@@ -90,14 +90,13 @@ int main(int argc, char *argv[]) {
     place_marker("M - AGM Service Starting...");
 #endif
     sp<IAGM> service = new AGM();
-#ifdef AR_EARLY_CHIME
     int context_initialized = -1;
+#ifdef AR_EARLY_CHIME
     init_service_socket();
 #endif
     AGM *temp = static_cast<AGM *>(service.get());
     setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_URGENT_AUDIO);
     if (temp->is_agm_initialized()) {
-#ifdef AR_EARLY_CHIME
         if (argc > 1) {
             FILE *fptr;
             int num = 1;
@@ -120,21 +119,18 @@ int main(int argc, char *argv[]) {
                 else
                     sleep(1);
             } while(1);
-
+#ifndef AR_EARLY_CHIME
             while (!checkBinderServiceReady())
                 sleep(1);
-        }
 #endif
-
+        }
         configureRpcThreadpool(16, true /*callerWillJoin*/);
+#ifndef AR_EARLY_CHIME
         if (android::OK !=  service->registerAsService()) {
             ALOGE("%s:AGM service cannot be registered!", __func__);
-#ifdef AR_EARLY_CHIME
-            sleep(1);
-            deinit_service_socket();
-#endif
             return 1;
         }
+#endif
 #ifdef PLATFORM_MSMNILE_AU
         place_marker("M - AGM Service Created...");
         android::base::SetProperty("vendor.audio.feature.agm.enable", "running");
@@ -143,7 +139,6 @@ int main(int argc, char *argv[]) {
 #ifdef AR_EARLY_CHIME
         //TODO delay
         sleep(1);
-        deinit_service_socket();
 #endif
         joinRpcThreadpool();
     }
