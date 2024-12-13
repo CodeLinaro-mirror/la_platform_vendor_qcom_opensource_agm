@@ -26,7 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -84,7 +84,11 @@
 #define DEVICE_RX 0
 #define DEVICE_TX 1
 #define FILE_PATH_EXTN_MAX_SIZE 80
+#ifdef QTI_OPTIMIZED
+#define ACDB_PATH_MAX_LENGTH 80
+#else
 #define ACDB_PATH_MAX_LENGTH 50
+#endif
 #define ARRAX_FILE_PATH_EXTN "_arrax"
 #define ARRAX_SOC_ID 585
 
