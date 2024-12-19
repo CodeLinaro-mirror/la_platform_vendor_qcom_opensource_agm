@@ -91,7 +91,7 @@ static void usage(void)
            " [-i intf_name] : Can be multiple if num_intf is more than 1\n"
            " [-dkv device_kv] : Can be multiple if num_intf is more than 1\n"
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
-           " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph\n"
+           " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph Default is Zero\n"
            " [-skv stream_kv] [-h haptics usecase]\n"
            " [is_24_LE] : [0-1] Only to be used if user wants to play S24_LE clip\n"
            " [-usb_d usb device]\n"
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
     uint32_t dkv = SPEAKER;
     uint32_t dppkv = DEVICEPP_RX_AUDIO_MBDRC;
     unsigned int stream_kv = 0;
-    unsigned int instance_kv = INSTANCE_1;
+    unsigned int instance_kv = 0;
     bool haptics = false;
     char **intf_name = NULL;
     char *filename;
@@ -269,6 +269,11 @@ int main(int argc, char **argv)
     if (intf_name == NULL)
         return 1;
 
+    printf("Stream kv= 0x%X, Instance kv = 0x%X\n",stream_kv,instance_kv);
+    for (int intf_idx = 0; intf_idx < intf_num; intf_idx++) {
+        printf("Device PP kv[%d]= 0x%X, Device kv[%d] = 0x%X\n",
+            intf_idx, devicepp_kv[intf_idx], intf_idx, device_kv[intf_idx]);
+    }
     play_sample(file, card, device, usb_device, channels, rate, bits, device_kv, stream_kv,
                  instance_kv, devicepp_kv, chunk_fmt, haptics, intf_name, intf_num, is_24_LE);
 
