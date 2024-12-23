@@ -2436,6 +2436,11 @@ int session_obj_read(struct session_obj *sess_obj, void *buff, size_t *count)
     ret = graph_read(sess_obj->graph, &buffer, count);
     if (ret) {
         AGM_LOGE("Error:%d reading from graph\n", ret);
+    } else if (*count < buffer.size) {
+        /* If read a partial buffer, reset the other data to 0 to avoid
+         * unexpected noise issue.
+         */
+        memset((uint8_t *)buff + *count, 0, buffer.size - *count);
     }
 
 done:
