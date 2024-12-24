@@ -1,6 +1,6 @@
 /**
-* Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
-* SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
 package vendor.qti.hardware.agm;
@@ -20,6 +20,7 @@ import vendor.qti.hardware.agm.AifInfo;
 import vendor.qti.hardware.agm.Direction;
 import vendor.qti.hardware.agm.IAGMCallback;
 import vendor.qti.hardware.agm.MmapBufInfo;
+import vendor.qti.hardware.agm.AgmCshmInfo;
 
 @VintfStability
 interface IAGM {
@@ -541,4 +542,39 @@ interface IAGM {
     * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
     */
     void ipc_agm_dump(in AgmDumpInfo dumpInfo);
+
+    /**
+    * Call to allocate shared memory
+    * @param size size of memory to be allocated
+    * @param AgmCshmInfo AgmCshmInfo is a structure.
+    * if return value is zero, AGM will copy memID and fd to AgmCshmInfo.
+    * @return AgmCshmInfo AgmCshmInfo is a structure.
+    * @throws ServiceSpecificException with one of the values defined in Status.aidl
+    * These exceptions are used to preserve the linux error codes over AIDL.
+    * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
+    */
+    AgmCshmInfo ipc_agm_cshm_alloc(in int size, in AgmCshmInfo info);
+
+    /**
+    * Call to deallocate shared memory
+    * @param memID mem ID which is needed to be deallocated.
+    * @throws ServiceSpecificException with one of the values defined in Status.aidl
+    * These exceptions are used to preserve the linux error codes over AIDL.
+    * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
+    */
+    void ipc_agm_cshm_dealloc(in int memID);
+
+    /**
+    * Send a Global MSG to a module
+    * @param memID memory ID of allocated memory
+    * @param offset offset of the memory
+    * @param length length of the chunk of memory
+    * @param miid ID of the module for which message is sent
+    * @param propFlag Flag conveying additional info regarding the MSG.
+    * @throws ServiceSpecificException with one of the values defined in Status.aidl
+    * These exceptions are used to preserve the linux error codes over AIDL.
+    * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
+    */
+    void ipc_agm_cshm_msg(in int memID, in int offset, in int length, in int miid,
+                    in int propFlag);
 }
