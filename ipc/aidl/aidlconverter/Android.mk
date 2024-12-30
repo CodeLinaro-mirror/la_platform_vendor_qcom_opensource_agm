@@ -17,7 +17,7 @@ LOCAL_SRC_FILES     := \
 
 LOCAL_STATIC_LIBRARIES := libaidlcommonsupport
 
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/mm-audio-headers/gsl_fe/
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \
@@ -27,12 +27,13 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     vendor.qti.hardware.agm-V1-ndk
 
+LOCAL_HEADER_LIBRARIES := libagm_headers
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
 else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
 
-LOCAL_HEADER_LIBRARIES := libagm_headers
 
 include $(BUILD_STATIC_LIBRARY)

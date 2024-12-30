@@ -50,8 +50,9 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils
 
 ifeq ($(ENABLE_HYP), true)
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/mm-audio-headers/gsl_fe/
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
 LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
 LOCAL_CFLAGS += -DBYPASS_SND_CARD_CHECK
 else
