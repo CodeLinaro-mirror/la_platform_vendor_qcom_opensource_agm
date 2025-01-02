@@ -28,7 +28,7 @@
 <!--
 Changes from Qualcomm Innovation Center are provided under the following license:
 
-Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+Copyright (c) 2022-2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
 SPDX-License-Identifier: BSD-3-Clause-Clear
 -->
 <defs>
@@ -37,6 +37,17 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
     <name>auto-agm-virtual-snd-card</name>
 
 <!-- playback devices -->
+<!-- PCM0p: hifi -->
+<!-- PCM1p: navigation -->
+<!-- PCM2p: a2b/eavb_play  -->
+<!-- PCM3p: a2b2 -->
+<!-- PCM4p: hifi_pull -->
+<!-- PCM5p: navigation_pull -->
+<!-- PCM6p: sen -->
+<!-- PCM7p: sep-->
+<!-- PCM8p: lpaif_hsif0 -->
+<!-- PCM9p: lpaif_hsif1 -->
+<!-- PCM10p:lpaif_hsif2 -->
     <pcm-device>
         <id>0</id>
         <name>PCM0p</name>
@@ -194,6 +205,15 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
     </pcm-device>
 
 <!-- capture devices -->
+<!-- PCM0c: Record -->
+<!-- PCM1c: a2b_record/eavb_record -->
+<!-- PCM2c: a2b2_record  -->
+<!-- PCM4c: record_push -->
+<!-- PCM6c: sen_record  -->
+<!-- PCM7c: sep_record  -->
+<!-- PCM8c: hsif0_record  -->
+<!-- PCM9c: hsif1_record  -->
+<!-- PCM10c:hsif2_record  -->
     <pcm-device>
         <id>100</id>
         <name>PCM0c</name>
@@ -288,6 +308,45 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
     <pcm-device>
         <id>107</id>
         <name>PCM7c</name>
+        <pcm_plugin>
+            <so-name>libasound_module_pcm_agm.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <agm_data_mode>2</agm_data_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>108</id>
+        <name>PCM8c</name>
+        <pcm_plugin>
+            <so-name>libasound_module_pcm_agm.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <agm_data_mode>2</agm_data_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>109</id>
+        <name>PCM9c</name>
+        <pcm_plugin>
+            <so-name>libasound_module_pcm_agm.so</so-name>
+        </pcm_plugin>
+        <props>
+            <playback>0</playback>
+            <capture>1</capture>
+            <agm_data_mode>2</agm_data_mode>
+        </props>
+    </pcm-device>
+
+    <pcm-device>
+        <id>110</id>
+        <name>PCM10c</name>
         <pcm_plugin>
             <so-name>libasound_module_pcm_agm.so</so-name>
         </pcm_plugin>
