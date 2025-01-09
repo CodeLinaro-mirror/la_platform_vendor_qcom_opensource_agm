@@ -17,7 +17,6 @@ LOCAL_SRC_FILES     := \
 
 LOCAL_STATIC_LIBRARIES := libaidlcommonsupport
 
-LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/proprietary/mm-audio-headers/gsl_fe/
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \
