@@ -658,6 +658,41 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
             client->ipc_agm_session_write_datapath_params(session_id, aidlBuffer), __func__);
 }
 
+int32_t agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+
+    auto client = getAgm();
+    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
+    const native_handle *fdHandle = nullptr;
+    AgmCshmInfo infoAidl;
+    AgmCshmInfo infoAidlResult;
+    infoAidl.type = static_cast<AgmCshmCacheType>(info->type);
+    infoAidl.flags = info->flags;
+    auto status = client->ipc_agm_cshm_alloc(size, infoAidl, &infoAidlResult);
+    if (status.isOk()) {
+        auto fdInfo = AidlToLegacy::getFdIntFromNativeHandle(infoAidlResult.allocHandle);
+        info->mem_id = infoAidlResult.memID;
+        info->fd = fdInfo.first;
+    }
+
+    return statusTFromBinderStatus(status);
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length,
+                    uint32_t miid, uint32_t prop_flag) {
+
+    auto client = getAgm();
+    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
+
+    return statusTFromBinderStatus(
+            client->ipc_agm_cshm_msg(mem_id, offset, length, miid, prop_flag));
+}
+
+int agm_cshm_dealloc(uint32_t mem_id)  {
+    auto client = getAgm();
+    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
+    return statusTFromBinderStatus(client->ipc_agm_cshm_dealloc(mem_id));
+}
+
 int agm_dump(struct agm_dump_info *dump_info) {
     return 0;
 }
