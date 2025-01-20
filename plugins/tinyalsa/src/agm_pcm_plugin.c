@@ -932,7 +932,7 @@ struct pcm_plugin_ops agm_pcm_ops = {
     .mmap = agm_pcm_mmap,
     .munmap = agm_pcm_munmap,
     .poll = agm_pcm_poll,
-    .ioctl = agm_pcm_ioctl,
+    .ioctl = (int (*)(struct pcm_plugin *, int, void *))agm_pcm_ioctl,
 };
 
 PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
