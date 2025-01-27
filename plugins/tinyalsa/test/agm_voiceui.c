@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -97,7 +97,7 @@ static void read_event_data(struct mixer *mixer, char *mixer_str)
     printf("%s params.event_payload_size %x\n", __func__, params->event_payload_size);
 }
 
-static void event_wait_thread_loop(void *context)
+static void *event_wait_thread_loop(void *context)
 {
     struct mixer *mixer = (struct mixer *)context;
     int ret = 0;
@@ -122,6 +122,7 @@ static void event_wait_thread_loop(void *context)
     }
 
     mixer_subscribe_events(mixer, 0);
+    return NULL;
 }
 
 static void record_lab_buffer(struct pcm *pcm, unsigned int cap_time)
