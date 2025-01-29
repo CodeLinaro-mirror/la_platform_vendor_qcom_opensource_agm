@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -116,6 +116,7 @@ enum {
     PCM_CTL_NAME_SET_CALIBRATION,
     PCM_CTL_NAME_GET_PARAM,
     PCM_CTL_NAME_BUF_INFO,
+    PCM_CTL_NAME_SEND_MSG,
     /* Add new ones here */
 };
 
@@ -133,6 +134,7 @@ static char *amp_pcm_ctl_name_extn[] = {
     "setCalibration",
     "getParam",
     "getBufInfo",
+    "sendMsg",
     /* Add new ones below, be sure to update enum as well */
 };
 
@@ -1560,6 +1562,28 @@ static int amp_pcm_tag_info_get(struct mixer_plugin *plugin,
     return ret;
 }
 
+static int amp_pcm_send_msg_get(struct mixer_plugin *plugin,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    /* Get for sendMsg not supported */
+    return 0;
+}
+
+
+static int amp_pcm_send_msg_put(struct mixer_plugin *plugin,
+                struct snd_control *ctl, struct snd_ctl_tlv *tlv)
+{
+    int ret = -EINVAL;
+
+    agm_msg_config *payload = (agm_msg_config *) &tlv->tlv[0];
+    if (!payload)
+        return -EINVAL;
+
+    ret = agm_cshm_msg(payload->mem_id, payload->offset, payload->length,
+                         payload->miid, payload->flags);
+    return ret;
+}
+
 static int amp_pcm_tag_info_put(struct mixer_plugin *plugin __unused,
                 struct snd_control *ctl __unused, struct snd_ctl_tlv *tlv __unused)
 {
@@ -1721,6 +1745,8 @@ static struct snd_value_tlv_bytes pcm_metadata_bytes =
     SND_VALUE_TLV_BYTES(1024, amp_pcm_metadata_get, amp_pcm_metadata_put);
 static struct snd_value_tlv_bytes pcm_taginfo_bytes =
     SND_VALUE_TLV_BYTES(1024, amp_pcm_tag_info_get, amp_pcm_tag_info_put);
+static struct snd_value_tlv_bytes pcm_sendmsg_bytes =
+    SND_VALUE_TLV_BYTES(1024, amp_pcm_send_msg_get, amp_pcm_send_msg_put);
 static struct snd_value_tlv_bytes pcm_setparamtag_bytes =
     SND_VALUE_TLV_BYTES(256 * 1024, amp_pcm_set_param_get, amp_pcm_set_param_put);
 static struct snd_value_tlv_bytes pcm_setparamtagacdb_bytes =
@@ -1870,6 +1896,19 @@ static void amp_create_pcm_get_tag_info_ctl(struct amp_priv *amp_priv,
              name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_GET_TAG_INFO]);
 
     INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_taginfo_bytes,
+                    pval, pdata);
+}
+
+static void amp_create_pcm_send_msg_ctl(struct amp_priv *amp_priv,
+                char *name, int ctl_idx, int pval, void *pdata)
+{
+    struct snd_control *ctl = AMP_PRIV_GET_CTL_PTR(amp_priv, ctl_idx);
+    char *ctl_name = AMP_PRIV_GET_CTL_NAME_PTR(amp_priv, ctl_idx);
+
+    snprintf(ctl_name, AIF_NAME_MAX_LEN + 16, "%s %s",
+             name, amp_pcm_ctl_name_extn[PCM_CTL_NAME_SEND_MSG]);
+
+    INIT_SND_CONTROL_TLV_BYTES(ctl, ctl_name, pcm_sendmsg_bytes,
                     pval, pdata);
 }
 
@@ -2142,6 +2181,8 @@ static int amp_form_common_pcm_ctls(struct amp_priv *amp_priv, int *ctl_idx,
         amp_create_pcm_get_param_ctl(amp_priv, name, (*ctl_idx)++,
                         i, pcm_adi);
         amp_create_pcm_bufinfo_ctl(amp_priv, name, (*ctl_idx)++,
+                        idx, pcm_adi);
+        amp_create_pcm_send_msg_ctl(amp_priv, name, (*ctl_idx)++,
                         idx, pcm_adi);
     }
 
