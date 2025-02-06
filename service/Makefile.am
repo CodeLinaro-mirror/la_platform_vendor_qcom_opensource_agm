@@ -31,6 +31,10 @@ libagm_la_LDFLAGS = -L$(top_builddir)/snd_parser/.libs
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
 libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
 
+if USE_DEFAULT_ACDB_PATH
+libagm_la_CFLAGS += -DUSE_DEFAULT_ACDB_PATH
+endif
+
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG
 endif
