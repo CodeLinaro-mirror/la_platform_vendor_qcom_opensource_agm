@@ -27,7 +27,7 @@
 ** DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
         } else if (strcmp(*argv, "-ikv") == 0) {
             argv++;
             if (*argv)
-                instance_kv = convert_char_to_hex(*argv);
+                instance_kv = atoi(*argv);
         } else if (strcmp(*argv, "-dppkv") == 0) {
             argv++;
             if (*argv)
