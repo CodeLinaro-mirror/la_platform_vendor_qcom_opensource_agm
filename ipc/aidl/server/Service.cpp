@@ -19,8 +19,12 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
     ndk::SpAIBinder agmBinder = agmService->asBinder();
     const std::string interfaceName = std::string() + IAGM::descriptor + "/default";
 
+    if (!AServiceManager_isDeclared(interfaceName.c_str())) {
+        ALOGW("%s interface %s is not declared in VINTF", __func__, interfaceName.c_str());
+    }
+
     binder_status_t status = AServiceManager_addService(agmBinder.get(), interfaceName.c_str());
-    ALOGI("register AGM Service interface %s registered %s ", interfaceName.c_str(),
-          (status == STATUS_OK) ? "yes" : "no");
+    ALOGI("register AGM Service interface %s registered %s status %d", interfaceName.c_str(),
+          (status == STATUS_OK) ? "yes" : "no", status);
     return status;
 }
