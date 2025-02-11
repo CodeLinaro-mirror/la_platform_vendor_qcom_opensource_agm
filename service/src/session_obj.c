@@ -2300,7 +2300,7 @@ int session_obj_flush(struct session_obj *sess_obj)
     list_for_each_safe(node, next, &sess_obj->cb_pool) {
         sess_cb = node_to_item(node, struct session_cb, node);
         if (sess_cb && sess_cb->cb) {
-            event_params->event_id = AGM_EVENT_EARLY_EOS;
+            event_params->event_id = AGM_EVENT_EARLY_EOS_INTERNAL;
             sess_cb->cb(sess_obj->sess_id,
                         (struct agm_event_cb_params *)event_params,
                         sess_cb->client_data);
