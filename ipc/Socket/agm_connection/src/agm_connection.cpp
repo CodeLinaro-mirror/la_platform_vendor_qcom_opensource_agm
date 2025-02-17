@@ -230,11 +230,14 @@ AgmSocketClient* AgmSocketClient::getInstance()
         snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_%d", AGM_SOCKET_PATH, getpid());
 
         ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
-        while (ret < 0) {
+        if (ret < 0) {
             ALOGE("socket bind failed!");
+        }
+        while (ret < 0) {
             usleep(1000);
             ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
         }
+        ALOGD("socket bind success");
         /* system & audioserver read write */
         chmod(addr.sun_path, 0777);
         mInstance = new AgmSocketClient(fd);
