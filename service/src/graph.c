@@ -58,7 +58,13 @@
 ** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 ** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+* Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+*
+* Copyright (c) 2023-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+*
+*/
+
 #define LOG_TAG "AGM: graph"
 
 #include <errno.h>
@@ -223,7 +229,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_NON_BLOCKING)
             buf_config.attributes = GSL_DATA_MODE_NON_BLOCKING;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGE("Unsupported buffer mode : %u, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
         buf_config.shmem_ep_tag = RD_SHMEM_ENDPOINT;
@@ -293,7 +299,7 @@ int configure_buffer_params(struct graph_obj *gph_obj,
         else if (mode == AGM_DATA_PUSH_PULL)
             buf_config.attributes = GSL_DATA_MODE_PUSH_PULL;
         else {
-            AGM_LOGE("Unsupported buffer mode : %d, Default to Blocking\n", mode);
+            AGM_LOGE("Unsupported buffer mode : %u, Default to Blocking\n", mode);
             buf_config.attributes = GSL_DATA_MODE_BLOCKING;
         }
 
@@ -336,13 +342,14 @@ int graph_init()
 
     snd_card_found = get_file_path_extn(file_path_extn, file_path_extn_wo_variant);
     if (snd_card_found) {
-        snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s%s", ACDB_PATH, file_path_extn);
+        snprintf(acdb_path, ACDB_PATH_MAX_LENGTH, "%s/%s", ACDB_PATH, file_path_extn);
     } else {
         ret = -ENOENT;
         goto err;
     }
     AGM_LOGI("acdb file path: %s\n", acdb_path);
 
+    AGM_LOGV("going to load acdb file from path %s",acdb_path);
     ret = get_acdb_files_from_directory(acdb_path, &acdb_files);
     if (ret) {
         /* if acdb_path is not found, try without variant */
@@ -350,8 +357,10 @@ int graph_init()
                 file_path_extn_wo_variant);
         AGM_LOGI("trying - acdb file path: %s\n", acdb_path);
         ret = get_acdb_files_from_directory(acdb_path, &acdb_files);
-        if (ret)
+        if (ret) {
+            AGM_LOGE("failed to load acdb file from %s",acdb_path);
             goto err;
+        }
     }
 
 #ifdef ACDB_DELTA_FILE_PATH
@@ -375,7 +384,7 @@ int graph_init()
     ret = gsl_init(&init_data);
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("gsl_init failed error %d \n", ret);
+        AGM_LOGE("gsl_init failed error %u \n", ret);
     }
 
 err:
@@ -531,7 +540,7 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
     size_t tag_module_info_size;
     struct gsl_tag_module_info_entry *gsl_tag_entry = NULL;
     struct agm_key_vector_gsl *gkv;
-    int i = 0;
+    uint32_t i = 0;
     size_t module_list_count =  0;
     module_info_t *mod, *temp_mod = NULL;
     module_info_link_list_t *mod_list = NULL;
@@ -834,7 +843,7 @@ int graph_prepare(struct graph_obj *graph_obj)
               (stream_config.dir == TX)) ||
             ((mod->tag == STREAM_PCM_ENCODER) &&
               (stream_config.dir == RX))) {
-            AGM_LOGE("Session cfg (dir = %d) does not match session module %x\n",
+            AGM_LOGE("Session cfg (dir = %u) does not match session module %x\n",
                       stream_config.dir, mod->module);
              ret = -EINVAL;
              goto done;
@@ -927,7 +936,7 @@ int graph_stop(struct graph_obj *graph_obj,
     pthread_mutex_lock(&graph_obj->lock);
     AGM_LOGD("entry graph_handle %p\n", graph_obj->graph_handle);
     if ((graph_obj->state & (CLOSED))) {
-       AGM_LOGE("graph object is not in correct state, current state %d\n",
+       AGM_LOGE("graph object is not in correct state, current state %u\n",
                     graph_obj->state);
        ret = -EINVAL;
        goto done;
@@ -1445,7 +1454,7 @@ int graph_add(struct graph_obj *graph_obj,
     AGM_LOGD("entry graph_handle %p\n", graph_obj->graph_handle);
 
     if (graph_obj->state < OPENED) {
-        AGM_LOGE("Cannot add a graph in %d state\n", graph_obj->state);
+        AGM_LOGE("Cannot add a graph in %u state\n", graph_obj->state);
         ret = -EINVAL;
         goto done;
     }
@@ -1887,7 +1896,7 @@ int graph_get_session_time(struct graph_obj *graph_obj, uint64_t *tstamp)
 
     pthread_mutex_lock(&graph_obj->lock);
     if (!(graph_obj->state & (STARTED))) {
-       AGM_LOGV("graph object is not in correct state, current state %d\n",
+       AGM_LOGV("graph object is not in correct state, current state %u\n",
                     graph_obj->state);
        ret = 0;
        goto done;
@@ -1953,7 +1962,7 @@ int graph_get_buffer_timestamp(struct graph_obj *graph_obj, uint64_t *tstamp)
 
     pthread_mutex_lock(&graph_obj->lock);
     if (!(graph_obj->state & (STARTED))) {
-       AGM_LOGE("graph object is not in correct state, current state %d",
+       AGM_LOGE("graph object is not in correct state, current state %u",
                     graph_obj->state);
        ret = -EINVAL;
        goto done;
@@ -2131,13 +2140,13 @@ int graph_set_gapless_metadata(struct graph_obj *graph_obj,
     } else if (type == TRAILING_SILENCE) {
        header->param_id = PARAM_ID_REMOVE_TRAILING_SILENCE;
     } else {
-        AGM_LOGE("Invalid gapless silence type %d", type);
+        AGM_LOGE("Invalid gapless silence type %u", type);
         goto error;
     }
     pid_is->samples_per_ch_to_remove = silence;
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret !=0)
-        AGM_LOGE("failed to set %d type silence with ret = %d", type, ret);
+        AGM_LOGE("failed to set %u type silence with ret = %d", type, ret);
 
 error:
     free(payload);
@@ -2284,10 +2293,51 @@ static bool is_media_config_needed_on_datapath(enum agm_media_format format)
         ret = true;
         break;
     default:
-        AGM_LOGE("Entered default, format %d", format);
+        AGM_LOGE("Entered default, format %u", format);
         break;
     }
     return ret;
+}
+
+
+int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
+{
+    int ret = 0;
+    struct listnode *node = NULL;
+    module_info_t *mod = NULL;
+
+    list_for_each(node, &graph_obj->tagged_mod_list) {
+        mod = node_to_item(node, module_info_t, list);
+        if (mod->tag == STREAM_PCM_ENCODER) {
+            ret = mod->configure(mod, graph_obj);
+            if (ret != 0) {
+                AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+                          mod->miid, mod->mid, mod->tag, ret);
+            }
+        }
+    }
+    return ret;
+}
+
+int graph_set_stream_mfc_config(struct graph_obj *graph_obj)
+{
+      int ret = 0;
+      struct listnode *node = NULL;
+      module_info_t *mod = NULL;
+      struct session_obj *sess_obj = graph_obj->sess_obj;
+
+      list_for_each(node, &graph_obj->tagged_mod_list) {
+      mod = node_to_item(node, module_info_t, list);
+      if (mod->tag == MODULE_STREAM_MFC) {
+          ret = mod->configure(mod, graph_obj);
+          if (ret != 0) {
+          AGM_LOGE("Module configuration for miid %x, mid %x, tag %x, failed:%d\n",
+               mod->miid, mod->mid, mod->tag, ret);
+          }
+      }
+      }
+
+      return ret;
 }
 
 int graph_set_media_config_datapath(struct graph_obj *graph_obj)

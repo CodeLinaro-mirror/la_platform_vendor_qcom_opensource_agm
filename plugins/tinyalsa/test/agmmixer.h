@@ -107,6 +107,8 @@ int agm_mixer_get_event_param(struct mixer *mixer, int device, enum stream_type 
 int agm_mixer_get_buf_tstamp(struct mixer *mixer, int device, enum stream_type stype, uint64_t *tstamp);
 int get_device_media_config(char* filename, char *intf_name, struct device_config *config);
 int get_group_device_info(char* filename, char *intf_name, struct group_config *config);
-int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
-                       unsigned int channels, unsigned int bits, uint32_t miid);
+int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype,
+        unsigned int rate, unsigned int channels, unsigned int bits, uint32_t miid);
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
+        enum stream_type stype, unsigned int rate, unsigned int channels, unsigned int bits);
 #endif

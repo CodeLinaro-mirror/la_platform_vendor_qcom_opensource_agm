@@ -497,7 +497,7 @@ static int agm_pcm_hw_params(struct pcm_plugin *plugin,
     snd_card_def_get_int(plugin->node, "session_mode", &sess_mode);
     session_config->dir = (plugin->mode & PCM_IN) ? TX : RX;
     session_config->sess_mode = sess_mode;
-    AGM_LOGD("%s: mode: %d\n", __func__, plugin->mode);
+    AGM_LOGD("mode: %d", plugin->mode);
     if ((plugin->mode & PCM_MMAP) && (plugin->mode & PCM_NOIRQ))
         session_config->data_mode = AGM_DATA_PUSH_PULL;
 
@@ -722,6 +722,7 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
             close(priv->buf_info->data_buf_fd);
         free(priv->buf_info);
     }
+
     free(plugin->priv);
     free(plugin);
 
@@ -855,8 +856,7 @@ static void* agm_pcm_mmap(struct pcm_plugin *plugin, void *addr __unused, size_t
                 boundary *= 2;
 
             priv->pos_buf->boundary = boundary;
-            AGM_LOGE("%s: boundary: 0x%x, size_frames: 0x%lx\n",
-                    __func__, boundary, priv->total_size_frames);
+            AGM_LOGE("boundary: 0x%x, size_frames: 0x%lx", boundary, priv->total_size_frames);
         }
     }
 
@@ -932,7 +932,7 @@ struct pcm_plugin_ops agm_pcm_ops = {
     .mmap = agm_pcm_mmap,
     .munmap = agm_pcm_munmap,
     .poll = agm_pcm_poll,
-    .ioctl = agm_pcm_ioctl,
+    .ioctl = (int (*)(struct pcm_plugin *, int, void *))agm_pcm_ioctl,
 };
 
 PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)

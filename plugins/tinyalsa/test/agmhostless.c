@@ -194,6 +194,8 @@ int main(int argc, char **argv)
         printf("%u bits is not supported.\n", bits);
         return 1;
     }
+
+    signal(SIGINT, sigint_handler);
     play_loopback(card, p_device, c_device, num_channels, sample_rate, format, &capture_config, &play_config, period_size,
                   period_count, play_cap_time, c_intf_name, p_intf_name, p_device_kv,
                   c_device_kv, stream_kv, do_loopback);
@@ -254,12 +256,13 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
         goto err_close_mixer;
     }
 
-    /* set audio interface metadata mixer control */
+    /* set audio interface metadata mixer control for capture */
     if (set_agm_audio_intf_metadata(mixer, c_intf_name, cdkv, CAPTURE, rate, cap_config->bits, stream_kv)) {
         printf("Failed to set capture device metadata\n");
         goto err_close_mixer;
     }
 
+    /* set audio interface metadata mixer control for playback */
     if (set_agm_audio_intf_metadata(mixer, p_intf_name, pdkv, PLAYBACK, rate, p_config->bits, stream_kv)) {
         printf("Failed to set playback device metadata\n");
         goto err_close_mixer;
@@ -267,7 +270,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
 
     if (set_agm_stream_metadata(mixer, p_device, stream_kv, LOOPBACK, STREAM_PCM,
                                 0)) {
-        printf("Failed to capture stream metadata\n");
+        printf("Failed to set playback stream metadata\n");
         goto err_close_mixer;
     }
 
@@ -286,7 +289,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
     }
 
     if (connect_play_pcm_to_cap_pcm(mixer, p_device, c_device)) {
-        printf("Failed to connect capture pcm to audio interface\n");
+        printf("Failed to connect playback pcm to audio interface\n");
         goto err_disconnect;
     }
 
@@ -299,7 +302,7 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
             goto err_disconnect;
         }
     }
-    ret = agm_mixer_get_miid (mixer, p_device, p_intf_name, STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
+    ret = agm_mixer_get_miid(mixer, p_device, p_intf_name, STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
     if (ret) {
         printf("MFC not present for this graph\n");
     } else {
@@ -325,19 +328,19 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
     }
 
     if (pcm_start(p_pcm) < 0) {
-        printf("start error");
+        printf("start error playback\n");
         goto err_close_p_pcm;
     }
 
     c_pcm = pcm_open(card, c_device, PCM_IN, &config);
     if (!c_pcm || !pcm_is_ready(c_pcm)) {
-        printf("Unable to open playback PCM device (%s)\n",
+        printf("Unable to open capture PCM device (%s)\n",
                 pcm_get_error(c_pcm));
         goto err_close_p_pcm;
     }
 
     if (pcm_start(c_pcm) < 0) {
-        printf("start error");
+        printf("start error capture\n");
         goto err_close_c_pcm;
     }
 
@@ -378,6 +381,9 @@ void play_loopback(unsigned int card, unsigned int p_device, unsigned int c_devi
         }
     }
     connect_play_pcm_to_cap_pcm(mixer, -1, c_device);
+
+    printf("loopback test pass\n");
+
 err_close_c_pcm:
     pcm_close(c_pcm);
 err_close_p_pcm:

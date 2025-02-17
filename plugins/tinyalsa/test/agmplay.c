@@ -27,7 +27,7 @@
 ** DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -91,7 +91,7 @@ static void usage(void)
            " [-i intf_name] : Can be multiple if num_intf is more than 1\n"
            " [-dkv device_kv] : Can be multiple if num_intf is more than 1\n"
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
-           " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph\n"
+           " [-ikv instance_kv] :  Assign 0 if no instance kv in the graph Default is Zero\n"
            " [-skv stream_kv] [-h haptics usecase]\n"
            " [is_24_LE] : [0-1] Only to be used if user wants to play S24_LE clip\n"
            " [-usb_d usb device]\n"
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
     uint32_t dkv = SPEAKER;
     uint32_t dppkv = DEVICEPP_RX_AUDIO_MBDRC;
     unsigned int stream_kv = 0;
-    unsigned int instance_kv = INSTANCE_1;
+    unsigned int instance_kv = 0;
     bool haptics = false;
     char **intf_name = NULL;
     char *filename;
@@ -269,6 +269,11 @@ int main(int argc, char **argv)
     if (intf_name == NULL)
         return 1;
 
+    printf("Stream kv= 0x%X, Instance kv = 0x%X\n",stream_kv,instance_kv);
+    for (int intf_idx = 0; intf_idx < intf_num; intf_idx++) {
+        printf("Device PP kv[%d]= 0x%X, Device kv[%d] = 0x%X\n",
+            intf_idx, devicepp_kv[intf_idx], intf_idx, device_kv[intf_idx]);
+    }
     play_sample(file, card, device, usb_device, channels, rate, bits, device_kv, stream_kv,
                  instance_kv, devicepp_kv, chunk_fmt, haptics, intf_name, intf_num, is_24_LE);
 
@@ -303,6 +308,11 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
 
+    if (device_kv == NULL || devicepp_kv == NULL || intf_name == NULL) {
+        printf("play_sample invalid args");
+        return;
+    }
+
     grp_config = (struct group_config *) malloc(intf_num * sizeof(struct group_config));
     if (!grp_config) {
         printf("Failed to allocate memory for group config");
@@ -330,7 +340,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     else if (fmt.bits_per_sample == 16)
         config.format = PCM_FORMAT_S16_LE;
     config.start_threshold = 0;
-    config.stop_threshold = 0;
+    config.stop_threshold = INT32_MAX;
     config.silence_threshold = 0;
 
     mixer = mixer_open(card);
@@ -385,7 +395,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         }
     }
 
-    /* set audio interface metadata mixer control */
+    /* set stream metadata mixer control */
     if (set_agm_stream_metadata(mixer, device, stream_kv, PLAYBACK, STREAM_PCM,
                                 instance_kv)) {
         printf("Failed to set pcm metadata\n");
@@ -429,7 +439,15 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
             goto err_close_mixer;
         }
 
-        ret = agm_mixer_get_miid (mixer, device, intf_name[index], STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
+        /* Configure PCM Converter */
+        if (configure_pcm_converter(mixer, device, intf_name[index], STREAM_PCM_CONVERTER,
+                            STREAM_PCM, fmt.sample_rate, fmt.num_channels,
+                            fmt.bits_per_sample)) {
+            printf("Failed to configure pcm converter\n");
+            goto err_close_mixer;
+        }
+
+        ret = agm_mixer_get_miid(mixer, device, intf_name[index], STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
         if (ret) {
             printf("MFC not present for this graph\n");
         } else {
