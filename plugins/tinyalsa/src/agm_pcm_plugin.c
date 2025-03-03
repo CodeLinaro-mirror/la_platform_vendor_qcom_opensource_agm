@@ -1,6 +1,5 @@
 /*
 ** Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -26,7 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**
 **/
+
 #define LOG_TAG "PLUGIN: pcm"
 
 #include <agm/agm_api.h>
@@ -368,10 +372,11 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
             if (hw_base >= priv->pos_buf->boundary) {
                 priv->pos_buf->crossed_boundary_cnt += hw_base / priv->pos_buf->boundary;
                 hw_base = 0;
-            }
-            __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
-            __builtin_uaddl_overflow(new_hw_ptr,
-                priv->pos_buf->boundary * priv->pos_buf->crossed_boundary_cnt, &new_hw_ptr);
+	    }	
+	    __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
+            __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+            __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
             priv->pos_buf->hw_ptr_base = hw_base;
             AGM_LOGD("%s: crossed_boundary = %u, new_hw_ptr=%ld \n",
                                                 __func__, crossed_boundary, new_hw_ptr);
