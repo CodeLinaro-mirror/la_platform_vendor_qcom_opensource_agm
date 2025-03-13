@@ -4,7 +4,7 @@ LOCAL_PATH := $(call my-dir)
 #Adding Android U and target check to avoid AMS service inclusion for elite
 #on LA3.6.0
 ifneq ( ,$(filter U UpsideDownCake 14 V VanillaIceCream 15, $(PLATFORM_VERSION)))
-ifeq (,$(filter $(PRODUCT_NAME), msmnile_au msmnile_au_s_u sm6150_au))
+ifeq (,$(filter $(PRODUCT_NAME), msmnile_au msmnile_au_s_u msmnile_gvmq sm6150_au))
 include $(CLEAR_VARS)
 
 LOCAL_MODULE        := vendor.qti.hardware.AGMIPC@1.0-impl
