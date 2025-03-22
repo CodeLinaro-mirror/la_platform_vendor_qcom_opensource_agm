@@ -31,6 +31,9 @@ static std::shared_ptr<IAGM> gAgmClient = nullptr;
 static ::ndk::ScopedAIBinder_DeathRecipient gDeathRecipient;
 std::mutex gLock;
 
+agm_service_crash_cb callback;
+uint64_t callback_cookie;
+
 #define RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client)            \
     ({                                                         \
         if (client.get() == nullptr) {                         \
@@ -43,6 +46,7 @@ void serviceDied(void *cookie) {
     ALOGE("%s : AGM Service died ,cookie : %llu", __func__, (unsigned long long)cookie);
     std::lock_guard<std::mutex> guard(gLock);
     gAgmClient = nullptr;
+    callback(callback_cookie);
 }
 
 std::shared_ptr<IAGM> getAgm() {
@@ -79,6 +83,15 @@ std::shared_ptr<IAGM> getAgm() {
 }
 
 int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie) {
+    ALOGE("%s Enter: ", __func__);
+
+    std::shared_ptr<IAGMCallback> aidlAgmCallback;
+    int ret = 0;
+    callback = cb;
+    callback_cookie = cookie;
+
+    auto client = getAgm();
+    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
     return 0;
 }
 
