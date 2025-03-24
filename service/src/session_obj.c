@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: session"
@@ -2770,3 +2770,32 @@ int session_obj_set_non_tunnel_mode_config(struct session_obj *sess_obj,
     pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }
+
+int session_dummy_get_driver_data(uint32_t module_id,
+                            struct agm_cal_config *cal_config,
+                            void *payload,
+                            size_t *size)
+{
+    int ret = 0;
+
+    if ((!cal_config) || (!size) || (*size && (payload == NULL))) {
+        AGM_LOGE("Error Invalid params\n");
+        return -EINVAL;
+    }
+
+    AGM_LOGI("Get driver module data for module 0x%X, payload = %p, size = %d\n",
+        module_id, payload, *size);
+
+    for (int i = 0; i < cal_config->num_ckvs; i++)
+    {
+        AGM_LOGI("key 0x%X: val 0x%X", cal_config->kv[i].key, cal_config->kv[i].value);
+    }
+
+    ret = graph_get_driver_data(module_id, cal_config, payload, size);
+    if (ret) {
+        AGM_LOGE("Error:%d getting driver module data for 0x%X\n", ret, module_id);
+    }
+
+    return ret;
+}
+
