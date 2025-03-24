@@ -27,6 +27,6 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libar-gsl \
     libagm \
-    vendor.qti.hardware.agm-V1-ndk
+    vendor.qti.hardware.agm-V2-ndk
 
 include $(BUILD_SHARED_LIBRARY)
