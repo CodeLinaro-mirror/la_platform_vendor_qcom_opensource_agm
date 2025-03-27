@@ -15,6 +15,7 @@ using namespace aidl::vendor::qti::hardware::agm;
 
 extern "C" __attribute__((visibility("default"))) binder_status_t registerService() {
     ALOGI("register AGM Service");
+    ABinderProcess_setThreadPoolMaxThreadCount(1);
     auto agmService = ::ndk::SharedRefBase::make<AgmServerWrapper>();
     ndk::SpAIBinder agmBinder = agmService->asBinder();
     const std::string interfaceName = std::string() + IAGM::descriptor + "/default";
@@ -26,5 +27,12 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
     binder_status_t status = AServiceManager_addService(agmBinder.get(), interfaceName.c_str());
     ALOGI("register AGM Service interface %s registered %s status %d", interfaceName.c_str(),
           (status == STATUS_OK) ? "yes" : "no", status);
-    return status;
+    std::cout << "register AGM Service interface registered" << std::endl;
+    ABinderProcess_joinThreadPool();
+    return EXIT_FAILURE;
+}
+
+int main(int argc, char *argv[]) {
+    registerService();
+    return 1;
 }
