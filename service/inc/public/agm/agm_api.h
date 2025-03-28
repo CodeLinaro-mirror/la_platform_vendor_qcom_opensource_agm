@@ -451,6 +451,15 @@ struct agm_acdb_tunnel_param {
     uint8_t blob[];            /**< gkv + t/ckv + payload */
 };
 
+struct agm_shmem_info {
+    uint32_t size;
+    uint32_t cache;
+    uint64_t spf_addr;
+    uint32_t ion_fd;
+    uint32_t spf_mem_handle;
+};
+
+
 /**
  * Event types
  */
@@ -1075,6 +1084,24 @@ int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp);
  * api will return failure.
  */
 int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info, uint32_t flag);
+
+/**
+ * \brief Get shared memory buf_info
+ *
+ * \param[out] buf_info - agm_shmem_info structure with ion_fd
+ *
+ * \return 0 on success, error code on failure.
+ */
+int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info);
+
+/**
+ * \brief Free shared memory
+ *
+ * \param[in] spf_mem_handle - Memory handle to the shared memory
+ *
+ * \return 0 on success, error code on failure.
+ */
+int agm_shmem_buf_free(uint32_t spf_mem_handle);
 
 /**
   * \brief This api is a no-op if agm runs in clients context.

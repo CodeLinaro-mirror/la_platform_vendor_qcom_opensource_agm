@@ -19,6 +19,7 @@ LOCAL_SHARED_LIBRARIES := \
     libagmclient \
     libutils \
     libcutils \
+    libagm \
     liblog
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
@@ -57,6 +58,7 @@ LOCAL_SHARED_LIBRARIES := \
     libagmclient \
     libcutils \
     libutils \
+    libagm \
     liblog
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
