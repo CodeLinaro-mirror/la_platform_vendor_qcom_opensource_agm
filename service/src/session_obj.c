@@ -380,7 +380,7 @@ int session_obj_valid_check(uint64_t hndl)
     pthread_mutex_lock(&sess_pool->lock);
     list_for_each(node, &sess_pool->session_list) {
         obj = node_to_item(node, struct session_obj, node);
-        if (obj == hndl) {
+        if (obj == (struct session_obj *)hndl) {
             pthread_mutex_unlock(&sess_pool->lock);
             return  1;
         }
