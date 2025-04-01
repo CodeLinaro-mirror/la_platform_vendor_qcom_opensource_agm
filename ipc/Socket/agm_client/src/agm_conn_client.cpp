@@ -9,6 +9,7 @@
 #include <agm_connection.h>
 #include <agm_conn_client.h>
 #include <log/log.h>
+#include <errno.h>
 
 using namespace std;
 
@@ -238,16 +239,21 @@ int agm_session_aif_set_cal_socket(uint32_t session_id,uint32_t aif_id,
     /* 2. get whole payload size */
     uint32_t payload_size = sizeof(uint32_t) + sizeof(uint32_t) +
                             sizeof(struct AgmCalConfig_Socket);
+
+    cconfig = (struct AgmCalConfig_Socket*)malloc(sizeof(struct AgmCalConfig_Socket) +
+                        (cal_config->num_ckvs * sizeof(struct AgmKeyValue_Socket)));
+
+    if(!cconfig) {
+        ALOGE("no memory to allocate cconfig");
+        return -ENOMEM;
+    }
+    memset(cconfig, 0, sizeof(struct AgmCalConfig_Socket));
     /* 3. define function obj to write payload */
     auto payloadFiller = [&](uint8_t* payload) {
         memcpy(payload, &session_id, sizeof(uint32_t));
         payload += sizeof(uint32_t);
         memcpy(payload, &aif_id, sizeof(uint32_t));
         payload += sizeof(uint32_t);
-
-        struct AgmCalConfig_Socket *cconfig =
-                  (struct AgmCalConfig_Socket*)malloc(sizeof(struct AgmCalConfig_Socket) +
-                               (cal_config->num_ckvs * sizeof(struct AgmKeyValue_Socket)));
 
         cconfig->num_ckvs = cal_config->num_ckvs;
 
