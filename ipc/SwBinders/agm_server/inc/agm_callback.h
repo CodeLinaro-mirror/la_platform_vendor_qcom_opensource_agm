@@ -76,4 +76,5 @@ typedef struct {
     sp<ICallback> cb_binder;
     agm_event_cb cb_func;
     void * client_data;
+    pid_t pid;
 }clbk_data ;

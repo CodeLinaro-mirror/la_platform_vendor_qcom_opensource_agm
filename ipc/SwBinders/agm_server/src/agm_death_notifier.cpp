@@ -60,6 +60,7 @@ pthread_mutex_t g_client_list_lock;
 bool g_client_list_init = false;
 
 extern struct listnode clbk_data_list;
+extern bool clbk_data_list_init;
 
 //initialize mutex
 
@@ -217,12 +218,16 @@ void client_death_notifier::binderDied(const wp<IBinder>& who)
     list_for_each_safe(node, tempnode, &g_client_list) {
         handle = node_to_item(node, client_info, list);
         if (IInterface::asBinder(handle->binder).get() == who.unsafe_get()) {
-            list_for_each_safe(clbk_node, next, &clbk_data_list) {
-                clbk_data_obj_tmp = node_to_item(clbk_node, clbk_data, list);
-                agm_session_register_cb(clbk_data_obj_tmp->session_id, NULL, clbk_data_obj_tmp->evnt, clbk_data_obj_tmp->client_data);
-                list_remove(&clbk_data_obj_tmp->list);
-                clbk_data_obj_tmp->cb_binder = NULL;
-                free(clbk_data_obj_tmp);
+            if (clbk_data_list_init == true) {
+                list_for_each_safe(clbk_node, next, &clbk_data_list) {
+                    clbk_data_obj_tmp = node_to_item(clbk_node, clbk_data, list);
+                    if (clbk_data_obj_tmp->pid == handle->pid) {
+                        agm_session_register_cb(clbk_data_obj_tmp->session_id, NULL, clbk_data_obj_tmp->evnt, clbk_data_obj_tmp->client_data);
+                        list_remove(&clbk_data_obj_tmp->list);
+                        clbk_data_obj_tmp->cb_binder = NULL;
+                        free(clbk_data_obj_tmp);
+                    }
+                }
             }
 
             list_for_each_safe(sess_node, sess_tempnode,
