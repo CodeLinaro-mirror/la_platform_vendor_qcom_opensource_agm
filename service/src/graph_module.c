@@ -1983,6 +1983,37 @@ done:
     return ret;
 }
 
+int configure_spr_session_time_reset_info(struct module_info* spr_mod,
+                                          struct graph_obj* graph_obj) {
+    size_t apm_size = sizeof(struct apm_module_param_data_t);
+    size_t param_payload_size = sizeof(struct param_id_spr_session_time_reset_info_t);
+    size_t payload_size = apm_size + param_payload_size;
+
+    ALIGN_PAYLOAD(payload_size, 8);
+    uint8_t bytes[payload_size];
+    memset(bytes, 0, payload_size);
+
+    struct apm_module_param_data_t* header;
+    header = (struct apm_module_param_data_t*)bytes;
+    header->module_instance_id = spr_mod->miid;
+    header->param_id = PARAM_ID_SPR_SESSION_TIME_RESET_INFO;
+    header->error_code = 0x0;
+    header->param_size = param_payload_size;
+
+    struct param_id_spr_session_time_reset_info_t* reset_info =
+            (struct param_id_spr_session_time_reset_info_t*)(bytes + apm_size);
+    reset_info->mode = SPR_SESSION_TIME_SKIP_RESET_GAPLESS_SWITCH;
+
+    int ret = gsl_set_custom_config(graph_obj->graph_handle, bytes, payload_size);
+    if (ret != 0) {
+        ret = ar_err_get_lnx_err_code(ret);
+        AGM_LOGE("failed for PARAM_ID_SPR_SESSION_TIME_RESET_INFO: %d", ret);
+        return ret;
+    }
+
+    AGM_LOGD("configured");
+    return ret;
+}
 
 int configure_spr(struct module_info *spr_mod,
                             struct graph_obj *graph_obj)
@@ -2031,7 +2062,8 @@ int configure_spr(struct module_info *spr_mod,
 done:
     if (payload)
         free(payload);
-    return ret;
+
+    return configure_spr_session_time_reset_info(spr_mod, graph_obj);
 }
 
 int configure_gapless(struct module_info *gapless_mod,
