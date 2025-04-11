@@ -103,8 +103,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     liblog \
-    libcodec_interface
-    #libcodec_ipc_client
+    libcodec_ipc_client
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
