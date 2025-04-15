@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -315,7 +315,7 @@ bool device_pcm_is_rate_supported(unsigned int rate)
     };
 }
 
-int device_open(struct device_obj *dev_obj)
+int device_open_l(struct device_obj *dev_obj)
 {
     int ret = 0;
     struct pcm *pcm = NULL;
@@ -387,6 +387,14 @@ done:
     pthread_mutex_unlock(&obj->lock);
     return ret;
 }
+
+int device_open(struct device_obj *dev_obj)
+{
+    struct device_obj *obj = device_get_pcm_obj(dev_obj);
+    if (!obj->refcnt.open)
+        obj->state = DEV_OPENED;
+    return 0;
+}
 #endif
 
 int device_prepare(struct device_obj *dev_obj)
@@ -401,6 +409,13 @@ int device_prepare(struct device_obj *dev_obj)
     }
 
     obj = device_get_pcm_obj(dev_obj);
+
+    ret = device_open_l(dev_obj);
+    if (ret) {
+        AGM_LOGE("device_open failed, reset the state\n");
+        obj->state = DEV_CLOSED;
+        return ret;
+    }
 
     pthread_mutex_lock(&obj->lock);
 
@@ -478,51 +493,7 @@ done:
     return ret;
 }
 
-int device_stop(struct device_obj *dev_obj)
-{
-    int ret = 0;
-    struct device_group_data *grp_data = NULL;
-    struct device_obj *obj = NULL;
-
-    if(dev_obj == NULL) {
-        AGM_LOGE("Invalid device object\n");
-        return -EINVAL;
-    }
-
-    obj = device_get_pcm_obj(dev_obj);
-
-    pthread_mutex_lock(&obj->lock);
-    if (!obj->refcnt.start) {
-        AGM_LOGE("PCM device %u already stopped\n",
-              obj->pcm_id);
-        goto done;
-    }
-
-    if (obj->group_data) {
-        grp_data = obj->group_data;
-        grp_data->refcnt.start--;
-    }
-
-    obj->refcnt.start--;
-    if (obj->refcnt.start == 0) {
-#ifdef DEVICE_USES_ALSALIB
-        ret = snd_pcm_drop(obj->pcm);
-#else
-        ret = pcm_stop(obj->pcm);
-#endif
-        if (ret) {
-            AGM_LOGE("PCM device %u stop failed, ret = %d\n",
-                    obj->pcm_id, ret);
-        }
-        obj->state = DEV_STOPPED;
-    }
-
-done:
-    pthread_mutex_unlock(&obj->lock);
-    return ret;
-}
-
-int device_close(struct device_obj *dev_obj)
+int device_close_l(struct device_obj *dev_obj)
 {
     int ret = 0;
     struct device_group_data *grp_data = NULL;
@@ -568,6 +539,57 @@ int device_close(struct device_obj *dev_obj)
 done:
     pthread_mutex_unlock(&obj->lock);
     return ret;
+}
+
+int device_stop(struct device_obj *dev_obj)
+{
+    int ret = 0;
+    struct device_group_data *grp_data = NULL;
+    struct device_obj *obj = NULL;
+
+    if(dev_obj == NULL) {
+        AGM_LOGE("Invalid device object\n");
+        return -EINVAL;
+    }
+
+    obj = device_get_pcm_obj(dev_obj);
+
+    pthread_mutex_lock(&obj->lock);
+    if (!obj->refcnt.start) {
+        AGM_LOGE("PCM device %u already stopped\n",
+              obj->pcm_id);
+        goto done;
+    }
+
+    if (obj->group_data) {
+        grp_data = obj->group_data;
+        grp_data->refcnt.start--;
+    }
+
+    obj->refcnt.start--;
+    if (obj->refcnt.start == 0) {
+#ifdef DEVICE_USES_ALSALIB
+        ret = snd_pcm_drop(obj->pcm);
+#else
+        ret = pcm_stop(obj->pcm);
+#endif
+        if (ret) {
+            AGM_LOGE("PCM device %u stop failed, ret = %d\n",
+                    obj->pcm_id, ret);
+        }
+        obj->state = DEV_STOPPED;
+    }
+
+done:
+    pthread_mutex_unlock(&obj->lock);
+
+    ret = device_close_l(dev_obj);
+    return ret;
+}
+
+int device_close(struct device_obj *dev_obj)
+{
+    return 0;
 }
 
 enum device_state device_current_state(struct device_obj *dev_obj)
