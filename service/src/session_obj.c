@@ -2365,6 +2365,11 @@ int session_obj_flush(struct session_obj *sess_obj)
 
     pthread_mutex_lock(&sess_obj->cb_pool_lock);
     list_for_each_safe(node, next, &sess_obj->cb_pool) {
+        if (!node){
+            AGM_LOGE("Error getting Node from list");
+            ret = -EINVAL;
+            goto exit;
+        }
         sess_cb = node_to_item(node, struct session_cb, node);
         if (sess_cb && sess_cb->cb) {
             event_params->event_id = AGM_EVENT_EARLY_EOS;
@@ -2373,6 +2378,7 @@ int session_obj_flush(struct session_obj *sess_obj)
                         sess_cb->client_data);
         }
     }
+exit:
     pthread_mutex_unlock(&sess_obj->cb_pool_lock);
     if (event_params)
         free(event_params);
