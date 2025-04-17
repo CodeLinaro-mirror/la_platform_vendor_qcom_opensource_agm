@@ -1071,9 +1071,11 @@ fail:
         free(g_shmem_list);
         g_shmem_list = NULL;
     }
-    buf_info->spf_addr = 0;
-    buf_info->ion_fd = 0;
-    buf_info->spf_mem_handle = 0;
+    if(buf_info != NULL) {
+        buf_info->spf_addr = 0;
+        buf_info->ion_fd = 0;
+        buf_info->spf_mem_handle = 0;
+    }
     return ret;
 }
 
@@ -1094,9 +1096,9 @@ int agm_shmem_buf_free(uint32_t spf_mem_handle)
                             ret = gsl_shmem_free(&temp_mod->shmem);
                             temp_mod->shmem.v_addr = NULL;
                             temp_mod->shmem.handle = NULL;
-                            list_remove(node);
-                            free(temp_mod);
                         }
+                        list_remove(node);
+                        free(temp_mod);
                     }
                 } else {
                     AGM_LOGE("shmem.metadata is not valid");
