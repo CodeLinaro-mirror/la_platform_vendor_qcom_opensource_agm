@@ -346,6 +346,11 @@ std::shared_ptr<ClientInfo> AgmServerWrapper::getClient_l() {
 
 AgmServerWrapper::AgmServerWrapper() {
     mInitialized = (agm_init() == 0);
+    ALOGI("%s created", __func__);
+}
+
+AgmServerWrapper::~AgmServerWrapper() {
+    ALOGI("%s destroyed", __func__);
 }
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_init() {
