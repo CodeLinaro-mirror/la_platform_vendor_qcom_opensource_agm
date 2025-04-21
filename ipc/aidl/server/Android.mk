@@ -27,7 +27,14 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libagm \
-    vendor.qti.hardware.agm-V1-ndk
+    vendor.qti.hardware.agm-V1-ndk \
+    libselinux
+
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
+LOCAL_CFLAGS += -DSOCKET_ENABLED
+LOCAL_SHARED_LIBRARIES += libagmsocket_server
+LOCAL_HEADER_LIBRARIES += libagmsocket_server_headers
+endif
 
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe

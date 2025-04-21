@@ -24,6 +24,6 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
     libutils \
-    vendor.qti.hardware.AGMIPC@1.0
+    vendor.qti.hardware.agm-V1-ndk
 
 include $(BUILD_SHARED_LIBRARY)

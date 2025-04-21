@@ -19,6 +19,12 @@
 #include <aidlcommonsupport/NativeHandle.h>
 #include "AgmCallback.h"
 
+#include <agm_conn_client.h>
+#ifdef SOCKET_ENABLED
+#include <chrono>
+#include <cutils/properties.h>
+#endif
+
 using ::aidl::vendor::qti::hardware::agm::IAGM;
 using ::aidl::vendor::qti::hardware::agm::IAGMCallback;
 using ::aidl::vendor::qti::hardware::agm::AidlToLegacy;
@@ -41,6 +47,26 @@ uint64_t callback_cookie;
             return -EINVAL;                                    \
         }                                                      \
     })
+
+static bool checkBinderServiceReady() {
+#ifdef SOCKET_ENABLED
+    static bool flag = false;
+    if (flag) {
+        /* return true if servicemanager online once */
+        return true;
+    } else {
+        char state[PROPERTY_VALUE_MAX] = {0};
+        char default_state[] = "\0";
+        property_get("servicemanager.ready", state, default_state);
+        if (!strcmp(state, "true")) {
+            flag = true;
+        }
+    }
+    return flag;
+#else
+    return true;
+#endif
+}
 
 void serviceDied(void *cookie) {
     ALOGE("%s : AGM Service died ,cookie : %llu", __func__, (unsigned long long)cookie);
@@ -84,6 +110,11 @@ std::shared_ptr<IAGM> getAgm() {
 
 int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie) {
     ALOGE("%s Enter: ", __func__);
+    if (!checkBinderServiceReady()) {
+        ALOGE("%s: skip callback register for rbvm",__func__);
+        /* skip callback register for rbvm audio sessions */
+        return 0;
+    }
 
     std::shared_ptr<IAGMCallback> aidlAgmCallback;
     int ret = 0;
@@ -97,6 +128,9 @@ int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie
 
 int agm_aif_set_media_config(uint32_t audio_intf, struct agm_media_config *media_config) {
     ALOGV("%s audio_intf = %d", __func__, audio_intf);
+    if (!checkBinderServiceReady()) {
+        return agm_aif_set_media_config_socket(audio_intf, media_config);
+    }
 
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -109,6 +143,13 @@ int agm_session_set_config(uint64_t handle, struct agm_session_config *session_c
                            struct agm_media_config *media_config,
                            struct agm_buffer_config *buffer_config) {
     ALOGV("%s handle = %llx ", __func__, (unsigned long long)handle);
+
+    if (!checkBinderServiceReady()) {
+        return agm_session_set_config_socket(handle,
+                                            session_config,
+                                            media_config,
+                                            buffer_config);
+    }
 
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -132,6 +173,10 @@ int agm_deinit() {
 
 int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata) {
     ALOGV("%s audio_intf = %d, size =%d ", __func__, audio_intf, size);
+    if (!checkBinderServiceReady()) {
+        return agm_aif_set_metadata_socket(audio_intf, size, metadata);
+    }
+
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -142,6 +187,9 @@ int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata) 
 
 int agm_session_set_metadata(uint32_t session_id, uint32_t size, uint8_t *metadata) {
     ALOGV("%s session_id = %d, size = %d", __func__, session_id, size);
+    if (!checkBinderServiceReady()) {
+        return agm_session_set_metadata_socket(session_id, size, metadata);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -153,6 +201,12 @@ int agm_session_set_metadata(uint32_t session_id, uint32_t size, uint8_t *metada
 int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf, uint32_t size,
                                  uint8_t *metadata) {
     ALOGV("%s  session_id = %d, aif = %d, size = %d", __func__, session_id, audio_intf, size);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_set_metadata_socket(session_id,
+                                                    audio_intf,
+                                                    size,
+                                                    metadata);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -164,6 +218,9 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf, uint3
 
 int agm_session_close(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_close_socket(handle);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -172,6 +229,9 @@ int agm_session_close(uint64_t handle) {
 
 int agm_session_prepare(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_prepare_socket(handle);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -180,6 +240,9 @@ int agm_session_prepare(uint64_t handle) {
 
 int agm_session_start(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_start_socket(handle);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
     return statusTFromBinderStatus(client->ipc_agm_session_start(handle));
@@ -187,6 +250,9 @@ int agm_session_start(uint64_t handle) {
 
 int agm_session_stop(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
+    if (!checkBinderServiceReady()) {
+        return agm_session_stop_socket(handle);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -234,7 +300,11 @@ int agm_session_suspend(uint64_t handle) {
 }
 
 int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint64_t *handle) {
-    ALOGV("%s  handle = %x , *handle = %x", __func__, handle, *handle);
+    ALOGE("%s  handle = %x , *handle = %x", __func__, handle, *handle);
+    if (!checkBinderServiceReady()) {
+        ALOGE("%s ", __func__);
+        return agm_session_open_socket(session_id, sess_mode, handle);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -252,6 +322,9 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
 int agm_session_aif_connect(uint32_t session_id, uint32_t audio_intf, bool state) {
     ALOGV("%s session_id =%d, aif = %d, state = %s", __func__, session_id, audio_intf,
           state ? "true" : "false");
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_connect_socket(session_id, audio_intf, state);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -279,6 +352,9 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
 
 int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
     ALOGV("%s  handle = %llx, bytes %d ", __func__, (unsigned long long)handle, *byte_count);
+    if (!checkBinderServiceReady()) {
+        return agm_session_write_socket(handle, buf, byte_count);
+    }
 
     auto client = getAgm();
 
@@ -318,6 +394,9 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir) {
 
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     ALOGV("%s: Enter: noOfAif %d, aifListEmpty %d", __func__, *num_aif_info, (aif_list == NULL));
+    if (!checkBinderServiceReady()) {
+        return agm_get_aif_info_list_socket(aif_list, num_aif_info);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -337,6 +416,9 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
 int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id, void *payload,
                                         size_t *size) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_get_tag_module_info_socket(session_id, aif_id, payload, size);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -392,6 +474,9 @@ int agm_aif_set_params(uint32_t aif_id, void *payload, size_t size) {
 
 int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id, void *payload, size_t size) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        return agm_session_aif_set_params_socket(session_id, aif_id, payload, size);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -476,6 +561,10 @@ int agm_session_register_for_events(uint32_t session_id, struct agm_event_reg_cf
 int agm_session_aif_set_cal(uint32_t session_id, uint32_t aif_id,
                             struct agm_cal_config *cal_config) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
+    if (!checkBinderServiceReady()) {
+        /* skip callback register for early audio sessions */
+        return 0;
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
@@ -498,6 +587,10 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb, enum event_typ
                             void *client_data) {
     ALOGV("%s session_id =%d, evt_type = %d, client_data = %p , register %d ", __func__, session_id,
           evt_type, client_data, (cb != NULL));
+    if (!checkBinderServiceReady()) {
+        /* skip callback register for early audio sessions */
+        return 0;
+    }
 
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -635,6 +728,9 @@ int agm_aif_group_set_media_config(uint32_t group_id, struct agm_group_media_con
 
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups) {
     ALOGV("%s called ", __func__);
+    if (!checkBinderServiceReady()) {
+        return agm_get_group_aif_info_list_socket(aif_list, num_groups);
+    }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 

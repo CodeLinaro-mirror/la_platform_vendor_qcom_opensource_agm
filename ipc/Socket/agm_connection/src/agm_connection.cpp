@@ -8,6 +8,7 @@
 #include <log/log.h>
 #include <sys/un.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 using namespace std;
 
@@ -319,7 +320,8 @@ AgmSocketServer* AgmSocketServer::getInstance(function<int(const AgmSocket&)> fu
 
         ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
         while (ret < 0) {
-            ALOGE("socket bind failed!");
+            ALOGE("socket bind failed! %d perror %d strerr %s",ret,errno,strerror(errno));
+            perror("bind failed");
             usleep(1000);
             ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
         }

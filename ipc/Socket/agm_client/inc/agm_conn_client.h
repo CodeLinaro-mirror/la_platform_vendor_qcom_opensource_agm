@@ -65,10 +65,4 @@ int agm_session_write_socket(uint64_t hndl,
                             void *buff,
                             size_t *count);
 
-int agm_hw_rsc_config_socket(enum agm_hw_config_type type,
-                            uint8_t *cfg,
-                            uint32_t cfg_len,
-                            uint8_t *outbuff,
-                            uint32_t *out_len);
-
 #endif

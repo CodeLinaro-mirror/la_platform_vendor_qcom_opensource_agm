@@ -23,4 +23,10 @@ LOCAL_STATIC_LIBRARIES := libagmaidltypeconverter libaidlcommonsupport
 
 LOCAL_HEADER_LIBRARIES := libagm_headers
 
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
+LOCAL_CFLAGS += -DSOCKET_ENABLED
+LOCAL_SHARED_LIBRARIES += libagmsocket_client
+LOCAL_HEADER_LIBRARIES += libagmsocket_client_headers
+endif
+
 include $(BUILD_SHARED_LIBRARY)
