@@ -1348,6 +1348,8 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
     uint32_t gkv_size, ckv_size, prop_size, index = 0;
     int ctl_len = 0, ret = 0, offset = 0;
     char *type = intf_name;
+    if (!devicepp_kv)
+        num_gkv = 1;
 
     ret = set_agm_stream_metadata_type(mixer, device, type, stype);
     if (ret)
@@ -1390,18 +1392,20 @@ int set_agm_streamdevice_metadata(struct mixer *mixer, int device, uint32_t val,
         gkv[index].value = val;
         index++;
     }
-    if (val == VOICE_UI) {
-        gkv[index].key = DEVICEPP_TX;
-        gkv[index].value = devicepp_kv;
-        index++;
-    } else if (usecase == PLAYBACK) {
-        gkv[index].key = DEVICEPP_RX;
-        gkv[index].value = devicepp_kv;
-        index++;
-    } else if (usecase == CAPTURE) {
-        gkv[index].key = DEVICEPP_TX;
-        gkv[index].value = devicepp_kv;
-        index++;
+    if (devicepp_kv) {
+        if (val == VOICE_UI) {
+            gkv[index].key = DEVICEPP_TX;
+            gkv[index].value = devicepp_kv;
+            index++;
+        } else if (usecase == PLAYBACK) {
+            gkv[index].key = DEVICEPP_RX;
+            gkv[index].value = devicepp_kv;
+            index++;
+        } else if (usecase == CAPTURE) {
+            gkv[index].key = DEVICEPP_TX;
+            gkv[index].value = devicepp_kv;
+            index++;
+        }
     }
 
     for (int i = 0; i < index; i++) {
