@@ -22,10 +22,10 @@
 extern "C" {
 #endif /* __cplusplus */
 
-struct listnode {
+typedef struct listnode {
     struct listnode *next;
     struct listnode *prev;
-};
+}listnode;
 
 #define node_to_item(node, container, member) \
     (container *) (((char*) (node)) - offsetof(container, member))

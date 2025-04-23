@@ -133,7 +133,7 @@ int AgmSocket::Receive(const agmCmdHandler& handler) const
     struct msghdr msg;
     struct iovec iov;
     int ret = 0;
-    struct AgmPacketHdr hdr = {0};
+    struct AgmPacketHdr hdr = {0, 0, 0, 0};
 
     memset(&msg, 0, sizeof(msg));
     memset(&iov, 0, sizeof(iov));
@@ -216,7 +216,7 @@ AgmSocketClient* AgmSocketClient::getInstance()
     call_once(once, []() {
         int fd = 0;
         int ret = 0;
-        struct sockaddr_un addr = {0};
+        struct sockaddr_un addr = {{0}, 0};
         memset(&addr, 0, sizeof(addr));
 
         fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -247,16 +247,16 @@ int AgmSocketClient::Connect()
 {
     int ret = 0;
     int count = 0;
-    struct sockaddr_un addr = {0};
+    struct sockaddr_un addr = {{0}, 0};
     memset(&addr, 0, sizeof(addr));
 
     ALOGV("%s", __func__);
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_0", AGM_SOCKET_PATH);
 
-    while (ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr))) {
+    while ((ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr)))) {
         ALOGW("Connect error %s", strerror(ret));
-        if (ENOENT == ret ||  ECONNREFUSED  == ret || EACCES == ret) {
+        if ((ENOENT == ret) ||  (ECONNREFUSED  == ret) || (EACCES == ret)) {
             count++;
             if (count < 10)
                 usleep(1000);
@@ -303,7 +303,7 @@ AgmSocketServer* AgmSocketServer::getInstance(function<int(const AgmSocket&)> fu
 
     ALOGV("%s", __func__);
     call_once(once, [&func]() {
-        struct sockaddr_un addr = {0};
+        struct sockaddr_un addr = {{0}, 0};
         int fd = 0;
         int ret = 0;
         memset(&addr, 0, sizeof(addr));
@@ -363,7 +363,7 @@ void AgmSocketServer::Accept()
     thread t([this]()
         {
             int fd = 0;
-            struct sockaddr_un addr = {0};
+            struct sockaddr_un addr = {{0}, 0};
             memset(&addr, 0, sizeof(addr));
             socklen_t len = sizeof(addr);
             do {

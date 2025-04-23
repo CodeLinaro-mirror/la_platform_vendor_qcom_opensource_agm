@@ -1368,7 +1368,7 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
                                                uint32_t captured_sz,
                                                ipc_agm_session_read_with_metadata_cb _hidl_cb)
 {
-    struct agm_buff buf = {0};
+    struct agm_buff buf = {0, 0};
     int32_t ret = 0;
     hidl_vec<AgmBuff> outBuff_hidl;
     uint32_t bufSize;
