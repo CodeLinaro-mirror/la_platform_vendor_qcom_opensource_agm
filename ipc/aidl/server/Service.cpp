@@ -21,6 +21,16 @@
 
 using namespace aidl::vendor::qti::hardware::agm;
 
+static void place_markers(char const *name) {
+   int fd=open("/dev/kmsg_debug", O_WRONLY);
+   if (fd > 0) {
+       char har_kpi[100] = {0};
+       strlcpy(har_kpi, name, sizeof(har_kpi));
+       write(fd, har_kpi, strlen(har_kpi));
+       close(fd);
+   }
+}
+
 static bool checkBinderServiceReady() {
 #ifdef SOCKET_ENABLED
     static bool flag = false;
@@ -55,6 +65,7 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
     ALOGI("register AGM Service interface %s registered %s status %d", interfaceName.c_str(),
           (status == STATUS_OK) ? "yes" : "no", status);
     std::cout << "register AGM Service interface registered" << std::endl;
+    place_markers("AGM Service registered");
 #ifdef SOCKET_ENABLED
     FILE *fptr;
     int num = 1;
@@ -85,6 +96,7 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
 }
 
 int main(int argc, char *argv[]) {
+    place_markers("register AGM Service");
     registerService();
     return 1;
 }
