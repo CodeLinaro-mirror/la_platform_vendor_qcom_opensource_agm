@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -36,6 +36,7 @@
 #include "inc/agm_server_wrapper.h"
 #include <log/log.h>
 #include <cutils/list.h>
+#include <cutils/properties.h>
 #include <pthread.h>
 #include "gsl_intf.h"
 #include <hwbinder/IPCThreadState.h>
@@ -449,6 +450,19 @@ void ipc_callback (uint32_t session_id,
     }
 }
 // Methods from ::vendor::qti::hardware::AGMIPC::V1_0::IAGM follow.
+AGM::AGM() {
+    char audioType[PROPERTY_VALUE_MAX];
+    property_get("ro.boot.audio", audioType, "");
+
+    isAudioReach = (strcmp(audioType, "audioreach") == 0);
+
+    if (isAudioReach) {
+        agm_initialized = agm_init() == 0 ? true : false;
+    } else {
+        agm_initialized = true;
+    }
+}
+
 Return<int32_t> AGM::ipc_agm_init() {
     ALOGV("%s called \n", __func__);
     return 0;
@@ -462,9 +476,12 @@ Return<int32_t> AGM::ipc_agm_deinit() {
 Return<int32_t> AGM::ipc_agm_aif_set_media_config(uint32_t aif_id,
                                  const hidl_vec<AgmMediaConfig>& media_config) {
     ALOGV("%s called with aif_id = %d \n", __func__, aif_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_media_config *med_config_l = NULL;
     med_config_l =
-          (struct agm_media_config*)calloc(1, sizeof(struct agm_media_config));
+        (struct agm_media_config*)calloc(1, sizeof(struct agm_media_config));
     if (med_config_l == NULL) {
         ALOGE("%s: Cannot allocate memory for med_config_l\n", __func__);
         return -ENOMEM;
@@ -482,6 +499,9 @@ Return<int32_t> AGM::ipc_agm_aif_set_metadata(uint32_t aif_id,
                                             uint32_t size,
                                             const hidl_vec<uint8_t>& metadata) {
     ALOGV("%s called with aif_id = %d, size = %d\n", __func__, aif_id, size);
+    if (!isAudioReach) {
+        return 0;
+    }
     uint8_t * metadata_l = NULL;
     int32_t ret = 0;
     metadata_l = (uint8_t *) calloc(1,size);
@@ -499,6 +519,9 @@ Return<int32_t> AGM::ipc_agm_session_set_metadata(uint32_t session_id,
                                             uint32_t size,
                                             const hidl_vec<uint8_t>& metadata) {
     ALOGV("%s : session_id = %d, size = %d\n", __func__, session_id, size);
+    if (!isAudioReach) {
+        return 0;
+    }
     uint8_t * metadata_l = NULL;
     int32_t ret = 0;
     metadata_l = (uint8_t *) calloc(1,size);
@@ -522,6 +545,9 @@ Return<int32_t> AGM::ipc_agm_session_aif_set_metadata(uint32_t session_id,
                                             const hidl_vec<uint8_t>& metadata) {
     ALOGV("%s : session_id = %d, aif_id =%d, size = %d\n", __func__,
                                                       session_id, aif_id, size);
+    if (!isAudioReach) {
+        return 0;
+    }
     uint8_t * metadata_l = NULL;
     int32_t ret = 0;
     metadata_l = (uint8_t *) calloc(1,size);
@@ -545,6 +571,9 @@ Return<int32_t> AGM::ipc_agm_session_aif_connect(uint32_t session_id,
                                                  bool state) {
     ALOGV("%s : session_id = %d, aif_id =%d, state = %s\n", __func__,
                           session_id, aif_id, state ? "true" : "false");
+    if (!isAudioReach) {
+        return 0;
+    }
     pthread_mutex_lock(&client_list_lock);
     if (state)
         add_session_aif_to_list_l(session_id, aif_id);
@@ -561,6 +590,9 @@ Return<void> AGM::ipc_agm_session_aif_get_tag_module_info(uint32_t session_id,
                           ipc_agm_session_aif_get_tag_module_info_cb _hidl_cb) {
     ALOGV("%s : session_id = %d, aif_id =%d, size = %d\n", __func__,
                                                       session_id, aif_id, size);
+    if (!isAudioReach) {
+        return Void();
+    }
     uint8_t * payload_local = NULL;
     size_t size_local;
     size_local = (size_t) size;
@@ -591,6 +623,9 @@ Return<void> AGM::ipc_agm_session_get_params(uint32_t session_id,
                                      const hidl_vec<uint8_t>& buff,
                                      ipc_agm_session_get_params_cb _hidl_cb) {
     ALOGV("%s : session_id = %d, size = %d\n", __func__, session_id, size);
+    if (!isAudioReach) {
+        return Void();
+    }
     uint8_t * payload_local = NULL;
     int32_t ret = 0;
     hidl_vec<uint8_t> payload_hidl;
@@ -606,7 +641,7 @@ Return<void> AGM::ipc_agm_session_get_params(uint32_t session_id,
     payload_hidl.resize((size_t)size);
     ret = agm_session_get_params(session_id, payload_local, (size_t)size);
     if (!ret)
-       memcpy(payload_hidl.data(), payload_local, (size_t)size);
+        memcpy(payload_hidl.data(), payload_local, (size_t)size);
 
      _hidl_cb(ret, payload_hidl);
     free(payload_local);
@@ -617,6 +652,9 @@ Return<int32_t> AGM::ipc_agm_aif_set_params(uint32_t aif_id,
                                             const hidl_vec<uint8_t>& payload,
                                             uint32_t size)
 {
+    if (!isAudioReach) {
+        return 0;
+    }
     size_t size_local = (size_t) size;
     void * payload_local = NULL;
     int32_t ret = 0;
@@ -639,6 +677,9 @@ Return<int32_t> AGM::ipc_agm_session_aif_set_params(uint32_t session_id,
                                                uint32_t size) {
     ALOGV("%s : session_id = %d, aif_id =%d, size = %d\n", __func__,
                                                       session_id, aif_id, size);
+    if (!isAudioReach) {
+        return 0;
+    }
     size_t size_local = (size_t) size;
     void * payload_local = NULL;
     int32_t ret = 0;
@@ -660,6 +701,9 @@ Return<int32_t> AGM::ipc_agm_session_aif_set_cal(uint32_t session_id,
                                     uint32_t aif_id,
                                     const hidl_vec<AgmCalConfig>& cal_config) {
     ALOGV("%s : session_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_cal_config *cal_config_local = NULL;
     int32_t ret = 0;
 
@@ -689,6 +733,9 @@ Return<int32_t> AGM::ipc_agm_session_set_params(uint32_t session_id,
                                                const hidl_vec<uint8_t>& payload,
                                                uint32_t size) {
     ALOGV("%s : session_id = %d, size = %d\n", __func__, session_id, size);
+    if (!isAudioReach) {
+        return 0;
+    }
     size_t size_local = (size_t) size;
     void * payload_local = NULL;
     int32_t ret = 0;
@@ -707,6 +754,9 @@ Return<int32_t> AGM::ipc_agm_set_params_with_tag(uint32_t session_id,
                                      uint32_t aif_id,
                                      const hidl_vec<AgmTagConfig>& tag_config) {
     ALOGV("%s : session_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_tag_config *tag_config_local;
     size_t size_local = (sizeof(struct agm_tag_config) +
                         (tag_config.data()->num_tkvs) * sizeof(agm_key_value));
@@ -736,6 +786,9 @@ Return<int32_t> AGM::ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
                                      const hidl_vec<uint8_t>& payload,
                                      uint32_t size) {
     ALOGV("%s : session_id = %d, aif_id = %d\n", __func__, session_id, aif_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     size_t size_local = (size_t) size;
     void * payload_local = NULL;
     int32_t ret = 0;
@@ -754,6 +807,9 @@ Return<int32_t> AGM::ipc_agm_set_params_with_tag_to_acdb(uint32_t session_id,
 Return<int32_t> AGM::ipc_agm_session_register_for_events(uint32_t session_id,
                                   const hidl_vec<AgmEventRegCfg>& evt_reg_cfg) {
     ALOGV("%s : session_id = %d\n", __func__, session_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_event_reg_cfg *evt_reg_cfg_local;
     int32_t ret = 0;
 
@@ -790,6 +846,9 @@ Return<int32_t> AGM::ipc_agm_session_register_for_events(uint32_t session_id,
 Return<void> AGM::ipc_agm_session_open(uint32_t session_id,
                                        AgmSessionMode sess_mode,
                                        ipc_agm_session_open_cb _hidl_cb) {
+    if (!isAudioReach) {
+        return Void();
+    }
     uint64_t handle = 0;
     agm_client_session_handle *session_handle = NULL;
     hidl_vec<uint64_t> handle_ret;
@@ -825,7 +884,9 @@ Return<int32_t> AGM::ipc_agm_session_set_config(uint64_t hndl,
                 const hidl_vec<AgmMediaConfig>& media_config,
                 const hidl_vec<AgmBufferConfig>& buffer_config) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_media_config *media_config_local = NULL;
     int32_t ret = 0;
     media_config_local = (struct agm_media_config*)
@@ -870,6 +931,9 @@ Return<int32_t> AGM::ipc_agm_session_set_config(uint64_t hndl,
 
 Return<int32_t> AGM::ipc_agm_session_close(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct listnode *node = NULL;
     struct listnode *tempnode = NULL;
     agm_client_session_handle *session_handle = NULL;
@@ -910,49 +974,66 @@ done:
 
 Return<int32_t> AGM::ipc_agm_session_prepare(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_prepare(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_start(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_start(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_stop(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_stop(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_pause(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_pause(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_flush(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_flush(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_resume(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_resume(hndl);
 }
 
 Return<int32_t> AGM::ipc_agm_session_suspend(uint64_t hndl) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_suspend(hndl);
 }
 
 Return<void> AGM::ipc_agm_session_read(uint64_t hndl, uint32_t count,
                                              ipc_agm_session_read_cb _hidl_cb) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return Void();
+}
     hidl_vec <uint8_t> buff_ret;
     void *buffer = NULL;
     buffer = (void*) calloc(1,count);
@@ -975,6 +1056,9 @@ Return<void> AGM::ipc_agm_session_write(uint64_t hndl,
                                         uint32_t count,
                                         ipc_agm_session_write_cb _hidl_cb) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return Void();
+    }
     void* buffer = NULL;
     buffer = (void*) calloc(1,count);
     if (buffer == NULL) {
@@ -993,6 +1077,9 @@ Return<void> AGM::ipc_agm_session_write(uint64_t hndl,
 Return<int32_t> AGM::ipc_agm_get_hw_processed_buff_cnt(uint64_t hndl,
                                                         Direction dir) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return 0;
+    }
     enum direction dir_local = (enum direction) dir;
     return agm_get_hw_processed_buff_cnt(hndl, dir_local);
 }
@@ -1000,6 +1087,9 @@ Return<int32_t> AGM::ipc_agm_get_hw_processed_buff_cnt(uint64_t hndl,
 Return<void> AGM::ipc_agm_get_aif_info_list(uint32_t num_aif_info,
                                        ipc_agm_get_aif_info_list_cb _hidl_cb) {
     ALOGV("%s called with num_aif_info = %d\n", __func__, num_aif_info);
+    if (!isAudioReach) {
+        return Void();
+    }
     int32_t ret;
     hidl_vec<AifInfo> aif_list_ret;
     struct aif_info * aif_list = NULL;
@@ -1027,26 +1117,35 @@ Return<void> AGM::ipc_agm_get_aif_info_list(uint32_t num_aif_info,
     free(aif_list);
     return Void();
 }
+
 Return<int32_t> AGM::ipc_agm_session_set_loopback(uint32_t capture_session_id,
                                                   uint32_t playback_session_id,
                                                   bool state) {
     ALOGV("%s called capture_session_id = %d, playback_session_id = %d\n", __func__,
            capture_session_id, playback_session_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_set_loopback(capture_session_id,
                                     playback_session_id,
                                     state);
 }
 
-
 Return<int32_t> AGM::ipc_agm_session_set_ec_ref(uint32_t capture_session_id,
                                                 uint32_t aif_id, bool state) {
     ALOGV("%s : cap_sess_id = %d, aif_id = %d\n", __func__,
                                   capture_session_id, aif_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_set_ec_ref(capture_session_id, aif_id, state);
 }
 
 Return<int32_t> AGM::ipc_agm_client_register_callback(const sp<IAGMCallback>& cb)
 {
+    if (!isAudioReach) {
+        return 0;
+    }
     int pid = ::android::hardware::IPCThreadState::self()->getCallingPid();
     client_info *client_handle = NULL;
     struct listnode* node = NULL;
@@ -1083,6 +1182,9 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
                                                      uint32_t evt_type,
                                                      uint64_t ipc_client_data,
                                                      uint64_t clnt_data) {
+    if (!isAudioReach) {
+        return 0;
+    }
     agm_event_cb ipc_cb;
     SrvrClbk  *sr_clbk_data = NULL, *tmp_sr_clbk_data = NULL;
     clbk_data *clbk_data_obj = NULL;
@@ -1153,12 +1255,18 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
 
 Return<int32_t> AGM::ipc_agm_session_eos(uint64_t hndl){
     ALOGV("%s : handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return 0;
+    }
     return agm_session_eos(hndl);
 }
 
 Return<void> AGM::ipc_agm_get_session_time(uint64_t hndl,
                                           ipc_agm_get_session_time_cb _hidl_cb){
     ALOGV("%s : handle = %llx \n", __func__, (unsigned long long) hndl);
+    if (!isAudioReach) {
+        return Void();
+    }
     uint64_t ts = 0;
     int ret = agm_get_session_time(hndl, &ts);
     _hidl_cb(ret,ts);
@@ -1168,6 +1276,9 @@ Return<void> AGM::ipc_agm_get_session_time(uint64_t hndl,
 Return<void> AGM::ipc_agm_get_buffer_timestamp(uint32_t session_id,
                                           ipc_agm_get_buffer_timestamp_cb _hidl_cb){
     ALOGV("%s : session_id = %u\n", __func__, session_id);
+    if (!isAudioReach) {
+        return Void();
+    }
     uint64_t ts = 0;
     int ret = agm_get_buffer_timestamp(session_id, &ts);
 
@@ -1177,6 +1288,9 @@ Return<void> AGM::ipc_agm_get_buffer_timestamp(uint32_t session_id,
 
 Return<void> AGM::ipc_agm_session_get_buf_info(uint32_t session_id, uint32_t flag,
                                              ipc_agm_session_get_buf_info_cb _hidl_cb) {
+    if (!isAudioReach) {
+        return Void();
+    }
     struct agm_buf_info buf_info;
     int32_t ret = -EINVAL;
     MmapBufInfo info;
@@ -1225,6 +1339,9 @@ exit:
 
 Return<int32_t> AGM::ipc_agm_set_gapless_session_metadata(uint64_t hndl,
                      AgmGaplessSilenceType type, uint32_t silence) {
+    if (!isAudioReach) {
+        return 0;
+    }
     enum agm_gapless_silence_type type_local = (enum agm_gapless_silence_type)type;
     ALOGV("%s : handle = %lu \n", __func__, hndl);
     return agm_set_gapless_session_metadata(hndl, type_local, silence);
@@ -1237,7 +1354,9 @@ Return<int32_t> AGM::ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
                 const hidl_vec<AgmBufferConfig>& in_buffer_config,
                 const hidl_vec<AgmBufferConfig>& out_buffer_config) {
     ALOGV("%s called with handle = %llx \n", __func__, (unsigned long long) hndl);
-
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_media_config *in_media_config_local, *out_media_config_local = NULL;
     int32_t ret = 0;
     in_media_config_local = (struct agm_media_config*)
@@ -1317,6 +1436,9 @@ Return<void> AGM::ipc_agm_session_write_with_metadata(uint64_t hndl, const hidl_
                                                uint64_t consumed_sz,
                                                ipc_agm_session_write_with_metadata_cb _hidl_cb)
 {
+    if (!isAudioReach) {
+        return Void();
+    }
     int32_t ret = -EINVAL;
     struct agm_buff buf;
     uint32_t bufSize;
@@ -1368,6 +1490,9 @@ Return<void> AGM::ipc_agm_session_read_with_metadata(uint64_t hndl, const hidl_v
                                                uint32_t captured_sz,
                                                ipc_agm_session_read_with_metadata_cb _hidl_cb)
 {
+    if (!isAudioReach) {
+        return Void();
+    }
     struct agm_buff buf = {0};
     int32_t ret = 0;
     hidl_vec<AgmBuff> outBuff_hidl;
@@ -1428,6 +1553,9 @@ exit:
 Return<int32_t> AGM::ipc_agm_aif_group_set_media_config(uint32_t group_id,
                                  const hidl_vec<AgmGroupMediaConfig>& media_config) {
     ALOGV("%s called with aif_id = %d \n", __func__, group_id);
+    if (!isAudioReach) {
+        return 0;
+    }
     struct agm_group_media_config *med_config_l = NULL;
     med_config_l =
           (struct agm_group_media_config*)calloc(1, sizeof(struct agm_group_media_config));
@@ -1448,6 +1576,9 @@ Return<int32_t> AGM::ipc_agm_aif_group_set_media_config(uint32_t group_id,
 Return<void> AGM::ipc_agm_get_group_aif_info_list(uint32_t num_groups,
                                        ipc_agm_get_aif_info_list_cb _hidl_cb) {
     ALOGV("%s called with num_aif_groups = %d\n", __func__, num_groups);
+    if (!isAudioReach) {
+        return Void();
+    }
     int32_t ret;
     hidl_vec<AifInfo> aif_list_ret;
     struct aif_info * aif_list = NULL;
@@ -1477,8 +1608,10 @@ Return<void> AGM::ipc_agm_get_group_aif_info_list(uint32_t num_groups,
 }
 
 Return<int32_t> AGM::ipc_agm_session_write_datapath_params(uint32_t session_id,
-                                                const hidl_vec<AgmBuff>& buff_hidl)
-{
+                                                const hidl_vec<AgmBuff>& buff_hidl) {
+    if (!isAudioReach) {
+        return 0;
+    }
     int32_t ret = -EINVAL;
     struct agm_buff buf;
     uint32_t bufSize;
@@ -1520,6 +1653,9 @@ exit:
 
 Return<void> AGM::ipc_agm_shmem_buf_alloc(const hidl_vec<AgmShmemInfo>& in_buf_hidl,
         ipc_agm_shmem_buf_alloc_cb _hidl_cb) {
+    if (!isAudioReach) {
+        return Void();
+    }
     int32_t ret = -1;
     struct agm_shmem_info buf_info_local;
     hidl_vec<AgmShmemInfo>out_buf_hidl;
@@ -1552,16 +1688,20 @@ exit:
 }
 
 Return<int32_t> AGM::ipc_agm_shmem_buf_free(uint32_t spf_mem_handle) {
+    if (!isAudioReach) {
+        return 0;
+    }
     int32_t ret = -1;
-
     ret = agm_shmem_buf_free(spf_mem_handle);
-
     return ret;
 }
 
 Return<void> AGM::ipc_agm_session_get_available_frame_count(uint32_t session_id,
                                           ipc_agm_session_get_available_frame_count_cb _hidl_cb){
     ALOGV("%s : session_id = %u\n", __func__, session_id);
+    if (!isAudioReach) {
+        return Void();
+    }
     uint32_t frame_count = 0;
     int ret = agm_session_get_available_frame_count(session_id, &frame_count);
 
@@ -1574,6 +1714,9 @@ Return<void>  AGM::ipc_agm_hw_rsc_config(AgmHwConfigType type,
                                 uint32_t cfg_len, uint32_t out_len,
                                 ipc_agm_hw_rsc_config_cb _hidl_cb)
 {
+    if (!isAudioReach) {
+        return Void();
+    }
     int32_t ret = -EINVAL;
     void *payload = nullptr;
     void *outbuff = nullptr;
