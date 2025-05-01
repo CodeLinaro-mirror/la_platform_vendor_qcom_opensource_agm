@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -18,6 +18,7 @@
 #include <aidl/vendor/qti/hardware/agm/AgmSessionMode.h>
 #include <aidl/vendor/qti/hardware/agm/AgmTagConfig.h>
 #include <aidl/vendor/qti/hardware/agm/AifInfo.h>
+#include <aidl/vendor/qti/hardware/agm/NonAlsaAifInfo.h>
 #include <aidl/vendor/qti/hardware/agm/Direction.h>
 #include <aidl/vendor/qti/hardware/agm/MmapBufInfo.h>
 #include <aidlcommonsupport/NativeHandle.h>
@@ -75,6 +76,16 @@ struct AidlToLegacy {
     */
     static void convertAifInfoList(const std::vector<AifInfo> &aidlAifList,
                                    struct aif_info *legacyAifList);
+
+    /**
+    * @brief convertNonAlsaAifInfoList converts NonAlsaAifInfo from AIDL to non_alsa_aif_info
+    * legacy type. Client needs to pass valid allocated memory of non_alsa_aif_info,
+    * who is also responsible for dellocating the memory.
+    * @param aidlNonAlsaAifList std::vector of NonAlsaAifInfo
+    * @param aif_list non_alsa_aif_info type.
+    */
+    static void convertNonAlsaAifInfoList(const std::vector<NonAlsaAifInfo> &aidlNonAlsaAifList,
+                                   struct non_alsa_aif_info *legacyAifList);
 
     /**
     * @brief convertAgmEventRegistrationConfig converts AgmEventRegistrationConfig from AIDL to

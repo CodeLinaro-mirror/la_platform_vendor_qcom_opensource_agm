@@ -27,7 +27,7 @@
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022,2025 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -199,6 +199,7 @@ struct device_obj {
 
     bool is_virtual_device;
     int num_virtual_child;
+    bool is_non_alsa;
     bool has_no_alsa_ops;
     struct device_obj *parent_dev;
     struct device_group_data *group_data;
@@ -209,6 +210,10 @@ int device_init();
 void device_deinit();
 /* Returns list of supported devices */
 int device_get_aif_info_list(struct aif_info *aif_list, size_t *audio_intfs);
+/* Returns list of supported devices which are not managed by alsa,
+ * subset of list returned by device_get_aif_info_list
+ */
+int device_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *audio_intfs);
 /* returns device_obj associated with device_id */
 int device_get_obj(uint32_t device_idx, struct device_obj **dev_obj);
 int device_get_hw_ep_info(struct device_obj *dev_obj,

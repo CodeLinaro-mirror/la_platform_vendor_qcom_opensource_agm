@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -2344,4 +2344,27 @@ static void print_graph_alias(const struct agm_meta_data_gsl *meta_data_kv)
         return;
     }
     AGM_LOGD("GKV Alias %s\n", acdb_string);
+}
+
+int graph_get_driver_data(uint32_t module_id,
+                    struct agm_cal_config *cal_config,
+                    void *payload,
+                    size_t *size)
+{
+    int ret = 0;
+    struct agm_key_vector_gsl ckv;
+
+    if ((!cal_config) || (!size) || (*size && (payload == NULL))) {
+        AGM_LOGE("Error Invalid params\n");
+        return -EINVAL;
+    }
+
+    ckv.num_kvs = cal_config->num_ckvs;
+    ckv.kv = cal_config->kv;
+    ret = gsl_get_driver_data(module_id,
+                            (struct gsl_key_vector *)&ckv,
+                            payload,
+                            size);
+
+    return ar_err_get_lnx_err_code(ret);
 }
