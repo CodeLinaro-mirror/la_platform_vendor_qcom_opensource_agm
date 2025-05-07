@@ -65,4 +65,6 @@ int agm_session_write_socket(uint64_t hndl,
                             void *buff,
                             size_t *count);
 
+int agm_session_request_heartbeat(uint64_t hndl, uint32_t* agmSrvrStatus);
+
 #endif

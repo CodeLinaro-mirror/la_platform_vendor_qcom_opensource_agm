@@ -87,6 +87,11 @@ static void agm_hw_rsc_config_socket(uint16_t cmd,
                 uint8_t* args_payload,
                 const AgmSocket& conn);
 
+static void agm_session_send_heartbeat(uint16_t cmd,
+                uint32_t args_payload_size,
+                uint8_t* args_payload,
+                const AgmSocket& conn);
+
 int init_service_socket() {
     ALOGV("%s", __func__);
     gAgmServer = AgmSocketServer::getInstance(&executeCmd);
@@ -117,7 +122,8 @@ static unordered_map<uint16_t, agmServerWrapper> functionTable = {
     {static_cast<uint16_t>(AGM_CMD_SESSION_AIF_GET_TAG_MODULE_INFO), &agm_session_aif_get_tag_module_info_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_AIF_SET_PARAMS), &agm_session_aif_set_params_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_WRITE), &agm_session_write_socket},
-    {static_cast<uint16_t>(AGM_CMD_HW_SRC_CONFIG), &agm_hw_rsc_config_socket}
+    {static_cast<uint16_t>(AGM_CMD_HW_SRC_CONFIG), &agm_hw_rsc_config_socket},
+    {static_cast<uint16_t>(AGM_CMD_SESSION_HEARTBEAT), &agm_session_send_heartbeat}
 };
 
 static void agm_conn_command_handler(uint16_t cmd,
@@ -989,6 +995,31 @@ static void agm_session_write_socket(uint16_t cmd,
         memcpy(payload, &ret, sizeof(int32_t));
         payload += sizeof(int32_t);
         memcpy(payload, count, sizeof(uint32_t));
+    };
+
+    /* 6. call Send to get IPC reply */
+    conn.Send(cmd, AGM_CMD_TYPE_REPLY, reply_size, payloadWriter);
+}
+
+static void agm_session_send_heartbeat(uint16_t cmd,
+                                        uint32_t args_payload_size,
+                                        uint8_t* args_payload,
+                                        const AgmSocket& conn)
+{
+    int32_t ret = 0;
+    uint32_t reply_size = 0;
+    uint32_t server_status = 0;
+
+    /* 3. update the server status to is alive */
+    server_status = AGM_SERVER_ALIVE;
+    /* 4. calculate reply's payload size */
+    reply_size += sizeof(ret) + sizeof(uint32_t);
+
+    /* 5. define function obj to write reply's payload */
+    auto payloadWriter = [&ret, &server_status](uint8_t* payload) {
+        memcpy(payload, &ret, sizeof(int32_t));
+        payload += sizeof(ret);
+        memcpy(payload, &server_status, sizeof(uint32_t));
     };
 
     /* 6. call Send to get IPC reply */

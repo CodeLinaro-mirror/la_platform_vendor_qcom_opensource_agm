@@ -602,6 +602,42 @@ int agm_session_close_socket(uint64_t hndl)
     return ret;
 }
 
+int agm_session_request_heartbeat(uint64_t hndl, uint32_t* agmSrvrStatus)
+{
+    int32_t ret = 0;
+    ALOGV("Enter %s %d", __func__, __LINE__);
+    /* 1. get socket client */
+    AgmSocketClient* conn = AgmSocketClient::getInstance();
+    if(conn == NULL) {
+        ALOGE("%s Failed to get AgmSocketClient instance", __func__);
+        return -1;
+    }
+    /* 2. get whole payload size */
+    uint32_t payload_size = sizeof(uint64_t);
+    /* 3. define function obj to write payload */
+    auto payloadFiller = [&](uint8_t* payload) {
+        memcpy(payload, &hndl, sizeof(uint64_t));
+    };
+    /* 4. call Send for IPC */
+    conn->Send(AGM_CMD_SESSION_HEARTBEAT,
+            AGM_CMD_TYPE_REQUEST,
+            payload_size,
+            payloadFiller);
+
+    auto replyhandler = [&ret, agmSrvrStatus](uint16_t cmd,uint16_t msg_type,uint32_t size, uint8_t* payload, const AgmSocket& socket) {
+        if (AGM_CMD_SESSION_HEARTBEAT == cmd && AGM_CMD_TYPE_REPLY == msg_type) {
+            memcpy(&ret, payload, sizeof(int32_t));
+            payload += sizeof(int32_t);
+            memcpy(agmSrvrStatus, payload, sizeof(uint32_t));
+            ALOGV("%s returned status %d", __func__, *agmSrvrStatus);
+        }
+    };
+    /* 6. call Receive to get IPC reply */
+    conn->Receive(replyhandler);
+
+    return ret;
+}
+
 int agm_session_write_socket(uint64_t hndl,
                             void *buff,
                             size_t *count)

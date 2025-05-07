@@ -21,10 +21,10 @@
 #include <aidl/vendor/qti/hardware/agm/BnAGMCallback.h>
 #include <aidlcommonsupport/NativeHandle.h>
 #include "AgmCallback.h"
-
 #include <agm_conn_client.h>
 #ifdef SOCKET_ENABLED
 #include <chrono>
+#include <thread>
 #include <cutils/properties.h>
 #endif
 
@@ -39,6 +39,14 @@ using ::aidl::vendor::qti::hardware::agm::MmapBufInfo;
 static std::shared_ptr<IAGM> gAgmClient = nullptr;
 static ::ndk::ScopedAIBinder_DeathRecipient gDeathRecipient;
 std::mutex gLock;
+std::mutex gSocketLock;
+
+static bool bAgmServiceAvailable = true;
+
+enum AgmServerStatus {
+    AGM_SERVER_DIED = 0,
+    AGM_SERVER_ALIVE
+};
 
 agm_service_crash_cb callback;
 uint64_t callback_cookie;
@@ -113,16 +121,17 @@ std::shared_ptr<IAGM> getAgm() {
 
 int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie) {
     ALOGE("%s Enter: ", __func__);
-    if (!checkBinderServiceReady()) {
-        ALOGE("%s: skip callback register for rbvm",__func__);
-        /* skip callback register for rbvm audio sessions */
-        return 0;
-    }
 
     std::shared_ptr<IAGMCallback> aidlAgmCallback;
     int ret = 0;
     callback = cb;
     callback_cookie = cookie;
+
+    if (!checkBinderServiceReady()) {
+        ALOGE("%s: Binder not ready, skipping binder registration but storing callback for socket path",__func__);
+        /* skip callback register, but store callback for rbvm audio sessions */
+        return 0;
+    }
 
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -132,7 +141,10 @@ int agm_register_service_crash_callback(agm_service_crash_cb cb, uint64_t cookie
 int agm_aif_set_media_config(uint32_t audio_intf, struct agm_media_config *media_config) {
     ALOGV("%s audio_intf = %d", __func__, audio_intf);
     if (!checkBinderServiceReady()) {
-        return agm_aif_set_media_config_socket(audio_intf, media_config);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_aif_set_media_config_socket(audio_intf, media_config);
+        }
     }
 
     auto client = getAgm();
@@ -148,10 +160,13 @@ int agm_session_set_config(uint64_t handle, struct agm_session_config *session_c
     ALOGV("%s handle = %llx ", __func__, (unsigned long long)handle);
 
     if (!checkBinderServiceReady()) {
-        return agm_session_set_config_socket(handle,
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_set_config_socket(handle,
                                             session_config,
                                             media_config,
                                             buffer_config);
+        }
     }
 
     auto client = getAgm();
@@ -177,7 +192,10 @@ int agm_deinit() {
 int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata) {
     ALOGV("%s audio_intf = %d, size =%d ", __func__, audio_intf, size);
     if (!checkBinderServiceReady()) {
-        return agm_aif_set_metadata_socket(audio_intf, size, metadata);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_aif_set_metadata_socket(audio_intf, size, metadata);
+        }
     }
 
     auto client = getAgm();
@@ -191,7 +209,10 @@ int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata) 
 int agm_session_set_metadata(uint32_t session_id, uint32_t size, uint8_t *metadata) {
     ALOGV("%s session_id = %d, size = %d", __func__, session_id, size);
     if (!checkBinderServiceReady()) {
-        return agm_session_set_metadata_socket(session_id, size, metadata);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_set_metadata_socket(session_id, size, metadata);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -205,10 +226,13 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf, uint3
                                  uint8_t *metadata) {
     ALOGV("%s  session_id = %d, aif = %d, size = %d", __func__, session_id, audio_intf, size);
     if (!checkBinderServiceReady()) {
-        return agm_session_aif_set_metadata_socket(session_id,
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_aif_set_metadata_socket(session_id,
                                                     audio_intf,
                                                     size,
                                                     metadata);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -241,10 +265,85 @@ int agm_session_prepare(uint64_t handle) {
     return statusTFromBinderStatus(client->ipc_agm_session_prepare(handle));
 }
 
+void* task_check_agm_server_status(void* arg) {
+    if(arg == NULL) {
+        ALOGE("Enter %s %d received empty arg", __func__, __LINE__);
+        pthread_exit(NULL);
+    }
+    uint64_t handle = (uint64_t) arg;
+    static uint32_t agmSrvrStatus = AGM_SERVER_DIED;
+    const int32_t SLEEP_DURATION = 2;
+    ALOGV("Enter %s %d handle =  %llx", __func__, __LINE__, (unsigned long long) handle);
+
+    while(!checkBinderServiceReady()) {
+        // Send message to server to check if server is alive
+        agmSrvrStatus = AGM_SERVER_DIED;
+        int ret = -EINVAL;
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            ret = agm_session_request_heartbeat(handle, &agmSrvrStatus);
+            ALOGV("Unlock socket %s %d AGM server status %d", __func__, __LINE__, agmSrvrStatus);
+            if(ret == 0) {
+                if(agmSrvrStatus == AGM_SERVER_ALIVE) {
+                    ALOGI("%s %d AGM server is alive", __func__, __LINE__);
+                    bAgmServiceAvailable = true;
+                } else {
+                    ALOGE("%s %d AGM server returned unexpected status: %d", __func__, __LINE__, agmSrvrStatus);
+                    bAgmServiceAvailable = false;
+                    if (callback) {
+                        callback(callback_cookie);
+                    }
+                    break;
+                }
+            } else {
+                ALOGE("%s %d AGM server is not alive, error code: %d", __func__, __LINE__, ret);
+                bAgmServiceAvailable = false;
+                if (callback) {
+                    callback(callback_cookie);
+                }
+                break;
+            }
+        }
+        // Wait for 2 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(SLEEP_DURATION));
+    }
+    ALOGV("Exit %s %d", __func__, __LINE__);
+    pthread_exit(NULL);
+}
+
 int agm_session_start(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
     if (!checkBinderServiceReady()) {
-        return agm_session_start_socket(handle);
+        int ret_agm = agm_session_start_socket(handle);
+        ALOGI("creating health monitor thread with handle = %llx ", (unsigned long long)handle);
+        if(ret_agm == 0) {
+            pthread_t client_thread;
+            pthread_attr_t attr;
+            int attr_init_result = pthread_attr_init(&attr);
+            if (attr_init_result != 0) {
+                ALOGE("Failed to initialize thread attributes: %d", attr_init_result);
+                std::unique_lock<std::mutex> lock(gSocketLock);
+                bAgmServiceAvailable = false;
+                if (callback) {
+                    callback(callback_cookie);
+                }
+                return -EINVAL;
+            }
+            pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+            int ret = pthread_create(&client_thread, NULL, task_check_agm_server_status, (void*)handle);
+            pthread_attr_destroy(&attr);
+            if (ret < 0) {
+                ALOGE("Create client health thread failed\n");
+                std::unique_lock<std::mutex> lock(gSocketLock);
+                bAgmServiceAvailable = false;
+                if (callback) {
+                    callback(callback_cookie);
+                }
+                agm_session_stop_socket(handle);
+                return -EINVAL;
+            }
+        }
+        return ret_agm;
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -326,7 +425,10 @@ int agm_session_aif_connect(uint32_t session_id, uint32_t audio_intf, bool state
     ALOGV("%s session_id =%d, aif = %d, state = %s", __func__, session_id, audio_intf,
           state ? "true" : "false");
     if (!checkBinderServiceReady()) {
-        return agm_session_aif_connect_socket(session_id, audio_intf, state);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_aif_connect_socket(session_id, audio_intf, state);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -356,7 +458,30 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
 int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
     ALOGV("%s  handle = %llx, bytes %d ", __func__, (unsigned long long)handle, *byte_count);
     if (!checkBinderServiceReady()) {
-        return agm_session_write_socket(handle, buf, byte_count);
+        int ret_agm = -ENODEV;
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            if (true == bAgmServiceAvailable) {
+                ret_agm = agm_session_write_socket(handle, buf, byte_count);
+                if (ret_agm < 0) {
+                    if (ret_agm == -ECONNRESET || ret_agm == -EPIPE ||
+                        ret_agm == -ENOTCONN || ret_agm == -ESHUTDOWN ||
+                        ret_agm == -ECONNABORTED || ret_agm == -ETIMEDOUT) {
+                        ALOGE("%s: Server connection lost during write", __func__);
+                        bAgmServiceAvailable = false;
+                        if (callback) {
+                            callback(callback_cookie);
+                        }
+                    } else {
+                        ALOGE("%s: Write operation failed with error: %d", __func__, ret_agm);
+                    }
+                }
+            } else {
+               ALOGE("%s: AGM service unavailable, skipping write", __func__);
+            }
+        }
+        ALOGV("Exit %s %d, with ret = %d", __func__, __LINE__, ret_agm);
+        return ret_agm;
     }
 
     auto client = getAgm();
@@ -398,7 +523,10 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir) {
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     ALOGV("%s: Enter: noOfAif %d, aifListEmpty %d", __func__, *num_aif_info, (aif_list == NULL));
     if (!checkBinderServiceReady()) {
-        return agm_get_aif_info_list_socket(aif_list, num_aif_info);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_get_aif_info_list_socket(aif_list, num_aif_info);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -420,7 +548,10 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id, vo
                                         size_t *size) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
     if (!checkBinderServiceReady()) {
-        return agm_session_aif_get_tag_module_info_socket(session_id, aif_id, payload, size);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_aif_get_tag_module_info_socket(session_id, aif_id, payload, size);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -478,7 +609,10 @@ int agm_aif_set_params(uint32_t aif_id, void *payload, size_t size) {
 int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id, void *payload, size_t size) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
     if (!checkBinderServiceReady()) {
-        return agm_session_aif_set_params_socket(session_id, aif_id, payload, size);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_session_aif_set_params_socket(session_id, aif_id, payload, size);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
@@ -732,7 +866,10 @@ int agm_aif_group_set_media_config(uint32_t group_id, struct agm_group_media_con
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups) {
     ALOGV("%s called ", __func__);
     if (!checkBinderServiceReady()) {
-        return agm_get_group_aif_info_list_socket(aif_list, num_groups);
+        {
+            std::unique_lock<std::mutex> lock(gSocketLock);
+            return agm_get_group_aif_info_list_socket(aif_list, num_groups);
+        }
     }
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
