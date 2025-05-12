@@ -63,6 +63,9 @@ AC_ARG_WITH([openwrt],
     [with_openwrt=no])
 AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
 
+AC_MSG_RESULT([$machine_selected])
+AC_SUBST([MACHINE_ENABLED],[$machine_selected])
+
 AC_CONFIG_FILES([ \
         Makefile \
         sndparser.pc

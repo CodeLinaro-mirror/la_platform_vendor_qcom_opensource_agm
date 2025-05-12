@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022, 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -2349,6 +2349,14 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
     int non_alsa_be_ctl_cnt = 0;
 
     AGM_LOGI("%s: enter, card %u\n", __func__, card);
+
+#ifdef AGM_NO_IPC
+    ret = agm_init();
+    if (ret) {
+        printf("%s: agm init failed\n", __func__);
+        return ret;
+    }
+#endif
 
     amp = calloc(1, sizeof(*amp));
     if (!amp) {
