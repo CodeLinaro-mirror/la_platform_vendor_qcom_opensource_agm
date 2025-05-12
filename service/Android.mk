@@ -66,6 +66,10 @@ else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
 
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
+LOCAL_SHARED_LIBRARIES :=$(filter-out libaudioroute,$(LOCAL_SHARED_LIBRARIES))
+endif
+
 #if android version is R, use qtitinyalsa lib otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter R 11,$(PLATFORM_VERSION)),)

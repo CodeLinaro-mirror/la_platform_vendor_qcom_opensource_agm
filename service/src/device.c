@@ -54,8 +54,8 @@
 
 #define SNDCARD_PATH "/sys/kernel/snd_card/card_state"
 #define PCM_DEVICE_FILE "/proc/asound/pcm"
-#define MAX_RETRY 100 /*Device will try these many times before return an error*/
-#define RETRY_INTERVAL 1 /*Retry interval in seconds*/
+#define MAX_RETRY 200 /*Device will try these many times before return an error*/
+#define RETRY_INTERVAL 10 /*Retry interval in seconds*/
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -1089,7 +1089,7 @@ static int wait_for_snd_card_to_online()
             }
         }
         retries--;
-        sleep(RETRY_INTERVAL);
+        usleep(RETRY_INTERVAL * 1000);
     } while ( retries > 0);
 
     if (0 == retries) {

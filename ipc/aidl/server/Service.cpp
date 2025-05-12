@@ -11,10 +11,47 @@
 
 #include "AgmServerWrapper.h"
 
+#ifdef SOCKET_ENABLED
+#include <agm_conn_server.h>
+#include <android-base/properties.h>
+#include <selinux/android.h>
+#include <chrono>
+#include <errno.h>
+#endif
+
 using namespace aidl::vendor::qti::hardware::agm;
+
+static void place_markers(char const *name) {
+   int fd=open("/dev/kmsg_debug", O_WRONLY);
+   if (fd > 0) {
+       char har_kpi[100] = {0};
+       strlcpy(har_kpi, name, sizeof(har_kpi));
+       write(fd, har_kpi, strlen(har_kpi));
+       close(fd);
+   }
+}
+
+static bool checkBinderServiceReady() {
+#ifdef SOCKET_ENABLED
+    static bool flag = false;
+    if (flag) {
+        /* return true if servicemanager online once */
+        return true;
+    } else {
+        flag = android::base::WaitForProperty("servicemanager.ready", "true", std::chrono::milliseconds(1000));
+    }
+    return flag;
+#else
+    return true;
+#endif
+}
 
 extern "C" __attribute__((visibility("default"))) binder_status_t registerService() {
     ALOGI("register AGM Service");
+#ifdef SOCKET_ENABLED
+    int context_initialized = -1;
+    init_service_socket();
+#endif
     ABinderProcess_setThreadPoolMaxThreadCount(1);
     auto agmService = ::ndk::SharedRefBase::make<AgmServerWrapper>();
     ndk::SpAIBinder agmBinder = agmService->asBinder();
@@ -28,11 +65,38 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
     ALOGI("register AGM Service interface %s registered %s status %d", interfaceName.c_str(),
           (status == STATUS_OK) ? "yes" : "no", status);
     std::cout << "register AGM Service interface registered" << std::endl;
+    place_markers("AGM Service registered");
+#ifdef SOCKET_ENABLED
+    FILE *fptr;
+    int num = 1;
+    fptr = fopen("/vendor_early_services/agm.txt","w");
+     if (fptr != NULL) {
+        fprintf(fptr,"%d",num);
+        fclose(fptr);
+    }
+    do {
+        if (context_initialized == -1)
+            context_initialized = selinux_android_setcon("u:r:vendor_agmservice_qti:s0");
+
+        if (context_initialized != -1)
+            break;
+        else
+            sleep(1);
+    } while(1);
+
+    while (!checkBinderServiceReady())
+        sleep(1);
+#endif
+
+#ifdef SOCKET_ENABLED
+    deinit_service_socket();
+#endif
     ABinderProcess_joinThreadPool();
     return EXIT_FAILURE;
 }
 
 int main(int argc, char *argv[]) {
+    place_markers("register AGM Service");
     registerService();
     return 1;
 }

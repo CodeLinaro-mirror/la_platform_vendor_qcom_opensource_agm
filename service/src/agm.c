@@ -58,6 +58,17 @@ static bool agm_initialized = 0;
 static pthread_t ats_thread;
 static const int MAX_RETRIES = 120;
 
+static void place_markers(char const *name){
+   int fd=open("/dev/kmsg_debug", O_WRONLY);
+   if (fd > 0)
+   {
+       char har_kpi[100] = {0};
+       strlcpy(har_kpi, name, sizeof(har_kpi));
+       write(fd, har_kpi, strlen(har_kpi));
+       close(fd);
+   }
+}
+
 static void *ats_init_thread(void *obj __unused)
 {
     int ret = 0;
@@ -83,6 +94,7 @@ static void *ats_init_thread(void *obj __unused)
 int agm_init()
 {
     int ret = 0;
+    place_markers("kpi_value: agm_init start");
 
     if (agm_initialized)
         goto exit;
@@ -109,10 +121,16 @@ int agm_init()
 
     agm_initialized = 1;
 
+    place_markers("kpi_value: agm_init done");
+
+#ifdef BYPASS_ATS_INIT
+    AGM_LOGD("ATS init skipped for Automotive Hypervisor");
+#else
     ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
                                            ats_init_thread, NULL);
     if (ret)
         AGM_LOGE(" ats init thread creation failed\n");
+#endif
 
 exit:
     return ret;
@@ -657,13 +675,16 @@ int agm_session_open(uint32_t session_id,
                      enum agm_session_mode sess_mode,
                      uint64_t *hndl)
 {
-
+    place_markers("kpi_value: agm_session_open start");
     struct session_obj **handle = (struct session_obj**) hndl;
     if (!handle) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
-    return session_obj_open(session_id, sess_mode, handle);
+    int ret = session_obj_open(session_id, sess_mode, handle);
+    place_markers("kpi_value: agm_session_open done");
+
+    return ret;
 }
 
 int agm_session_set_config(uint64_t hndl,
@@ -704,8 +725,8 @@ int agm_session_prepare(uint64_t hndl)
 
 int agm_session_start(uint64_t hndl)
 {
-
     struct session_obj *handle = (struct session_obj *) hndl;
+    place_markers("kpi_value: agm_session_start start");
     if (!handle) {
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
@@ -715,7 +736,9 @@ int agm_session_start(uint64_t hndl)
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
-    return session_obj_start(handle);
+    int ret = session_obj_start(handle);
+    place_markers("kpi_value: agm_session_start done");
+    return ret;
 }
 
 int agm_session_stop(uint64_t hndl)
