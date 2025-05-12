@@ -1012,7 +1012,7 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     priv->card_node = card_node;
     priv->session_id = session_id;
     priv->mmap_status = false;
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm_node, "session_mode", (int *)&sess_mode);
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {
