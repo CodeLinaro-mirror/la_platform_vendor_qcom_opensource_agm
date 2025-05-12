@@ -322,7 +322,7 @@ static int agm_pcm_plugin_get_card_status(struct agm_pcm_priv *priv)
     int card_status = -1;
 
     if (priv->fd < 0) {
-         if ((priv->fd = open(SNDCARD_PATH, O_RDWR)) < 0) {
+         if ((priv->fd = open(SNDCARD_PATH, O_RDONLY)) < 0) {
              AGM_LOGE(LOG_TAG, "Open failed snd sysfs node");
              errno = ENETRESET;
              return -ENETRESET;
@@ -985,7 +985,7 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     }
 
     priv->fd = -1;
-    if ((priv->fd = open(SNDCARD_PATH, O_RDWR)) < 0) {
+    if ((priv->fd = open(SNDCARD_PATH, O_RDONLY)) < 0) {
         AGM_LOGE(LOG_TAG, "Open failed snd sysfs node");
         ret = -EINVAL;
         goto err_session_free;
