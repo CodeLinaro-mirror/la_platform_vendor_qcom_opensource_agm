@@ -23,7 +23,7 @@ if AGM_NO_IPC
 libagm_pcm_plugin_la_CFLAGS += -DAGM_NO_IPC
 libagm_pcm_plugin_la_LDFLAGS += -lagm -L$(top_builddir)/service/.libs
 else
-libagm_pcm_plugin_la_LDFLAGS += -lagmclient -L$(top_builddir)/ipc/DBus/agm_client/.libs
+libagm_pcm_plugin_la_LDFLAGS += -lagm_ls_fe -L$(top_builddir)/ipc/DBus/agm_client/.libs
 endif
 
 lib_LTLIBRARIES      += libagm_compress_plugin.la
@@ -34,7 +34,7 @@ if AGM_NO_IPC
 libagm_compress_plugin_la_CFLAGS += -DAGM_NO_IPC
 libagm_compress_plugin_la_LDFLAGS += -lagm -L$(top_builddir)/service/.libs
 else
-libagm_compress_plugin_la_LDFLAGS += -lagmclient -L$(top_builddir)/ipc/DBus/agm_client/.libs
+libagm_compress_plugin_la_LDFLAGS += -lagm_ls_fe -L$(top_builddir)/ipc/DBus/agm_client/.libs
 endif
 
 lib_LTLIBRARIES      += libagm_mixer_plugin.la
@@ -45,5 +45,5 @@ if AGM_NO_IPC
 libagm_mixer_plugin_la_CFLAGS += -DAGM_NO_IPC
 libagm_mixer_plugin_la_LDFLAGS += -lagm -L$(top_builddir)/service/.libs
 else
-libagm_mixer_plugin_la_LDFLAGS += -lagmclient -L$(top_builddir)/ipc/DBus/agm_client/.libs
+libagm_mixer_plugin_la_LDFLAGS += -lagm_ls_fe -L$(top_builddir)/ipc/DBus/agm_client/.libs
 endif
