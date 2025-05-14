@@ -284,7 +284,7 @@ static int cmp_disable_codec_route_control_put(struct mixer_plugin *plugin __unu
      if (ret)
         goto done;
 
-     ret = cdc_route_endpoint(pcm, &mp_list, true);
+     ret = cdc_route_endpoint(pcm, &mp_list, false);
 
 done:
 
