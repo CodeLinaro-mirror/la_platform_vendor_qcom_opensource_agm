@@ -50,13 +50,30 @@ AM_CONDITIONAL([AGM_NO_IPC], [test "x${with_agm_no_ipc}" = "xyes"])
 PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST(SPF_CFLAGS)
 
-
-PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
-AC_SUBST([KVH2XML_CFLAGS])
+# Checks for libraries
+PKG_CHECK_MODULES([MMHEADERS], [mm-audio-headers])
+AC_SUBST([MMHEADERS_CFLAGS])
 
 #TODO: Check dependency only if --with-ipc is set
 #PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.4.12 ], dummy=yes,
 #                 AC_MSG_ERROR(dbus-1 >= 1.4.12 is required))
+
+AC_ARG_WITH([openwrt],
+    AS_HELP_STRING([use openwrt (default is no)]),
+    [with_openwrt=$withval],
+    [with_openwrt=no])
+AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
+
+#basemachine
+AC_MSG_CHECKING([which base machine to use])
+AC_ARG_WITH([basemachine],
+            [AS_HELP_STRING([--with-basemachine],
+            [Specify the base machine])],
+            [machine_selected="$withval"],
+            [machine_selected=none])
+
+AC_MSG_RESULT([$machine_selected])
+AC_SUBST([MACHINE_ENABLED],[$machine_selected])
 
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)

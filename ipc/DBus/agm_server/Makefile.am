@@ -19,13 +19,13 @@ agmserver_sources = ${top_srcdir}/src/agm-dbus-utils.cpp \
 
 lib_LTLIBRARIES = libagmserverwrapper.la
 libagmserverwrapper_la_SOURCES = $(agmserver_sources)
-libagmserverwrapper_la_CPPFLAGS := $(AM_CPPFLAGS) $(DBUS_CFLAGS)
+libagmserverwrapper_la_CPPFLAGS = $(AM_CPPFLAGS) $(DBUS_CFLAGS)
 libagmserverwrapper_la_LIBADD = -lagm -laudio_log_utils -lar-osal
 libagmserverwrapper_la_LDFLAGS = -ldl -shared -avoid-version -lpthread -lar-osal $(DBUS_LIBS)
 
-bin_PROGRAMS := agm_server
+bin_PROGRAMS = agm_server
 
-agm_server_SOURCES := ./src/agm-server-daemon.cpp
-agm_server_la_CPPFLAGS := $(AM_CPPFLAGS)
+agm_server_SOURCES = ./src/agm-server-daemon.cpp
+agm_server_CPPFLAGS = $(AM_CPPFLAGS)
 agm_server_LDADD = libagmserverwrapper.la -laudio_log_utils -lar-osal -llog $(GLIB_LIBS)
-agm_server_la_LDFLAGS = -ldl -shared -avoid-version
+agm_server_LDFLAGS = -ldl -shared -avoid-version
