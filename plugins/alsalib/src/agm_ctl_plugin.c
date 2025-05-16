@@ -25,6 +25,10 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "PLUGIN: AGMCTL"
@@ -1222,7 +1226,7 @@ static int agmctl_write_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
     if (key >= agmctl->total_ctl_cnt)
         return -EINVAL;
 
-    len = (size_t)*(tlv + sizeof(unsigned int));
+    len = (size_t)(*(unsigned int*)(tlv + sizeof(unsigned int)));
     data = (unsigned char *)(tlv + 2 * sizeof(unsigned int));
 
     switch (agmctl->controls[key].ctl_id) {
