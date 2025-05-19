@@ -25,6 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: metadata"
 #include <stdio.h>
@@ -75,9 +79,9 @@
 
 void metadata_print(struct agm_meta_data_gsl* metadata)
 {
-    int i, count = metadata->gkv.num_kvs;
+    uint32_t i, count = metadata->gkv.num_kvs;
     AGM_LOGD("*************************Metadata*************************\n");
-    AGM_LOGD("GKV size:%d\n", count);
+    AGM_LOGD("GKV size:%u\n", count);
     for (i = 0; i < count; i++) {
         AGM_LOGD("key:0x%x, value:0x%x ", metadata->gkv.kv[i].key,
                                        metadata->gkv.kv[i].value);
@@ -91,8 +95,8 @@ void metadata_print(struct agm_meta_data_gsl* metadata)
     }
     AGM_LOGD("\n");
 
-    AGM_LOGD("Property ID:%d\n", metadata->sg_props.prop_id);
-    AGM_LOGD("property count:%d\n", metadata->sg_props.num_values);
+    AGM_LOGD("Property ID:%u\n", metadata->sg_props.prop_id);
+    AGM_LOGD("property count:%u\n", metadata->sg_props.num_values);
 
     count = metadata->sg_props.num_values;
     AGM_LOGD("Property Values: ");
@@ -163,7 +167,7 @@ static void metadata_remove_dup(
 void metadata_update_cal(struct agm_meta_data_gsl *meta_data,
                                      struct agm_key_vector_gsl *ckv)
 {
-    int i, j;
+    uint32_t i, j;
 
     if (!meta_data || !ckv) {
         AGM_LOGE("Invalid params\n");
@@ -292,7 +296,7 @@ int metadata_copy(struct agm_meta_data_gsl *dest, uint32_t size,
 {
 
     int ret = 0;
-    int min_req_len = 0;
+    uint32_t min_req_len = 0;
 
     if (!metadata) {
         AGM_LOGI("NULL metadata passed, ignoring\n");
@@ -300,7 +304,7 @@ int metadata_copy(struct agm_meta_data_gsl *dest, uint32_t size,
     }
     min_req_len += sizeof(uint32_t);
     if (size < min_req_len) {
-        AGM_LOGE("size should be atleast %d size for GKV\n", sizeof(uint32_t));
+        AGM_LOGE("size should be at least %lu size for GKV\n", sizeof(uint32_t));
         ret = -EINVAL;
         goto done;
 

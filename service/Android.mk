@@ -22,6 +22,12 @@ LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
+ifeq ($(ENABLE_HYP),true)
+LOCAL_HEADER_LIBRARIES := libar-gsl_fe_headers
+else
+LOCAL_EXPORT_SHARED_LIBRARY_HEADERS := libar-gsl
+endif
+
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/inc/public
 
 LOCAL_SRC_FILES  := \
@@ -35,7 +41,7 @@ LOCAL_SRC_FILES  := \
     src/device_hw_ep.c \
     src/agm_memlogger.c
 
-LOCAL_HEADER_LIBRARIES := \
+LOCAL_HEADER_LIBRARIES += \
     libspf-headers \
     libutils_headers \
     libacdb_headers \
@@ -50,8 +56,8 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils
 
 ifeq ($(ENABLE_HYP), true)
-LOCAL_C_INCLUDES += $(TARGET_OUT_INTERMEDIATES)/include/mm-audio/gsl_fe
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
+LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
 LOCAL_CFLAGS += -DBYPASS_ATS_INIT -DBYPASS_ALSA_HW
 LOCAL_CFLAGS += -DBYPASS_SND_CARD_CHECK
 else
