@@ -26,9 +26,7 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -2029,7 +2027,11 @@ done:
     if (payload)
         free(payload);
 
-    return configure_spr_session_time_reset_info(spr_mod, graph_obj);
+    if (ret == 0 && graph_obj->state != STARTED) {
+        ret = configure_spr_session_time_reset_info(spr_mod, graph_obj);
+    }
+
+    return ret;
 }
 
 int configure_gapless(struct module_info *gapless_mod,
