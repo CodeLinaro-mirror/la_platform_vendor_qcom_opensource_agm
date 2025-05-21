@@ -2144,7 +2144,11 @@ done:
     if (payload)
         free(payload);
 
-    return configure_spr_session_time_reset_info(spr_mod, graph_obj);
+    if (ret == 0 && graph_obj->state != STARTED) {
+        ret = configure_spr_session_time_reset_info(spr_mod, graph_obj);
+    }
+
+    return ret;
 }
 
 int configure_gapless(struct module_info *gapless_mod,
