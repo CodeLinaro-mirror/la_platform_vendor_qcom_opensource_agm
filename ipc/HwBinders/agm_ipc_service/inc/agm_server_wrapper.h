@@ -28,7 +28,7 @@
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023, 2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #ifndef ANDROID_SYSTEM_AGMIPC_V1_0_AGM_H
@@ -101,9 +101,8 @@ typedef struct clbk_data {
 
 struct AGM : public IAGM {
     public :
-    AGM() {
-      agm_initialized = agm_init() == 0?true:false;
-    }
+    AGM();
+
     Return<int32_t> ipc_agm_init() override;
     Return<int32_t> ipc_agm_deinit() override;
     Return<int32_t> ipc_agm_aif_set_media_config(uint32_t aif_id,
@@ -230,6 +229,7 @@ struct AGM : public IAGM {
 private:
     sp<client_death_notifier> mDeathNotifier = NULL;
     bool agm_initialized;
+    bool isAudioReach;
 };
 
 }  // namespace implementation
