@@ -98,4 +98,6 @@
     <!-- HS_IF4 -->
     <device name="TDM-LPAIF_SDR-RX-QUINARY" rate="48000" ch="8" bits="16" />
     <device name="TDM-LPAIF_SDR-TX-QUINARY" rate="48000" ch="8" bits="16" />
+    <!-- DUMMY DEVICE -->
+    <device name="PCM_DUMMY-TX-0" rate="48000" ch="1" bits="16" />
 </config>
