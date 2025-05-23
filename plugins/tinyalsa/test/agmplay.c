@@ -26,8 +26,8 @@
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
 **
-** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -364,7 +364,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
                 /* Updating bitwitdh based on format to avoid mismatch between bitwidth
                  * and format, as device bw will be used to configure MFC.
                  */
-                dev_config[index].bits = get_pcm_bit_width(dev_config[index].format);
+                dev_config[index].bits = get_tinyalsa_pcm_bit_width(dev_config[index].format);
             }
         }
         printf("Backend %s rate ch bit fmt : %d, %d, %d %d\n", intf_name[index],

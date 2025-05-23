@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -79,7 +79,7 @@ typedef enum {
 }slot_mask_t;
 
 int convert_char_to_hex(char *char_num);
-int get_pcm_bit_width(enum pcm_format fmt_id);
+int get_tinyalsa_pcm_bit_width(enum pcm_format fmt_id);
 int set_agm_device_media_config(struct mixer *mixer, char *intf_name, struct device_config *config);
 int set_agm_device_custom_payload(struct mixer *mixer, char *intf_name, void *payload, size_t size);
 void get_agm_usb_audio_config_payload(uint8_t** payload, size_t* size, uint32_t miid, struct usbAudioConfig *data);

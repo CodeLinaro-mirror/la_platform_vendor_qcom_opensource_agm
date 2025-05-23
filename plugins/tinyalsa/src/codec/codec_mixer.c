@@ -48,6 +48,7 @@ enum {
     SND_DEVICE_IDX_BT_SCO_MIC,
     SND_DEVICE_IDX_BT_BLE_OUT,
     SND_DEVICE_IDX_BT_BLE_MIC,
+    SND_DEVICE_IDX_HAPTICS,
     SND_DEVICE_IDX_MAX,
 };
 
@@ -63,6 +64,7 @@ static char *cmp_snd_device_names[] = {
     [SND_DEVICE_IDX_BT_SCO_MIC]        = "bt-sco-mic",
     [SND_DEVICE_IDX_BT_BLE_OUT]        = "bt-ble",
     [SND_DEVICE_IDX_BT_BLE_MIC]        = "bt-ble-mic",
+    [SND_DEVICE_IDX_HAPTICS]           = "haptics-dev",
 };
 
 uint32_t snd_device_enum_to_route_map[SND_DEVICE_IDX_MAX] = {
@@ -75,6 +77,7 @@ uint32_t snd_device_enum_to_route_map[SND_DEVICE_IDX_MAX] = {
     [SND_DEVICE_IDX_BT_SCO_MIC]  = ROUTE_BT_SCO_MIC,
     [SND_DEVICE_IDX_BT_BLE_OUT]  = ROUTE_BT_BLE,
     [SND_DEVICE_IDX_BT_BLE_MIC]  = ROUTE_BT_BLE_MIC,
+    [SND_DEVICE_IDX_HAPTICS]     = ROUTE_HAPTICS,
 };
 
 struct snd_value_enum codec_routing_enum;
@@ -281,7 +284,7 @@ static int cmp_disable_codec_route_control_put(struct mixer_plugin *plugin __unu
      if (ret)
         goto done;
 
-     ret = cdc_route_endpoint(pcm, &mp_list, true);
+     ret = cdc_route_endpoint(pcm, &mp_list, false);
 
 done:
 
