@@ -24,8 +24,39 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libar-gsl \
-    vendor.qti.hardware.agm-V1-ndk
+    vendor.qti.hardware.agm-V3-ndk
 
 LOCAL_HEADER_LIBRARIES := libagm_headers
 
 include $(BUILD_STATIC_LIBRARY)
+
+# Build codec ipc converters
+include $(CLEAR_VARS)
+
+LOCAL_MODULE        := libcodecipcaidltypeconverter
+LOCAL_VENDOR_MODULE := true
+
+LOCAL_CFLAGS += -v -Wall  -Wextra -Wthread-safety
+LOCAL_TIDY := true
+
+LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/inc
+
+LOCAL_SRC_FILES     := \
+    src/CodecIpcLegacyToAidl.cpp
+
+LOCAL_STATIC_LIBRARIES := libaidlcommonsupport
+
+LOCAL_SHARED_LIBRARIES := \
+    liblog \
+    libbinder_ndk \
+    libbase \
+    libcutils \
+    libutils \
+    libar-gsl \
+    vendor.qti.hardware.agm-V3-ndk
+
+LOCAL_HEADER_LIBRARIES := libagm_headers
+
+include $(BUILD_STATIC_LIBRARY)
+

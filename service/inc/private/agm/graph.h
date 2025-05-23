@@ -25,6 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef GPH_OBJ_H
@@ -436,4 +440,8 @@ int graph_get_tckv_data_from_acdb(
 int32_t graph_enable_acdb_persistence(uint8_t enable_flag);
 
 int graph_set_media_config_datapath(struct graph_obj *gph_obj);
+int graph_get_driver_data(uint32_t module_id,
+                        struct agm_cal_config *cal_config,
+                        void *payload,
+                        size_t *size);
 #endif /*GPH_OBJ_H*/

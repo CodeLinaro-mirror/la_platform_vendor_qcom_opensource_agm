@@ -4,13 +4,20 @@ EXTRA_DIST = $(pkgconfig_DATA)
 
 h_sources = ./inc/public/agm/agm_api.h \
             ./inc/public/agm/agm_list.h \
-            ./inc/public/agm/utils.h
+            ./inc/public/agm/utils.h \
+            ./inc/private/agm/metadata.h \
+            ./inc/private/agm/graph.h \
+            ./inc/private/agm/graph_module.h \
+            ./inc/private/agm/session_obj.h \
+            ./inc/private/agm/agm_priv.h \
+            ./inc/private/agm/device.h
+
 
 AM_CFLAGS = @SPF_CFLAGS@
 AM_CFLAGS += -I $(srcdir)/inc/public
 AM_CFLAGS += -I $(srcdir)/inc/private
-AM_CFLAGS += @KVH2XML_CFLAGS@
-AM_CFLAGS += -Wl,-z,defs
+AM_CFLAGS += @MMHEADERS_CFLAGS@
+AM_CFLAGS += -I $(srcdir)/../snd_parser/inc
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 
@@ -28,6 +35,7 @@ libagm_la_SOURCES = $(agm_sources)
 libagm_la_LIBADD = -ltinyalsa -lar-osal -lar-gsl -lar-ats
 
 libagm_la_CFLAGS = $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/etc/acdbdata/delta"
+libagm_la_CFLAGS += -DCARD_STATE_UNSUPPORTED
 
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG

@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: API"
@@ -138,6 +138,17 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info)
 
     return device_get_aif_info_list(aif_list, num_aif_info);
 }
+
+int agm_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *num_aif_info)
+{
+    if (!num_aif_info || ((*num_aif_info != 0) && !aif_list)) {
+        AGM_LOGE("Error Invalid params\n");
+        return -EINVAL;
+    }
+
+    return device_get_non_alsa_aif_info_list(aif_list, num_aif_info);
+}
+
 
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups)
 {
@@ -321,18 +332,18 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGV("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
-    gkv.kv = payloadACDBTunnelInfo->blob;
+    gkv.kv = (struct agm_key_value *)payloadACDBTunnelInfo->blob;
 
     ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
     if (ret) {
@@ -542,13 +553,13 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGV("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
@@ -1084,3 +1095,17 @@ int agm_dump(struct agm_dump_info *dump_info __unused)
     // Placeholder for future enhancements
     return 0;
 }
+
+int agm_get_driver_data(uint32_t module_id,
+                    struct agm_cal_config *cal_config,
+                    void *payload,
+                    size_t *size)
+{
+    if ((!cal_config) || (!size) || (*size && (payload == NULL))) {
+        AGM_LOGE("Error Invalid params\n");
+        return -EINVAL;
+    }
+
+    return session_dummy_get_driver_data(module_id, cal_config, payload, size);
+}
+

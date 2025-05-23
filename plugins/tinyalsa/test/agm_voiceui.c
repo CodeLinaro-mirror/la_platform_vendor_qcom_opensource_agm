@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
@@ -281,7 +281,7 @@ void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_in
 
     dev_config.rate = config.rate;
     dev_config.ch = config.channels;
-    dev_config.bits = get_pcm_bit_width(config.format);
+    dev_config.bits = get_tinyalsa_pcm_bit_width(config.format);
     dev_config.format = config.format;
     mixer = mixer_open(card);
     if (!mixer) {
