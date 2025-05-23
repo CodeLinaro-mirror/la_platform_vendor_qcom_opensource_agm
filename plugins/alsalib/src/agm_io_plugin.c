@@ -47,6 +47,11 @@
 #include <agm/agm_list.h>
 #include <snd-card-def.h>
 #include "utils.h"
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <ctype.h>
 #if DUMP_OPEN
 #include <alsa/pcm.h>
 #endif
@@ -54,6 +59,10 @@
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
 #define DUMP_BUFFER 1024
 static char* dump_file_name;
+
+/* Add a listening thread for SSR events for aplay */
+#define SNDCARD_PATH "/sys/kernel/snd_card/card_state"
+static void* card_status_monitor(void *arg);
 
 /* pull-push mode macros */
 #define AGM_PULL_PUSH_IDX_RETRY_COUNT 2
@@ -104,6 +113,9 @@ struct agmio_priv {
     bool eos;
     struct agm_buf_info *buf_info;
     struct pcm_plugin_pos_buf_info *pos_buf;
+    pthread_t monitor_thread;
+    pthread_mutex_t ssr_lock;
+    int SSR_RUNNING;
 /* add private variables here */
 };
 
@@ -524,6 +536,9 @@ static int agm_io_close(snd_pcm_ioplug_t * io)
               AGM_EVENT_DATA_PATH, (void *)pcm);
     ret = agm_session_close(handle);
 
+    pthread_cancel(pcm->monitor_thread);
+    pthread_join(pcm->monitor_thread, NULL);
+
     snd_card_def_put_card(pcm->card_node);
     close(pcm->event_fd);
     free(pcm->buffer_config);
@@ -681,6 +696,14 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
     }
 
     eventfd_read(pcm->event_fd, &evfd);
+    /*stop aplay or arecord when SSR_RUNNING*/
+    pthread_mutex_lock(&pcm->ssr_lock);
+    if (pcm->SSR_RUNNING==1){
+        AGM_LOGE("SSR detected , aplay return error and exit !");
+        pthread_mutex_unlock(&pcm->ssr_lock);
+        return -EINVAL ;
+    }
+    pthread_mutex_unlock(&pcm->ssr_lock);
     AGM_LOGD("%s: exit\n", __func__);
     return 0;
 }
@@ -755,6 +778,45 @@ static int agm_hw_constraint(struct agmio_priv* priv)
     return 0;
 }
 
+static void* card_status_monitor(void *arg) {
+    struct agmio_priv *priv = (struct agmio_priv *)arg;
+    int fd = -1;
+    char buf[2] = {0};
+    struct pollfd pfd = {0};
+
+    if ((fd = open(SNDCARD_PATH, O_RDONLY)) < 0) {
+        AGM_LOGE("Open %s failed: %s", SNDCARD_PATH, strerror(errno));
+        return NULL;
+    }
+
+    pfd.fd = fd;
+    pfd.events = POLLPRI;
+    while (1) {
+        if (poll(&pfd, 1, 100) < 0) {
+            if (errno == EINTR){
+                continue;
+            } 
+            break;
+        }
+
+        lseek(fd, 0, SEEK_SET);
+        if (read(fd, buf, sizeof(buf)) <= 0) {
+            AGM_LOGE("read %s failed ,exit thread ",SNDCARD_PATH);
+            break;
+        }
+
+        if (buf[0] == '0') {
+            pthread_mutex_lock(&priv->ssr_lock);
+            eventfd_write(priv->event_fd, 1);
+            priv->SSR_RUNNING = 1;
+            AGM_LOGE("SSR trigger, card status in CARD_STATUS_OFFLINE !");
+            pthread_mutex_unlock(&priv->ssr_lock);
+            break;
+        }
+    }
+    close(fd);
+    return NULL;
+}
 SND_PCM_PLUGIN_DEFINE_FUNC(agm)
 {
     snd_config_iterator_t it, next;
@@ -857,6 +919,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     priv->io.mmap_rw = 0;
     priv->io.callback = &agm_io_callback;
     priv->io.private_data = priv;
+    priv->SSR_RUNNING = 0;
 
     ret = agm_session_register_cb(session_id, agm_pcm_event_cb,
               AGM_EVENT_DATA_PATH, (void *)priv);
@@ -887,6 +950,15 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     *pcmp = priv->io.pcm;
 
     pthread_mutex_init(&priv->eos_lock, (const pthread_mutexattr_t *) NULL);
+    pthread_mutex_init(&priv->ssr_lock, (const pthread_mutexattr_t *) NULL);
+    /*Create a thread to exit the playback or recording when the SSR is triggered*/
+    ret = pthread_create(&priv->monitor_thread,NULL,card_status_monitor,(void *)priv);
+    if (ret){
+        AGM_LOGE("pthread_create card_status_monitor failed\n");
+        ret = -EINVAL;
+        goto err_close_eventfd;
+    }
+
     return 0;
 
 err_close_eventfd:
