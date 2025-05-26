@@ -7,6 +7,13 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
+
 LOCAL_CFLAGS        += -Wall
 LOCAL_SRC_FILES     := src/agm_pcm_plugin.c
 
@@ -47,6 +54,13 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 LOCAL_SRC_FILES     := src/agm_mixer_plugin.c
+
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
@@ -89,6 +103,13 @@ LOCAL_C_INCLUDES    += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include
 LOCAL_ADDITIONAL_DEPENDENCIES += $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
 
 LOCAL_SRC_FILES     := src/agm_compress_plugin.c
+
+# add for gcov dump
+ifeq ($(AUDIO_FEATURE_ENABLED_GCOV), true)
+LOCAL_CFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_CPPFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+LOCAL_LDFLAGS += -g --coverage -fprofile-arcs -ftest-coverage
+endif
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
