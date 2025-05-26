@@ -1,6 +1,5 @@
 /*
 ** Copyright (c) 2019, 2021 The Linux Foundation. All rights reserved.
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted provided that the following conditions are
@@ -26,7 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**
 **/
+
 #define LOG_TAG "PLUGIN: pcm"
 
 #include <agm/agm_api.h>
@@ -74,6 +78,7 @@ struct pcm_plugin_pos_buf_info {
     unsigned int boundary;       /* pcm boundary */
     snd_pcm_uframes_t hw_ptr;    /* RO: hw ptr (0...boundary-1) */
     snd_pcm_uframes_t hw_ptr_base;
+    unsigned int crossed_boundary_cnt;
     struct timespec tstamp;
     snd_pcm_uframes_t appl_ptr;  /* RW: appl ptr (0...boundary-1) */
     snd_pcm_uframes_t avail_min; /* RW: min available frames for wakeup */
@@ -320,6 +325,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
     int ret = 0;
     uint32_t period_size = priv->period_size; /** in frames */
     uint32_t crossed_boundary = 0;
+    snd_pcm_uframes_t boundary = 0;
 
     do {
         ret = agm_pcm_plugin_get_shared_pos(priv->pos_buf,
@@ -331,7 +337,12 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         pos = (circ_buf_pos / period_size) * period_size;
         old_hw_ptr = agm_pcm_plugin_get_hw_ptr(priv);
         hw_base = priv->pos_buf->hw_ptr_base;
-        new_hw_ptr = hw_base + pos;
+
+        // Update new_hw_ptr
+        __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
+        __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+        __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
 
         // Set delta_wall_clk_us only if cached wall clk is non-zero
         if (priv->pos_buf->wall_clk_msw || priv->pos_buf->wall_clk_lsw) {
@@ -347,9 +358,9 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // hw ptr has jumped through by checking wall clock time delta
         // and assuming read ptr moved at a constant rate
         if (delta_wall_clk_us > 0 ) {
-            delta_wall_clk_frames = ((delta_wall_clk_us / 1000000)
-                                        * (priv->media_config->rate)
-                                        * priv->media_config->channels);
+            __builtin_mul_overflow(delta_wall_clk_us / 1000000,
+                (priv->media_config->rate * priv->media_config->channels),
+                 &delta_wall_clk_frames);
             crossed_boundary = delta_wall_clk_frames / priv->total_size_frames;
         }
 
@@ -358,9 +369,14 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // has crossed old_hw_ptr atleast once if not more
         if (crossed_boundary > 0) {
             hw_base += (crossed_boundary * priv->total_size_frames);
-            if (hw_base >= priv->pos_buf->boundary)
+            if (hw_base >= priv->pos_buf->boundary) {
+                priv->pos_buf->crossed_boundary_cnt += hw_base / priv->pos_buf->boundary;
                 hw_base = 0;
-            new_hw_ptr = hw_base + pos;
+	    }	
+	    __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
+            __builtin_umull_overflow(priv->pos_buf->boundary,
+                                 priv->pos_buf->crossed_boundary_cnt, &boundary);
+            __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
             priv->pos_buf->hw_ptr_base = hw_base;
             AGM_LOGD("%s: crossed_boundary = %u, new_hw_ptr=%ld \n",
                                                 __func__, crossed_boundary, new_hw_ptr);
@@ -371,9 +387,14 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         } else {
             if (new_hw_ptr < old_hw_ptr) {
                 hw_base += priv->total_size_frames;
-                if (hw_base >= priv->pos_buf->boundary)
+                if (hw_base >= priv->pos_buf->boundary) {
                     hw_base = 0;
-                new_hw_ptr = hw_base + pos;
+                    priv->pos_buf->crossed_boundary_cnt += 1;
+                }
+                __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
+                __builtin_umull_overflow(priv->pos_buf->boundary,
+                                         priv->pos_buf->crossed_boundary_cnt, &boundary);
+                __builtin_uaddl_overflow(new_hw_ptr, boundary, &new_hw_ptr);
                 priv->pos_buf->hw_ptr_base = hw_base;
             }
         }
@@ -428,6 +449,7 @@ static int agm_pcm_plugin_reset(struct pcm_plugin *plugin)
     priv->pos_buf->hw_ptr_base = 0;
     priv->pos_buf->wall_clk_msw = 0;
     priv->pos_buf->wall_clk_lsw = 0;
+    priv->pos_buf->crossed_boundary_cnt = 0;
     AGM_LOGD("%s: reset hw_ptr to %d \n", __func__, priv->pos_buf->hw_ptr);
     return ret;
 }
