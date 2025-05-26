@@ -12,7 +12,9 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <thread>
 #include <unistd.h>
+#include <vector>
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -41,15 +43,6 @@ int read_check(int socket, void *buff, size_t size) {
 }
 
 AgmIpcLsBackend::~AgmIpcLsBackend() { stop(); }
-
-void cleanupFinishedThreads(std::vector<std::thread> &clientThreads) {
-    for (auto &thread : clientThreads) {
-        if (thread.joinable()) {
-            thread.join();
-        }
-    }
-    clientThreads.clear();
-}
 
 void AgmIpcLsBackend::start() {
     sockaddr_un backendAddr = {};
@@ -127,10 +120,9 @@ void AgmIpcLsBackend::start() {
 
         AGM_LOGI("New client connected");
 
-        std::lock_guard<std::mutex> lock(threadMutex);
-        clientThreads.emplace_back(&AgmIpcLsBackend::handleClient, this,
-                                   frontendSocket, cbFrontEndSocket);
-        cleanupFinishedThreads(clientThreads);
+        std::thread(&AgmIpcLsBackend::handleClient, this, frontendSocket,
+                    cbFrontEndSocket)
+            .detach();
     }
 end:
     return;
@@ -147,7 +139,6 @@ void AgmIpcLsBackend::stop() {
         unlink(AGM_CB_SOCKET_PATH);
         cbBackendSocket = -1;
     }
-    cleanupFinishedThreads(clientThreads);
 }
 
 void AgmIpcLsBackend::handleClient(int frontendSocket, int cbFrontEndSocket) {

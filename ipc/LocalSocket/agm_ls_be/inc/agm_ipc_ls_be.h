@@ -5,18 +5,13 @@
 
 #include "agm_ls_be_wrapper.h"
 #include <agm/agm_api.h>
-#include <mutex>
 #include <string>
-#include <thread>
-#include <vector>
 
 // AgmIpcLsBackend class: Handles socket communication and AGM API execution
 class AgmIpcLsBackend {
   private:
     int backendSocket;
     int cbBackendSocket;
-    std::vector<std::thread> clientThreads;
-    std::mutex threadMutex;
     AgmLsBackend agmLsBeWrapper;
 
     // Handle a single client connection
