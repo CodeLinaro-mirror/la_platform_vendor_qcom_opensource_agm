@@ -180,12 +180,24 @@ int main(int argc, char **argv)
             argv++;
     }
 
+    // Null check before using c_intf_name
+    if (c_intf_name == NULL) {
+        fprintf(stderr, "Error: required argument -i <capture_interface_name> is Null\n");
+        return 1;
+    }
+
     ret = get_device_media_config(BACKEND_CONF_FILE, c_intf_name, &capture_config);
     if (ret) {
         printf("Invalid input, assigning default values for : %s\n", c_intf_name);
         capture_config.rate = sample_rate;
         capture_config.bits = bits;
         capture_config.ch = num_channels;
+    }
+
+    // Null check before using p_intf_name
+    if (p_intf_name == NULL) {
+        fprintf(stderr, "Error: required argument -o <Playback interface name> is Null\n");
+        return 1;
     }
 
     ret = get_device_media_config(BACKEND_CONF_FILE, p_intf_name, &play_config);
