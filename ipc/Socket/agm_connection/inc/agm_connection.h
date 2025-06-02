@@ -13,6 +13,7 @@
 #include <agm/agm_api.h>
 
 #define AGM_SOCKET_PATH "/dev/socket/agm/agm_socket"
+#define AGM_SOCKET_DIR "/dev/socket/agm/"
 
 enum AGM_CMD {
     AGM_CMD_GET_AIF_INFO_LIST,
