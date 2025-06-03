@@ -257,9 +257,9 @@ int AgmSocketClient::Connect()
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_0", AGM_SOCKET_PATH);
 
-    while (ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr))) {
+    while ((ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr)))) {
         ALOGW("Connect error %s", strerror(ret));
-        if (ENOENT == ret ||  ECONNREFUSED  == ret || EACCES == ret) {
+        if ((ENOENT == ret) || (ECONNREFUSED  == ret) || (EACCES == ret)) {
             count++;
             if (count < 10)
                 usleep(1000);
