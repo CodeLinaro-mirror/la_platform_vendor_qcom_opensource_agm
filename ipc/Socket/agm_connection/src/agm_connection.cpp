@@ -216,7 +216,7 @@ AgmSocketClient* AgmSocketClient::getInstance()
     call_once(once, []() {
         int fd = 0;
         int ret = 0;
-        struct sockaddr_un addr = {{0}, 0};
+        struct sockaddr_un addr = {AF_UNIX, {0}};
         memset(&addr, 0, sizeof(addr));
 
         fd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -247,7 +247,7 @@ int AgmSocketClient::Connect()
 {
     int ret = 0;
     int count = 0;
-    struct sockaddr_un addr = {{0}, 0};
+    struct sockaddr_un addr = {AF_UNIX, {0}};
     memset(&addr, 0, sizeof(addr));
 
     ALOGV("%s", __func__);
@@ -303,7 +303,7 @@ AgmSocketServer* AgmSocketServer::getInstance(function<int(const AgmSocket&)> fu
 
     ALOGV("%s", __func__);
     call_once(once, [&func]() {
-        struct sockaddr_un addr = {{0}, 0};
+        struct sockaddr_un addr = {AF_UNIX, {0}};
         int fd = 0;
         int ret = 0;
         memset(&addr, 0, sizeof(addr));
@@ -363,7 +363,7 @@ void AgmSocketServer::Accept()
     thread t([this]()
         {
             int fd = 0;
-            struct sockaddr_un addr = {{0}, 0};
+            struct sockaddr_un addr = {AF_UNIX, {0}};
             memset(&addr, 0, sizeof(addr));
             socklen_t len = sizeof(addr);
             do {
