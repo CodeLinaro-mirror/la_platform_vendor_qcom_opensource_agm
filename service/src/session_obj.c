@@ -1866,9 +1866,9 @@ int session_obj_get_tag_with_module_info(struct session_obj *sess_obj,
     struct aif *aif_obj = NULL;
     struct agm_meta_data_gsl *merged_metadata = NULL;
     enum agm_session_mode sess_mode = sess_obj->stream_config.sess_mode;
-
+    AGM_LOGI(": aif_id=%d , session mode=%d", aif_id , sess_mode);
     pthread_mutex_lock(&sess_obj->lock);
-    if (sess_mode != AGM_SESSION_NON_TUNNEL) {
+    if (sess_mode != AGM_SESSION_NON_TUNNEL && sess_mode != AGM_SESSION_NO_CONFIG) {
         if (aif_id < UINT_MAX) {
             ret = aif_obj_get(sess_obj, aif_id, &aif_obj);
             if (ret) {
