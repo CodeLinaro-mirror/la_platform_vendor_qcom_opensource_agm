@@ -1,0 +1,50 @@
+cc_library_static {
+    name: "libagmaidltypeconverter",
+    vendor: true,
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wextra",
+        "-Wthread-safety",
+    ],
+
+    srcs: [
+        "src/AgmLegacyToAidl.cpp",
+        "src/AgmAidlToLegacy.cpp",
+    ],
+
+    static_libs: [
+        "libaidlcommonsupport",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libbinder_ndk",
+        "libbase",
+        "libcutils",
+        "libutils",
+        "vendor.qti.hardware.agm-V1-ndk",
+    ] + select(soong_config_variable("qti", "ENABLE_HYP"), {
+        true: ["libar-gsl_fe"],
+        default: ["libar-gsl"],
+    }),
+
+    header_libs: [
+        "libagm_headers",
+    ] + select(soong_config_variable("qti", "ENABLE_HYP"), {
+        true: ["libar-gsl_fe_headers"],
+        default: [],
+    }),
+
+    include_dirs: ["vendor/qcom/opensource/args/gsl/api"],
+    export_include_dirs: ["inc"],
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+}

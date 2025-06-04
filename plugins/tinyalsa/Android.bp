@@ -1,0 +1,151 @@
+cc_library_shared {
+    name: "libagm_pcm_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+      "src/agm_pcm_plugin.c"
+    ],
+
+    shared_libs: [
+      "libsndcardparser",
+      "libagmclient",
+      "libutils",
+      "libcutils",
+      "liblog"
+    ]
+    + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_sdv": [],
+        "_cdcsdv": [],
+        default: ["libagm"],
+    })
+    + select(soong_config_variable("qti", "PLATFORM_VERSION"), {
+        "R": ["libqti-tinyalsa"],
+        "11": ["libqti-tinyalsa"],
+        default: ["libtinyalsa"],
+    })
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudio_log_utils", "libexpat"],
+        default: [],
+    }),
+    include_dirs: []
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["external/expat/lib/expat.h"],
+        default: [],
+    }),
+    min_sdk_version: "34",
+
+    cflags: [
+        "-Wall"
+    ]
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["-DDYNAMIC_LOG_ENABLED"],
+        default: [],
+    }),
+
+    header_libs: [
+      "libagm_headers",
+      "libarosal_headers"
+    ]
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudiologutils_headers"],
+        default: [],
+    }),
+}
+
+cc_library_shared {
+    name: "libagm_mixer_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+      "src/agm_mixer_plugin.c"
+    ],
+    shared_libs: [
+      "libsndcardparser",
+      "libagmclient",
+      "libcutils",
+      "libutils",
+      "liblog"
+    ]
+    + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_sdv": [],
+        "_cdcsdv": [],
+        default: ["libagm"],
+    })
+    + select(soong_config_variable("qti", "PLATFORM_VERSION"), {
+        "R": ["libqti-tinyalsa"],
+        "11": ["libqti-tinyalsa"],
+        default: ["libtinyalsa"],
+    })
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudio_log_utils", "libexpat"],
+        default: [],
+    }),
+    include_dirs: []
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["external/expat/lib/expat.h"],
+        default: [],
+    }),
+    cflags: []
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["-DDYNAMIC_LOG_ENABLED"],
+        default: [],
+    }),
+
+    header_libs: [
+        "libagm_headers",
+        "libarosal_headers"
+    ]
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudiologutils_headers"],
+        default: [],
+    }),
+    min_sdk_version: "34",
+}
+
+cc_library_shared {
+    name: "libagm_compress_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm_compress_plugin.c"
+    ],
+
+    shared_libs: [
+        "libsndcardparser",
+        "libagmclient",
+        "libutils",
+        "libcutils",
+        "liblog",
+    ]
+    + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+        true: ["libqti-tinyalsa", "libqti-tinycompress"],
+        default: ["libtinyalsa", "libtinycompress"],
+    })
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudio_log_utils", "libexpat"],
+        default: [],
+    }),
+
+    include_dirs: []
+    + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+        true: [],
+        default: ["external/tinycompress/include"],
+    })
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["external/expat/lib/expat.h"],
+        default: [],
+    }),
+
+    header_libs: [
+        "libagm_headers",
+        "libarosal_headers"
+    ]
+    + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+        true: ["libaudiologutils_headers"],
+        default: [],
+    }),
+    min_sdk_version: "34",
+}

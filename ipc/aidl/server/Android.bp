@@ -1,0 +1,79 @@
+cc_binary {
+
+    name: "agmipcservice",
+    owner: "qti",
+    vendor: true,
+    relative_install_path: "hw",
+
+    clang: true,
+    tidy: true,
+
+    srcs: [
+        "Service.cpp",
+        "AgmServerWrapper.cpp",
+        ],
+
+    shared_libs: [
+            "liblog",
+            "libbinder_ndk",
+            "libbase",
+            "libcutils",
+            "libutils",
+            "libagm",
+            "vendor.qti.hardware.agm-V1-ndk",
+            "libselinux",
+            ]
+        + select(soong_config_variable("qti", "ENABLE_HYP"), {
+            true: ["libar-gsl_fe"],
+            default: ["libar-gsl"],
+        }) + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+            "_sdv": ["libagmsocket_server"],
+            "_cdcsdv": ["libagmsocket_server"],
+            default: [],
+        }),
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/ipc/aidl/server"
+        ],
+    header_libs: [
+    ] + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+            "_sdv": ["libagmsocket_server_headers"],
+            "_cdcsdv": ["libagmsocket_server_headers"],
+            default: [],
+        })+ select(soong_config_variable("qti", "ENABLE_HYP"), {
+            true: ["libar-gsl_fe_headers"],
+            default: ["libar-gsl"],
+        }),
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wthread-safety"
+        ]  + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+            "_sdv": ["-DSOCKET_ENABLED"],
+            "_cdcsdv": ["-DSOCKET_ENABLED"],
+            default: [],
+        }),
+
+    static_libs: [
+        "libagmaidltypeconverter",
+        "libaidlcommonsupport"
+        ],
+
+    vintf_fragments: ["agmipcservice.xml"],
+
+}
+
+prebuilt_etc {
+    name: "init.qti.AGMIPC.sh",
+    srcs: ["init.qti.AGMIPC.sh"],
+    vendor: true,
+    relative_install_path: "executables",
+    defaults: ["init_qti_agmipc_sh"],
+
+    enabled: select(soong_config_variable("qti_audio", "TARGET_GVMGH_SPECIFIC"), {
+        false: true,
+        default: false,
+    }),
+
+}

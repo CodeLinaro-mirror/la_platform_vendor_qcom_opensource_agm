@@ -1,0 +1,59 @@
+cc_library_headers {
+
+    name: "libagmsocket_client_headers",
+    vendor: true,
+    export_include_dirs: [
+        "inc",
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+}
+
+cc_library_shared {
+
+    name: "libagmsocket_client",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm_conn_client.cpp"
+        ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libutils",
+        "libagmsocket",
+        ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/ipc/Socket/agm_client/inc"
+        ],
+
+    cflags: [
+        "-v",
+        "-Wall",
+        ],
+
+    header_libs: [
+        "libagmsocket_headers",
+        "libagmsocket_client_headers",
+        "libagm_headers",
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+
+}
+

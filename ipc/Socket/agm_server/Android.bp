@@ -1,0 +1,57 @@
+cc_library_headers {
+
+    name: "libagmsocket_server_headers",
+    vendor: true,
+    export_include_dirs: [
+        "inc",
+        ],
+
+}
+
+cc_library_shared {
+
+    name: "libagmsocket_server",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm_conn_server.cpp",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "libutils",
+        "libagm",
+        "libagmsocket",
+    ]
+    + select(soong_config_variable("qti", "ENABLE_HYP"), {
+        true: ["libar-gsl_fe"],
+        default: ["libar-gsl"],
+    }),
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/ipc/Socket/agm_server/inc/",
+        ],
+
+    cflags: [
+        "-v",
+        "-Wall",
+    ]
+    + select(soong_config_variable("qti", "ENABLE_HYP"), {
+        true: [],
+        default: ["-DAGM_HW_RSC_CFG_EN"],
+    }),
+
+    header_libs: [
+        "libarosal_headers",
+        "libagmsocket_headers",
+        "libagmsocket_server_headers",
+        "libagm_headers"
+    ]
+    + select(soong_config_variable("qti", "ENABLE_HYP"), {
+        true: ["libar-gsl_fe_headers"],
+        default: [],
+    }),
+
+}

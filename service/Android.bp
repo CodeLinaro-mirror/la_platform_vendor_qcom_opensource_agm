@@ -1,0 +1,119 @@
+cc_library_headers {
+    name: "libagm_headers",
+    export_include_dirs: ["inc/public"],
+    vendor: true,
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+
+}
+
+cc_library_shared {
+
+    name: "libagm",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm.c",
+        "src/graph.c",
+        "src/graph_module.c",
+        "src/metadata.c",
+        "src/session_obj.c",
+        "src/device.c",
+        "src/utils.c",
+        "src/device_hw_ep.c",
+        "src/agm_memlogger.c"
+        ],
+
+    shared_libs: [
+            "liblog",
+            "liblx-osal",
+            "libaudioroute",
+            "libats",
+            "libarmemlog",
+            "libcutils",
+            ]
+        + select(soong_config_variable("qti", "ENABLE_HYP"), {
+            true: ["libar-gsl_fe"],
+            default: ["libar-gsl"],
+        })
+        + select(soong_config_variable("qti", "PLATFORM_VERSION"), {
+             "R": ["libqti-tinyalsa"],
+             "11": ["libqti-tinyalsa"],
+            default: ["libtinyalsa"],
+        })
+        + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+            true: ["libaudio_log_utils", "libexpat"],
+            default: [],
+        }),
+
+    include_dirs: [
+            "vendor/qcom/opensource/agm/service/inc/public",
+            "vendor/qcom/opensource/agm/service/inc/private"
+            ]
+        + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+            true: ["external/expat/lib/expat.h"],
+            default: [],
+        }),
+
+    export_include_dirs: [
+        "inc/public"
+        ],
+
+    //export_shared_lib_headers: ["libar-gsl"],       //property not supported in .bp
+
+    cflags: [
+            "-D_ANDROID_",
+            "-DAGM_DEBUG_METADATA",
+            "-DAGM_USE_CUTILS",
+            "-Wno-tautological-compare",
+            "-Wno-macro-redefined",
+            "-Wall",
+            "-D_GNU_SOURCE",
+            "-DACDB_PATH=\"/vendor/etc/acdbdata/\"",
+            "-DACDB_DELTA_FILE_PATH=\"/data/vendor/audio/acdbdata/delta\"",
+            ]  + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+            "_cdcsdv": [],
+            default: ["-DBYPASS_SND_CARD_CHECK"],
+        })
+        + select(soong_config_variable("qti", "ENABLE_HYP"), {
+            true: ["-DBYPASS_ATS_INIT", "-DBYPASS_ALSA_HW"],
+            default: [],
+        })
+        + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+            true: ["-DDYNAMIC_LOG_ENABLED"],
+            default: [],
+        }),
+
+    header_libs: [
+            "libspf-headers",
+            "libutils_headers",
+            "libacdb_headers",
+            "libarmemlog_headers",
+            "libarosal_headers",
+            ]
+        + select(soong_config_variable("qti", "ENABLE_HYP"), {
+            true: ["libar-gsl_fe_headers"],
+            default: [],
+        })
+        + select(soong_config_variable("qti", "AUDIO_FEATURE_ENABLED_DYNAMIC_LOG"), {
+            true: ["libaudiologutils_headers"],
+            default: [],
+        }),
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+
+}
+
