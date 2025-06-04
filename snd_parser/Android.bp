@@ -1,0 +1,43 @@
+cc_library_shared {
+
+    name: "libsndcardparser",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/snd-card-parser.c"
+        ],
+
+    shared_libs: [
+        "libexpat",
+        "libcutils"
+        ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/snd_parser/inc"
+        ],
+
+    export_include_dirs: [
+        "inc"
+        ],
+
+    cflags: [
+        "-Wno-unused-parameter",
+        "-Wall",
+        "-DCARD_DEF_FILE=\"/vendor/etc/card-defs.xml\""
+        ],
+
+    header_libs: [
+        "libagm_headers"
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+
+}
+

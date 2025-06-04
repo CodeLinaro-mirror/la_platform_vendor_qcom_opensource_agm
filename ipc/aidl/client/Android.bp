@@ -1,0 +1,56 @@
+cc_library_shared {
+    name: "libagmclient",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "AgmClientWrapper.cpp",
+        "AgmCallback.cpp",
+    ],
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wthread-safety",
+    ] + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_sdv": ["-DSOCKET_ENABLED"],
+        "_cdcsdv": ["-DSOCKET_ENABLED"],
+        default: [],
+    }),
+
+    shared_libs: [
+        "liblog",
+        "libbase",
+        "libcutils",
+        "libutils",
+        "vendor.qti.hardware.agm-V1-ndk",
+        "libbinder_ndk",
+    ] + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_sdv": ["libagmsocket_client"],
+        "_cdcsdv": ["libagmsocket_client"],
+        default: [],
+    }),
+
+    static_libs: [
+        "libagmaidltypeconverter",
+        "libaidlcommonsupport",
+    ],
+
+    header_libs: [
+        "libagm_headers",
+    ]  + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_sdv": ["libagmsocket_client_headers"],
+        "_cdcsdv": ["libagmsocket_client_headers"],
+        default: [],
+    }),
+
+    apex_available: [
+        "//apex_available:platform",
+        "com.google.display_safety.har",
+        "com.google.display_safety.har.update",
+        "com.google.display_safety.har.stub",
+    ],
+    min_sdk_version: "34",
+
+}
+
