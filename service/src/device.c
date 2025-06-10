@@ -28,9 +28,9 @@
 **/
 
 /*
-* * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+* * Changes from Qualcomm Technologies, Inc. are provided under the following license:
 * *
-* * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * * SPDX-License-Identifier: BSD-3-Clause-Clear
 * */
 
@@ -164,7 +164,10 @@ static void update_sysfs_fd (int8_t pcm_id, int8_t state)
         if (sysfs_fd >= 0) {
             write(sysfs_fd, buf, MAX_USR_INPUT);
         } else {
-            AGM_LOGE("invalid file handle\n");
+            /*The variable sysfs_fd will have descriptor of file /sysfs/kernel/aud_dev/
+            *As this file open failure is not fatal and this node is not used further
+            changing from Error Log Level to Info Log Level*/
+            AGM_LOGI("Invalid file handle for file aud_dev in sysfs. State update Failed\n");
         }
     }
 }
