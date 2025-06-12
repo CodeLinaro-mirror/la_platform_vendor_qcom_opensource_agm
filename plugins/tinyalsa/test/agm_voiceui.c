@@ -210,7 +210,7 @@ static void fill_payload(char *filename, int size, void *payload)
     fclose(fp);
 }
 
-static void* merge_payload(uint32_t miid, int num, int *sum,  ...)
+static void* merge_payload(uint32_t miid, int *sum, int num,  ...)
 {
     va_list valist;
     int i = 0, total_size = 0, offset = 0;
@@ -308,7 +308,7 @@ void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_in
         goto err_close_mixer;
     }
 
-    param_buf = merge_payload(miid, 3, &param_size, "/vendor/etc/sound_model",
+    param_buf = merge_payload(miid, &param_size, 3, "/vendor/etc/sound_model",
         "/vendor/etc/wakeup_config", "/vendor/etc/buffer_config");
 
     if (agm_mixer_set_param(mixer, device, STREAM_PCM, param_buf, param_size)) {
