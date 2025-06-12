@@ -226,6 +226,7 @@ AgmSocketClient* AgmSocketClient::getInstance()
         ALOGV("%s fd %d", __func__, fd);
 
         addr.sun_family = AF_UNIX;
+        chmod(AGM_SOCKET_DIR, 0770);
         snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_%d", AGM_SOCKET_PATH, getpid());
 
         ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
@@ -234,8 +235,9 @@ AgmSocketClient* AgmSocketClient::getInstance()
             usleep(1000);
             ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
         }
+        chmod(AGM_SOCKET_DIR, 0660);
         /* system & audioserver read write */
-        chmod(addr.sun_path, 0777);
+        chmod(addr.sun_path, 0660);
         mInstance = new AgmSocketClient(fd);
         mInstance->Connect();
     });
@@ -251,11 +253,12 @@ int AgmSocketClient::Connect()
 
     ALOGV("%s", __func__);
     addr.sun_family = AF_UNIX;
+    chmod(AGM_SOCKET_DIR, 0770);
     snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_0", AGM_SOCKET_PATH);
 
-    while (ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr))) {
+    while ((ret = connect(mSocketfd, (struct sockaddr*)&addr, sizeof(addr)))) {
         ALOGW("Connect error %s", strerror(ret));
-        if (ENOENT == ret ||  ECONNREFUSED  == ret || EACCES == ret) {
+        if ((ENOENT == ret) || (ECONNREFUSED  == ret) || (EACCES == ret)) {
             count++;
             if (count < 10)
                 usleep(1000);
@@ -265,6 +268,7 @@ int AgmSocketClient::Connect()
             break;
         }
     }
+    chmod(AGM_SOCKET_DIR, 0660);
     return ret;
 }
 
@@ -315,6 +319,7 @@ AgmSocketServer* AgmSocketServer::getInstance(function<int(const AgmSocket&)> fu
         ALOGV("%s fd %d", __func__, fd);
 
         addr.sun_family = AF_UNIX;
+        chmod(AGM_SOCKET_DIR, 0770);
         snprintf(addr.sun_path, sizeof(addr.sun_path), "%s_0", AGM_SOCKET_PATH);
         ::unlink(addr.sun_path);
 
@@ -325,8 +330,9 @@ AgmSocketServer* AgmSocketServer::getInstance(function<int(const AgmSocket&)> fu
             usleep(1000);
             ret = ::bind(fd, (struct sockaddr*)&addr, sizeof(addr));
         }
+        chmod(AGM_SOCKET_DIR, 0660);
         /* system & audioserver read write */
-        chmod(addr.sun_path, 0777);
+        chmod(addr.sun_path, 0660);
         /* make socket a server */
         ret = ::listen(fd, 4);
         while (ret < 0) {
