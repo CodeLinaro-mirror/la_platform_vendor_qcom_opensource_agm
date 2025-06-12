@@ -12,12 +12,15 @@
 #include "gsl_hw_rsc_intf.h"
 #endif
 #include <unordered_map>
-
+#define THRESHOLD 2000
+#include <mutex>
+#include <thread>
 using namespace std;
 
 AgmSocketServer* gAgmServer = nullptr;
 
 static int32_t executeCmd(const AgmSocket& conn);
+static void update_timestamp();
 static void agm_aif_set_media_config_socket(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
@@ -86,7 +89,6 @@ static void agm_hw_rsc_config_socket(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
                 const AgmSocket& conn);
-
 static void agm_session_send_heartbeat(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
@@ -125,6 +127,15 @@ static unordered_map<uint16_t, agmServerWrapper> functionTable = {
     {static_cast<uint16_t>(AGM_CMD_HW_SRC_CONFIG), &agm_hw_rsc_config_socket},
     {static_cast<uint16_t>(AGM_CMD_SESSION_HEARTBEAT), &agm_session_send_heartbeat}
 };
+
+static auto current_timestamp = std::chrono::high_resolution_clock::now();
+static bool conn_open = false;
+static std::mutex timestamp_mutex;
+
+static void update_timestamp() {
+    std::lock_guard<std::mutex> lock(timestamp_mutex);
+    current_timestamp = std::chrono::high_resolution_clock::now();
+}
 
 static void agm_conn_command_handler(uint16_t cmd,
                 uint16_t msg_type __unused,
@@ -399,6 +410,10 @@ static void agm_session_open_socket(uint16_t cmd,
     auto mode = (enum agm_session_mode)*sess_mode;
     ret = agm_session_open(*session_id, mode, &handle);
 
+    if (ret == 0) {
+        conn_open = true;
+    }
+
     /* 4. calculate reply's payload size */
     reply_size += sizeof(ret) + sizeof(handle);
 
@@ -527,6 +542,35 @@ static void agm_session_prepare_socket(uint16_t cmd,
     conn.Send(cmd, AGM_CMD_TYPE_REPLY, reply_size, payloadWriter);
 }
 
+void* task_check_agm_client_status(void* arg) {
+    uint64_t* handle_ptr = reinterpret_cast<uint64_t*>(arg);
+    const int32_t SLEEP_DURATION = 2;
+    ALOGV("Enter %s %d handle =  %llx", __func__, __LINE__, (unsigned long long) handle_ptr);
+    while (conn_open) {
+        auto latest_timestamp = std::chrono::high_resolution_clock::now();
+        std::chrono::milliseconds time_diff;
+        {
+            std::lock_guard<std::mutex> lock(timestamp_mutex);
+            time_diff = std::chrono::duration_cast<std::chrono::milliseconds>(latest_timestamp - current_timestamp);
+        }
+        if (time_diff.count() > THRESHOLD) {
+            ALOGE("%s Client dead", __func__);
+            int32_t ret = agm_session_close(*handle_ptr);
+            if (ret != 0) {
+                ALOGE("%s Failed to close session: %d", __func__, ret);
+            }
+            break;
+        } else {
+            ALOGV("%s Client alive", __func__);
+        }
+        // Wait for 2 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(SLEEP_DURATION));
+    }
+    delete handle_ptr;
+    ALOGV("Exit %s %d", __func__, __LINE__);
+    pthread_exit(NULL);
+}
+
 static void agm_session_start_socket(uint16_t cmd,
                 uint32_t args_payload_size,
                 uint8_t* args_payload,
@@ -563,6 +607,23 @@ static void agm_session_start_socket(uint16_t cmd,
         memcpy(payload, &ret, sizeof(int32_t));
     };
 
+    if (ret == 0) {
+        /* Create a thread for client crash detection */
+        pthread_t server_thread;
+        uint64_t* hndl_ptr = new uint64_t;
+        *hndl_ptr = *handle;
+        int thread_ret = pthread_create(&server_thread, NULL, task_check_agm_client_status, hndl_ptr);
+        update_timestamp();
+        if (thread_ret < 0) {
+            ALOGE("Create client health thread failed\n");
+            delete hndl_ptr;
+            ret = -1;
+        } else {
+            // Detach the thread so its resources are automatically released when it terminates
+            pthread_detach(server_thread);
+        }
+    }
+
     /* 6. call Send to get IPC reply */
     conn.Send(cmd, AGM_CMD_TYPE_REPLY, reply_size, payloadWriter);
 }
@@ -594,6 +655,10 @@ static void agm_session_stop_socket(uint16_t cmd,
 
     /* 3. call agm service interface */
     ret = agm_session_stop(*handle);
+
+    if (ret == 0) {
+        conn_open = false;
+    }
 
     /* 4. calculate reply's payload size */
     reply_size += sizeof(ret);
@@ -990,6 +1055,8 @@ static void agm_session_write_socket(uint16_t cmd,
     reply_size += sizeof(ret);
     reply_size += sizeof(*count);
 
+    update_timestamp();
+
     /* 5. define function obj to write reply's payload */
     auto payloadWriter = [&ret, &count](uint8_t* payload) {
         memcpy(payload, &ret, sizeof(int32_t));
@@ -1012,6 +1079,7 @@ static void agm_session_send_heartbeat(uint16_t cmd,
 
     /* 3. update the server status to is alive */
     server_status = AGM_SERVER_ALIVE;
+    update_timestamp();
     /* 4. calculate reply's payload size */
     reply_size += sizeof(ret) + sizeof(uint32_t);
 
