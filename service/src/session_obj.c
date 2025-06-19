@@ -69,6 +69,17 @@ char tracestr[100] = "agm: ";
 
 #define GSL_EVENT_SRC_MODULE_ID_GSL 0x2001 // DO NOT CHANGE
 
+#ifdef AUDIO_FEATURE_ENABLED_GCOV
+extern void __gcov_dump(void);
+#define GCOV_DUMP() \
+    do { \
+        AGM_LOGD("agm: start dump gcov"); \
+        __gcov_dump(); \
+        AGM_LOGD("agm: end dump gcov"); \
+    } while(0)
+#else
+#define GCOV_DUMP()
+#endif
 //forward declarations
 static struct session_pool *sess_pool;
 static int session_close(struct session_obj *sess_obj);
@@ -1373,6 +1384,7 @@ static int session_close(struct session_obj *sess_obj)
     pthread_mutex_unlock(&hwep_lock);
     sess_obj->state = SESSION_CLOSED;
 done:
+    GCOV_DUMP();
     AGM_LOGD("exit, ret %d", ret);
     return ret;
 }
