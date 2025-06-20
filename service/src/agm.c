@@ -108,6 +108,9 @@ int agm_init()
                                            ats_init_thread, NULL);
     if (ret)
         AGM_LOGE(" ats init thread creation failed\n");
+#if LINUX_ENABLED
+     pthread_join(ats_thread, NULL);
+#endif
 
 exit:
     return ret;

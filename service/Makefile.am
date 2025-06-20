@@ -13,7 +13,7 @@ h_sources = ./inc/public/agm/agm_api.h \
             ./inc/private/agm/device.h
 
 
-AM_CFLAGS = @SPF_CFLAGS@
+AM_CFLAGS = @SPF_CFLAGS@ -DLINUX_ENABLED
 AM_CFLAGS += -I $(srcdir)/inc/public
 AM_CFLAGS += -I $(srcdir)/inc/private
 AM_CFLAGS += @MMHEADERS_CFLAGS@
@@ -48,4 +48,4 @@ libagm_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -incl
 endif
 
 libagm_la_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
-libagm_la_LDFLAGS = -module -shared -avoid-version
+libagm_la_LDFLAGS = -module -shared -avoid-version -lsndcardparser -L$(top_builddir)/snd_parser/.libs
