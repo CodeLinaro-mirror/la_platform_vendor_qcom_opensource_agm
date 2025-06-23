@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include <agm/agm_list.h>
+#include <limits.h>
 
 #define MAX_PATH 256
 #define BUF_SIZE 1024
