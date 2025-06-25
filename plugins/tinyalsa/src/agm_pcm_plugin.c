@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
  */
@@ -66,7 +65,7 @@
 #define AGM_PULL_PUSH_FRAME_CNT_RETRY_COUNT 5
 
 /* multiplier of timeout for wating for mmap buffers */
-#define MMAP_TOUT_MULTI 4
+#define MMAP_TOUT_MULTI 8
 
 struct agm_shared_pos_buffer {
     volatile uint32_t frame_counter;
@@ -86,6 +85,7 @@ struct pcm_plugin_pos_buf_info {
     uint32_t wall_clk_msw;
     uint32_t wall_clk_lsw;
     uint32_t frame_counter;
+    snd_pcm_uframes_t last_app_ptr; /* Track last app_ptr position */
 };
 
 struct agm_mmap_buffer_port {
@@ -774,6 +774,10 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
 
     avail = agm_pcm_get_avail(plugin);
 
+    if(priv->mmap_buf_tout &&
+       priv->pos_buf->last_app_ptr != priv->pos_buf->appl_ptr)
+        priv->mmap_buf_tout = 0;
+
     if (avail < period_size) {
         if (timeout == 0) //wait for 1msec
             timeout = 1;
@@ -795,6 +799,7 @@ static int agm_pcm_poll(struct pcm_plugin *plugin, struct pollfd *pfd,
     } else {
         ret = 0; /* TIMEOUT */
         priv->mmap_buf_tout += timeout;
+        priv->pos_buf->last_app_ptr = priv->pos_buf->appl_ptr;
         if (priv->mmap_buf_tout > (period_to_msec * MMAP_TOUT_MULTI)) {
             AGM_LOGE("timeout in waiting for mmap buffer");
             priv->mmap_buf_tout = 0;
