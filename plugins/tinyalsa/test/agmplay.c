@@ -303,6 +303,11 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
     uint8_t* payload = NULL;
     size_t payloadSize = 0;
 
+    if (device_kv == NULL || devicepp_kv == NULL || intf_name == NULL) {
+        printf("play_sample invalid args");
+        return;
+    }
+
     grp_config = (struct group_config *) malloc(intf_num * sizeof(struct group_config));
     if (!grp_config) {
         printf("Failed to allocate memory for group config");
@@ -385,7 +390,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         }
     }
 
-    /* set audio interface metadata mixer control */
+    /* set stream metadata mixer control */
     if (set_agm_stream_metadata(mixer, device, stream_kv, PLAYBACK, STREAM_PCM,
                                 instance_kv)) {
         printf("Failed to set pcm metadata\n");
@@ -429,7 +434,20 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
             goto err_close_mixer;
         }
 
-        ret = agm_mixer_get_miid (mixer, device, intf_name[index], STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
+        /* Configure PCM Converter */
+        ret = agm_mixer_get_miid(mixer, device, intf_name[index], STREAM_PCM, STREAM_PCM_CONVERTER, &miid);
+        if (ret) {
+            printf("PCM Converter not present for this graph\n");
+        } else {
+            if (configure_pcm_converter(mixer, device, intf_name[index], STREAM_PCM_CONVERTER,
+                                STREAM_PCM, fmt.sample_rate, fmt.num_channels,
+                                fmt.bits_per_sample)) {
+                printf("Failed to configure pcm converter\n");
+                goto err_close_mixer;
+            }
+        }
+
+        ret = agm_mixer_get_miid(mixer, device, intf_name[index], STREAM_PCM, PER_STREAM_PER_DEVICE_MFC, &miid);
         if (ret) {
             printf("MFC not present for this graph\n");
         } else {

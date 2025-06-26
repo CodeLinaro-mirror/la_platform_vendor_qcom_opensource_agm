@@ -110,4 +110,6 @@ int get_group_device_info(char* filename, char *intf_name, struct group_config *
 int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag, enum stream_type stype, unsigned int rate,
                        unsigned int channels, unsigned int bits, uint32_t miid);
 int set_agm_dp_audio_config_metadata(char *intf_name, struct mixer *mixer, uint32_t miid, unsigned int channels);
+int configure_pcm_converter(struct mixer *mixer, int device, char *intf_name, int tag,
+        enum stream_type stype, unsigned int rate, unsigned int channels, unsigned int bits);
 #endif
