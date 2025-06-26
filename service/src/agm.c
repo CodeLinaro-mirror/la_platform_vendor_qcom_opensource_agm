@@ -27,7 +27,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: API"
@@ -334,7 +334,7 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
     gkv.kv = payloadACDBTunnelInfo->blob;
 
-    ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
+    ret = session_dummy_rw_acdb_tunnel(payload, false);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;
@@ -552,7 +552,7 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size)
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
-    ret = session_dummy_rw_acdb_tunnel(payload, TRUE);
+    ret = session_dummy_rw_acdb_tunnel(payload, true);
     if (ret) {
          AGM_LOGE("Error get tag list");
          goto error;
