@@ -1294,7 +1294,8 @@ bool get_file_path_extn(char* file_path_extn, char* file_path_extn_wo_variant)
         snd_card_found = update_snd_card_info(snd_card_name);
         if (snd_card_found) {
             if (strstr(snd_card_name, "gvmauto")) {
-                if ((strstr(snd_card_name, "8255")) ||(strstr(snd_card_name, "8775")) || (strstr(snd_card_name, "8295"))) {
+                if ((strstr(snd_card_name, "8255")) ||(strstr(snd_card_name, "8775")) || (strstr(snd_card_name, "8295")) ||
+                    (strstr(snd_card_name, "7255"))) {
                     strlcpy(file_path_extn, "ADP_AR", FILE_PATH_EXTN_MAX_SIZE);
                 } else {
                     AGM_LOGE("invalid snd_card_name,expected valid snd_card,retrieved %s", snd_card_name);
