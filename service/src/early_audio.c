@@ -1,35 +1,59 @@
 /* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.  */
 /* SPDX-License-Identifier: BSD-3-Clause-Clear */
 
-
-#define LOG_TAG "Early_Audio:"
+#define LOG_TAG "Early_Audio"
 #include <agm/agm_api.h>
-//#include <log/log.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <string.h>
-#include <errno.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-#define ALOGE(arg,...) printf("[E][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__, ##__VA_ARGS__)
-#define ALOGD(arg,...) printf("[D][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__, ##__VA_ARGS__)
-#define ALOGI(arg,...) printf("[I][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__, ##__VA_ARGS__)
-#define ALOGV(arg,...) printf("[V][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__, ##__VA_ARGS__)
+// #define EAUDIO_DEBUG
+
+#ifdef EAUDIO_DEBUG
+#define ALOGE(arg, ...)                                                        \
+    printf("[E][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,           \
+           ##__VA_ARGS__);                                                     \
+    fflush(stdout)
+#define ALOGD(arg, ...)                                                        \
+    printf("[D][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,           \
+           ##__VA_ARGS__);                                                     \
+    fflush(stdout)
+#define ALOGI(arg, ...)                                                        \
+    printf("[I][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,           \
+           ##__VA_ARGS__);                                                     \
+    fflush(stdout)
+#define ALOGV(arg, ...)                                                        \
+    printf("[V][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,           \
+           ##__VA_ARGS__);                                                     \
+    fflush(stdout)
+#else
+#include <log/log.h>
+#endif
 
 #define TINYMIX "tinymix"
 
+// Audio interface configuration
+#define DEFAULT_AIF_ID_RX 7
+#define DEFAULT_SESSION_ID_RX 1
+#define DEFAULT_SAMPLE_RATE 48000
+#define DEFAULT_BIT_WIDTH 16
+#define DEFAULT_CHANNELS 2
+
 size_t num_aif_info = 0;
-int aif_id_rx = 7;
-uint32_t session_id_rx = 1;
+int aif_id_rx = DEFAULT_AIF_ID_RX;
+uint32_t session_id_rx = DEFAULT_SESSION_ID_RX;
 uint64_t sess_handle_rx = 0;
 uint32_t dev_rx_metadata[] = {
-    1,                                                     /* No of GKVS*/
-    0xA2000000, 0xA2000001,                                /*GKVS*/
-    3,                                                     /* No of CKVS*/
-    0xA5000000, 48000,      0xA6000000, 16, 0xD2000000, 0, /*CKVS*/
-    0,                                                     /* Property ID*/
-    0,                                                     /* No of Properties*/
+    1,                      /* No of GKVS*/
+    0xA2000000, 0xA2000001, /*GKVS*/
+    3,                      /* No of CKVS*/
+    0xA5000000, DEFAULT_SAMPLE_RATE, 0xA6000000, DEFAULT_BIT_WIDTH, 0xD2000000,
+    0, /*CKVS*/
+    0, /* Property ID*/
+    0, /* No of Properties*/
     /* Properties*/
 };
 uint32_t stream_metadata[] = {
@@ -55,7 +79,8 @@ uint32_t dev_rx_stream_params[] = {
 };
 struct agm_session_config stream_config = {
     RX, AGM_SESSION_DEFAULT, 2048, 4096, {0}, 0, 0};
-struct agm_media_config media_config = {48000, 2, 2, 1};
+struct agm_media_config media_config = {DEFAULT_SAMPLE_RATE, DEFAULT_CHANNELS,
+                                        AGM_FORMAT_PCM_S16_LE, 1};
 struct agm_buffer_config buffer_config = {4, 4096, 0};
 #define BUFF_SIZE (32 * 10 * 2)
 uint8_t audio_buff[BUFF_SIZE] = {0};
@@ -71,9 +96,10 @@ int session_play(int argc, char *argv[]) {
         goto end;
     }
     filename = argv[1];
+    ALOGI("session_play audio file %s", filename);
     file = fopen(filename, "rb");
     if (!file) {
-        ALOGE("Failed to open file");
+        ALOGE("Failed to open file error %d %s", errno, strerror(errno));
         goto end;
     }
     if (fseek(file, 44, SEEK_SET) != 0) {
@@ -82,7 +108,7 @@ int session_play(int argc, char *argv[]) {
     }
     while ((count = fread(audio_buff, 1, BUFF_SIZE, file)) == BUFF_SIZE) {
         // session write
-        ALOGV("agm_session_write");
+        // ALOGV("agm_session_write");
         rst = agm_session_write(sess_handle_rx, audio_buff, &count);
         if (rst) {
             ALOGE("agm_session_write failed "
@@ -100,11 +126,11 @@ end:
 }
 
 extern char **environ;
-char *env[] = {
-    "PATH=/system/bin:/vendor/bin:/vendor_early_services/system/bin:/vendor_early_services/vendor/bin",
-    "LD_LIBRARY_PATH=/system/lib64:/vendor/lib64:/vendor_early_services/system/lib64",
-    NULL
-};
+char *env[] = {"PATH=/system/bin:/vendor/bin:/vendor_early_services/system/"
+               "bin:/vendor_early_services/vendor/bin",
+               "LD_LIBRARY_PATH=/system/lib64:/vendor/lib64:/"
+               "vendor_early_services/system/lib64",
+               NULL};
 int execute_tinymix(const char *control, const char *value) {
     pid_t pid = fork();
     int rst = 0;
@@ -112,27 +138,25 @@ int execute_tinymix(const char *control, const char *value) {
     if (pid == -1) {
         ALOGE("fork failed");
         rst = -1;
-    }
-    else if (pid == 0) {
+    } else if (pid == 0) {
         environ = env;
         char *args[] = {TINYMIX, (char *)control, (char *)value, NULL};
         rst = execvpe(TINYMIX, args, env);
         ALOGE("execvp %s failed %s %d", TINYMIX, strerror(errno), rst);
-    }
-    else {
+    } else {
         int status;
         waitpid(pid, &status, 0);
 
         if (WIFEXITED(status)) {
             int exit_status = WEXITSTATUS(status);
             if (exit_status != 0) {
-                ALOGE("tinymix %s %s failed with status %d",
-                      control, value, exit_status);
+                ALOGE("tinymix %s %s failed with status %d", control, value,
+                      exit_status);
                 rst = -1;
             }
         } else if (WIFSIGNALED(status)) {
-            ALOGE("tinymix %s %s killed by signal %d",
-                  control, value, WTERMSIG(status));
+            ALOGE("tinymix %s %s killed by signal %d", control, value,
+                  WTERMSIG(status));
             rst = -1;
         }
     }
@@ -154,13 +178,13 @@ int configure_audio() {
         {"SpkrRight COMP Switch", "1"},
         {"SpkrRight VISENSE Switch", "1"},
         {"SpkrRight SWR DAC_Port Switch", "1"},
-        {NULL, NULL}  // Termination marker
+        {NULL, NULL} // Termination marker
     };
 
     for (int i = 0; commands[i][0] != NULL; i++) {
         if (execute_tinymix(commands[i][0], commands[i][1]) != 0) {
-            ALOGE("Failed to execute command %d", i+1);
-            rst =-1;
+            ALOGE("Failed to execute command %d", i + 1);
+            rst = -1;
             break;
         }
     }
@@ -172,7 +196,10 @@ int main(int argc, char *argv[]) {
     int i = 0;
     struct aif_info *aifinfo = NULL;
 
-    freopen("/dev/kmsg", "w", stdout);
+#ifdef EAUDIO_DEBUG
+    freopen("/dev/kmsg", "a", stdout);
+    freopen("/dev/kmsg", "a", stderr);
+#endif
     rst = configure_audio();
     if (rst) {
         ALOGE("configure_audio failed");
