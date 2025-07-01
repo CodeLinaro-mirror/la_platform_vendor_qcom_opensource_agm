@@ -28,9 +28,9 @@
 **/
 
 /*
-* * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+* * ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
 * *
-* * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
+* * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * * SPDX-License-Identifier: BSD-3-Clause-Clear
 * */
 
@@ -164,7 +164,10 @@ static void update_sysfs_fd (int8_t pcm_id, int8_t state)
         if (sysfs_fd >= 0) {
             write(sysfs_fd, buf, MAX_USR_INPUT);
         } else {
-            AGM_LOGE("invalid file handle\n");
+            /*The variable sysfs_fd will have descriptor of file /sysfs/kernel/aud_dev/
+            *As this file open failure is not fatal and this node is not used further
+            changing from Error Log Level to Info Log Level*/
+            AGM_LOGI("Invalid file handle for file aud_dev in sysfs. State update Failed\n");
         }
     }
 }
@@ -1027,8 +1030,10 @@ free_device:
     list_for_each_safe(dev_node, temp, &device_list) {
         dev_obj = node_to_item(dev_node, struct device_obj, list_node);
         list_remove(dev_node);
-        free(dev_obj);
-        dev_obj = NULL;
+        if (dev_obj != NULL) {
+            free(dev_obj);
+            dev_obj = NULL;
+        }
     }
 
     list_remove(&device_group_data_list);
@@ -1112,18 +1117,21 @@ void device_deinit()
 
         metadata_free(&dev_obj->metadata);
 
-        if (dev_obj->params)
-            free(dev_obj->params);
-
-        free(dev_obj);
-        dev_obj = NULL;
+        if (dev_obj) {
+            if (dev_obj->params)
+                free(dev_obj->params);
+            free(dev_obj);
+            dev_obj = NULL;
+        }
     }
 
     list_for_each_safe(grp_node, temp, &device_group_data_list) {
             grp_data = node_to_item(grp_node, struct device_group_data, list_node);
             list_remove(grp_node);
-            free(grp_data);
-            grp_data = NULL;
+            if (grp_data) {
+                free(grp_data);
+                grp_data = NULL;
+            }
     }
 
     list_remove(&device_group_data_list);
