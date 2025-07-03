@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -19,19 +19,19 @@
 #include <aidlcommonsupport/NativeHandle.h>
 #include "AgmCallback.h"
 
+using ::aidl::vendor::qti::hardware::agm::AgmCallback;
+using ::aidl::vendor::qti::hardware::agm::AgmSessionMode;
+using ::aidl::vendor::qti::hardware::agm::AidlToLegacy;
+using ::aidl::vendor::qti::hardware::agm::AifInfo;
 using ::aidl::vendor::qti::hardware::agm::IAGM;
 using ::aidl::vendor::qti::hardware::agm::IAGMCallback;
-using ::aidl::vendor::qti::hardware::agm::AidlToLegacy;
-using ::aidl::vendor::qti::hardware::agm::AgmSessionMode;
-using ::aidl::vendor::qti::hardware::agm::AifInfo;
-using ::aidl::vendor::qti::hardware::agm::AgmCallback;
 using ::aidl::vendor::qti::hardware::agm::MmapBufInfo;
 
 static std::shared_ptr<IAGM> gAgmClient = nullptr;
 static ::ndk::ScopedAIBinder_DeathRecipient gDeathRecipient;
 std::mutex gLock;
 
-#define RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client)            \
+#define RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client)           \
     ({                                                         \
         if (client.get() == nullptr) {                         \
             ALOGE(" %s Agm service doesn't exist ", __func__); \
@@ -88,7 +88,8 @@ int agm_aif_set_media_config(uint32_t audio_intf, struct agm_media_config *media
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
     auto aidlConfig = LegacyToAidl::convertAgmMediaConfigToAidl(media_config);
-    return statusTFromBinderStatus(client->ipc_agm_aif_set_media_config(audio_intf, aidlConfig));
+    return statusTFromBinderStatus(client->ipc_agm_aif_set_media_config(audio_intf, aidlConfig),
+                                   __func__);
 }
 
 int agm_session_set_config(uint64_t handle, struct agm_session_config *session_config,
@@ -104,8 +105,10 @@ int agm_session_set_config(uint64_t handle, struct agm_session_config *session_c
     auto aidlMediaConfig = LegacyToAidl::convertAgmMediaConfigToAidl(media_config);
     auto aidlBufferConfig = LegacyToAidl::convertAgmBufferConfigToAidl(buffer_config);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_set_config(
-            handle, aidlSessionConfig, aidlMediaConfig, aidlBufferConfig));
+    return statusTFromBinderStatus(
+            client->ipc_agm_session_set_config(handle, aidlSessionConfig, aidlMediaConfig,
+                                               aidlBufferConfig),
+            __func__);
 }
 
 int agm_init() {
@@ -123,7 +126,8 @@ int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata) 
 
     auto aidlMetadata = LegacyToAidl::convertRawPayloadToVector(metadata, size);
 
-    return statusTFromBinderStatus(client->ipc_agm_aif_set_metadata(audio_intf, aidlMetadata));
+    return statusTFromBinderStatus(client->ipc_agm_aif_set_metadata(audio_intf, aidlMetadata),
+                                   __func__);
 }
 
 int agm_session_set_metadata(uint32_t session_id, uint32_t size, uint8_t *metadata) {
@@ -133,7 +137,8 @@ int agm_session_set_metadata(uint32_t session_id, uint32_t size, uint8_t *metada
 
     auto aidlMetadata = LegacyToAidl::convertRawPayloadToVector(metadata, size);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_set_metadata(session_id, aidlMetadata));
+    return statusTFromBinderStatus(client->ipc_agm_session_set_metadata(session_id, aidlMetadata),
+                                   __func__);
 }
 
 int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf, uint32_t size,
@@ -145,7 +150,8 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf, uint3
     auto aidlMetadata = LegacyToAidl::convertRawPayloadToVector(metadata, size);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_aif_set_metadata(session_id, audio_intf, aidlMetadata));
+            client->ipc_agm_session_aif_set_metadata(session_id, audio_intf, aidlMetadata),
+            __func__);
 }
 
 int agm_session_close(uint64_t handle) {
@@ -153,7 +159,7 @@ int agm_session_close(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_close(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_close(handle), __func__);
 }
 
 int agm_session_prepare(uint64_t handle) {
@@ -161,14 +167,14 @@ int agm_session_prepare(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_prepare(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_prepare(handle), __func__);
 }
 
 int agm_session_start(uint64_t handle) {
     ALOGV("%s  handle = %llx ", __func__, (unsigned long long)handle);
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
-    return statusTFromBinderStatus(client->ipc_agm_session_start(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_start(handle), __func__);
 }
 
 int agm_session_stop(uint64_t handle) {
@@ -176,7 +182,7 @@ int agm_session_stop(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_stop(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_stop(handle), __func__);
 }
 
 int agm_session_pause(uint64_t handle) {
@@ -184,7 +190,7 @@ int agm_session_pause(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_pause(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_pause(handle), __func__);
 }
 
 int agm_session_flush(uint64_t handle) {
@@ -192,7 +198,7 @@ int agm_session_flush(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_flush(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_flush(handle), __func__);
 }
 
 int agm_sessionid_flush(uint32_t session_id) {
@@ -200,7 +206,7 @@ int agm_sessionid_flush(uint32_t session_id) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_sessionid_flush(session_id));
+    return statusTFromBinderStatus(client->ipc_agm_sessionid_flush(session_id), __func__);
 }
 
 int agm_session_resume(uint64_t handle) {
@@ -208,7 +214,7 @@ int agm_session_resume(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_resume(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_resume(handle), __func__);
 }
 
 int agm_session_suspend(uint64_t handle) {
@@ -216,7 +222,7 @@ int agm_session_suspend(uint64_t handle) {
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_suspend(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_suspend(handle), __func__);
 }
 
 int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint64_t *handle) {
@@ -229,9 +235,8 @@ int agm_session_open(uint32_t session_id, enum agm_session_mode sess_mode, uint6
     auto aidlStatus = client->ipc_agm_session_open(session_id, aidlSessionMode, &aidlHandle);
 
     *handle = convertAidlHandleToLegacy(aidlHandle);
-    auto ret = statusTFromBinderStatus(aidlStatus);
+    auto ret = statusTFromBinderStatus(aidlStatus, __func__);
     ALOGV("%s Received handle = %p, ret %d", __func__, (unsigned long long)*handle, ret);
-
     return ret;
 }
 
@@ -242,9 +247,8 @@ int agm_session_aif_connect(uint32_t session_id, uint32_t audio_intf, bool state
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_aif_connect(session_id, audio_intf, state));
+            client->ipc_agm_session_aif_connect(session_id, audio_intf, state), __func__);
 }
-
 int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
     ALOGV("%s  handle = %llx", __func__, (unsigned long long)handle);
 
@@ -260,7 +264,7 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count) {
         memcpy(buf, aidlReturn.data(), aidlReturn.size());
         *byte_count = aidlReturn.size();
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_write(uint64_t handle, void *buf, size_t *byte_count) {
@@ -289,7 +293,8 @@ int agm_session_set_loopback(uint32_t capture_session_id, uint32_t playback_sess
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_set_loopback(capture_session_id, playback_session_id, state));
+            client->ipc_agm_session_set_loopback(capture_session_id, playback_session_id, state),
+            __func__);
 }
 
 size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir) {
@@ -298,8 +303,8 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir) {
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
     auto aidlDirection = static_cast<Direction>(dir);
-    return statusTFromBinderStatus(
-            client->ipc_agm_get_hw_processed_buff_cnt(handle, aidlDirection));
+    return statusTFromBinderStatus(client->ipc_agm_get_hw_processed_buff_cnt(handle, aidlDirection),
+                                   __func__);
 }
 
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
@@ -315,7 +320,7 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     }
 
     *num_aif_info = (size_t)aidlAifList.size();
-    auto ret = statusTFromBinderStatus(aidlStatus);
+    auto ret = statusTFromBinderStatus(aidlStatus, __func__);
     ALOGV("%s: Exit size %d ret %d ", __func__, *num_aif_info);
     return ret;
 }
@@ -334,7 +339,7 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id, vo
         if (payload != NULL) memcpy(payload, aidlModuleInfoList.data(), aidlModuleInfoList.size());
         *size = aidlModuleInfoList.size();
     }
-    auto ret = statusTFromBinderStatus(status);
+    auto ret = statusTFromBinderStatus(status, __func__);
     ALOGV("%s session_id =%d, aif_id = %d ret %d, size %d ", __func__, session_id, aif_id, ret,
           *size);
     return ret;
@@ -363,7 +368,7 @@ int agm_session_get_params(uint32_t session_id, void *payload, size_t size) {
         memcpy(payload, aidlReturn.data(), size);
     }
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_aif_set_params(uint32_t aif_id, void *payload, size_t size) {
@@ -373,7 +378,7 @@ int agm_aif_set_params(uint32_t aif_id, void *payload, size_t size) {
 
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
 
-    return statusTFromBinderStatus(client->ipc_agm_aif_set_params(aif_id, aidlPayload));
+    return statusTFromBinderStatus(client->ipc_agm_aif_set_params(aif_id, aidlPayload), __func__);
 }
 
 int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id, void *payload, size_t size) {
@@ -384,7 +389,7 @@ int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id, void *paylo
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_aif_set_params(session_id, aif_id, aidlPayload));
+            client->ipc_agm_session_aif_set_params(session_id, aif_id, aidlPayload), __func__);
 }
 
 int agm_session_set_params(uint32_t session_id, void *payload, size_t size) {
@@ -394,7 +399,8 @@ int agm_session_set_params(uint32_t session_id, void *payload, size_t size) {
 
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_set_params(session_id, aidlPayload));
+    return statusTFromBinderStatus(client->ipc_agm_session_set_params(session_id, aidlPayload),
+                                   __func__);
 }
 
 int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
@@ -406,7 +412,7 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
     auto aidlTagConfig = LegacyToAidl::convertAgmTagConfigToAidl(tag_config);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_set_params_with_tag(session_id, aif_id, aidlTagConfig));
+            client->ipc_agm_set_params_with_tag(session_id, aif_id, aidlTagConfig), __func__);
 }
 
 int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id, void *payload,
@@ -416,7 +422,7 @@ int agm_set_params_with_tag_to_acdb(uint32_t session_id, uint32_t aif_id, void *
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
     return statusTFromBinderStatus(
-            client->ipc_agm_set_params_with_tag_to_acdb(session_id, aif_id, aidlPayload));
+            client->ipc_agm_set_params_with_tag_to_acdb(session_id, aif_id, aidlPayload), __func__);
 }
 
 int agm_set_params_to_acdb_tunnel(void *payload, size_t size) {
@@ -426,7 +432,8 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size) {
 
     auto aidlPayload = LegacyToAidl::convertRawPayloadToVector(payload, size);
 
-    return statusTFromBinderStatus(client->ipc_agm_set_params_to_acdb_tunnel(aidlPayload));
+    return statusTFromBinderStatus(client->ipc_agm_set_params_to_acdb_tunnel(aidlPayload),
+                                   __func__);
 }
 
 int agm_get_params_from_acdb_tunnel(void *payload, size_t *size) {
@@ -444,7 +451,7 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size) {
         *size = aidlReturn.size();
     }
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_register_for_events(uint32_t session_id, struct agm_event_reg_cfg *evt_reg_cfg) {
@@ -456,7 +463,7 @@ int agm_session_register_for_events(uint32_t session_id, struct agm_event_reg_cf
     auto aidlAgmEventRegConfig = LegacyToAidl::convertAgmEventRegistrationConfigToAidl(evt_reg_cfg);
 
     auto status = client->ipc_agm_session_register_for_events(session_id, aidlAgmEventRegConfig);
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_aif_set_cal(uint32_t session_id, uint32_t aif_id,
@@ -467,7 +474,7 @@ int agm_session_aif_set_cal(uint32_t session_id, uint32_t aif_id,
 
     auto aidlCalConfig = LegacyToAidl::convertAgmCalConfigToAidl(cal_config);
     return statusTFromBinderStatus(
-            client->ipc_agm_session_aif_set_cal(session_id, aif_id, aidlCalConfig));
+            client->ipc_agm_session_aif_set_cal(session_id, aif_id, aidlCalConfig), __func__);
 }
 
 int agm_session_set_ec_ref(uint32_t capture_session_id, uint32_t aif_id, bool state) {
@@ -477,7 +484,7 @@ int agm_session_set_ec_ref(uint32_t capture_session_id, uint32_t aif_id, bool st
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_set_ec_ref(capture_session_id, aif_id, state));
+            client->ipc_agm_session_set_ec_ref(capture_session_id, aif_id, state), __func__);
 }
 
 int agm_session_register_cb(uint32_t session_id, agm_event_cb cb, enum event_type evt_type,
@@ -498,7 +505,7 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb, enum event_typ
     int64_t clientDataAidl = reinterpret_cast<int64_t>(client_data);
     auto status = client->ipc_agm_session_register_callback(aidlAgmCallback, session_id, evt_type,
                                                             (cb != NULL), clientDataAidl);
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_eos(uint64_t handle) {
@@ -506,7 +513,7 @@ int agm_session_eos(uint64_t handle) {
 
     auto client = getAgm();
     RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
-    return statusTFromBinderStatus(client->ipc_agm_session_eos(handle));
+    return statusTFromBinderStatus(client->ipc_agm_session_eos(handle), __func__);
 }
 
 int agm_get_session_time(uint64_t handle, uint64_t *timestamp) {
@@ -518,7 +525,7 @@ int agm_get_session_time(uint64_t handle, uint64_t *timestamp) {
     auto status = client->ipc_agm_get_session_time(handle, &aidlTimestamp);
 
     *timestamp = aidlTimestamp;
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp) {
@@ -529,7 +536,7 @@ int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp) {
     int64_t aidlTimestamp;
     auto status = client->ipc_agm_get_buffer_timestamp(session_id, &aidlTimestamp);
     *timestamp = aidlTimestamp;
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info, uint32_t flag) {
@@ -542,7 +549,7 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     if (status.isOk()) {
         AidlToLegacy::convertMmapBufInfo(aidlMmapBufRet, buf_info, flag);
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_set_gapless_session_metadata(uint64_t handle, enum agm_gapless_silence_type type,
@@ -554,7 +561,8 @@ int agm_set_gapless_session_metadata(uint64_t handle, enum agm_gapless_silence_t
     AgmGaplessSilenceType aidlSilenceType = static_cast<AgmGaplessSilenceType>(type);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_set_gapless_session_metadata(handle, aidlSilenceType, silence));
+            client->ipc_agm_set_gapless_session_metadata(handle, aidlSilenceType, silence),
+            __func__);
 }
 
 int agm_session_set_non_tunnel_mode_config(uint64_t handle,
@@ -574,9 +582,11 @@ int agm_session_set_non_tunnel_mode_config(uint64_t handle,
     auto aidlInBufferConfig = LegacyToAidl::convertAgmBufferConfigToAidl(in_buffer_config);
     auto aidlOutBufferConfig = LegacyToAidl::convertAgmBufferConfigToAidl(out_buffer_config);
 
-    return statusTFromBinderStatus(client->ipc_agm_session_set_non_tunnel_mode_config(
-            handle, aidlSessionConfig, aidlInMediaConfig, aidlOutMediaConfig, aidlInBufferConfig,
-            aidlOutBufferConfig));
+    return statusTFromBinderStatus(
+            client->ipc_agm_session_set_non_tunnel_mode_config(
+                    handle, aidlSessionConfig, aidlInMediaConfig, aidlOutMediaConfig,
+                    aidlInBufferConfig, aidlOutBufferConfig),
+            __func__);
 }
 
 int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buf, size_t *consumed_size) {
@@ -591,7 +601,7 @@ int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buf, size_
     if (status.isOk()) {
         *consumed_size = written;
     }
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_session_read_with_metadata(uint64_t handle, struct agm_buff *buf, uint32_t *captured_size) {
@@ -605,7 +615,7 @@ int agm_session_read_with_metadata(uint64_t handle, struct agm_buff *buf, uint32
     auto status = client->ipc_agm_session_read_with_metadata(handle, aidlBuffer, *captured_size,
                                                              &aidlReturn);
 
-    return statusTFromBinderStatus(status);
+    return statusTFromBinderStatus(status, __func__);
 }
 
 int agm_aif_group_set_media_config(uint32_t group_id, struct agm_group_media_config *media_config) {
@@ -615,8 +625,8 @@ int agm_aif_group_set_media_config(uint32_t group_id, struct agm_group_media_con
 
     auto aidlConfig = LegacyToAidl::convertAgmGroupMediaConfigToAidl(media_config);
 
-    return statusTFromBinderStatus(
-            client->ipc_agm_aif_group_set_media_config(group_id, aidlConfig));
+    return statusTFromBinderStatus(client->ipc_agm_aif_group_set_media_config(group_id, aidlConfig),
+                                   __func__);
 }
 
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups) {
@@ -633,7 +643,7 @@ int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups) {
 
     *num_groups = (size_t)aidlAifList.size();
     ALOGV("%s: Exit size %d  ", __func__, *num_groups);
-    return statusTFromBinderStatus(aidlStatus);
+    return statusTFromBinderStatus(aidlStatus, __func__);
 }
 
 int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf) {
@@ -645,7 +655,7 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
     auto aidlBuffer = LegacyToAidl::convertAgmBufferToAidl(buf, false, true /*copyBuffer*/);
 
     return statusTFromBinderStatus(
-            client->ipc_agm_session_write_datapath_params(session_id, aidlBuffer));
+            client->ipc_agm_session_write_datapath_params(session_id, aidlBuffer), __func__);
 }
 
 int agm_dump(struct agm_dump_info *dump_info) {
