@@ -85,11 +85,33 @@ struct agm_buffer_config buffer_config = {4, 4096, 0};
 #define BUFF_SIZE (32 * 10 * 2)
 uint8_t audio_buff[BUFF_SIZE] = {0};
 
+#define KPI_VALUE_PATH          "/sys/kernel/boot_kpi/kpi_values"
+
+static void inline write_marker(const char* name)
+{
+#ifdef __ANDROID_U__
+    ALOGE("boot_kpi: %s ", name);
+#else
+    int fd = -1;
+
+    fd = open(KPI_VALUE_PATH, O_WRONLY);
+    if (fd > 0) {
+        (void)write(fd, name, strlen(name));
+    } else {
+        ALOGE("open bootkpi for name %s failed %s\r\n", name, strerror(errno));
+    }
+    if (fd > 0)
+        close(fd);
+#endif
+    return;
+}
+
 int session_play(int argc, char *argv[]) {
     int rst = 0;
     const char *filename = NULL;
     FILE *file = NULL;
     int count = 0;
+    int first_frame = 0;
 
     if (argc != 2) {
         ALOGE("Usage: %s <input.pcm>", argv[0]);
@@ -115,6 +137,11 @@ int session_play(int argc, char *argv[]) {
                   "rst %d",
                   rst);
             goto end;
+        }
+        if (first_frame == 0) {
+            ALOGI("EA - AGM write first audio frame done");
+            write_marker("EA - AGM write first audio frame done");
+            first_frame = 1;
         }
     }
 
@@ -196,6 +223,7 @@ int main(int argc, char *argv[]) {
     int i = 0;
     struct aif_info *aifinfo = NULL;
 
+    write_marker("EA - Early Audio enter");
 #ifdef EAUDIO_DEBUG
     freopen("/dev/kmsg", "a", stdout);
     freopen("/dev/kmsg", "a", stderr);
@@ -207,11 +235,13 @@ int main(int argc, char *argv[]) {
     }
 
     ALOGI("agm_init");
+    write_marker("EA - AGM init");
     rst = agm_init();
     if (rst) {
         ALOGE("agm_init failed rst %d", rst);
         goto end;
     }
+    write_marker("EA - AGM init Done");
 
     // get audio interface list
     ALOGI("agm_get_aif_info_list");
@@ -390,5 +420,6 @@ end:
         goto end;
     }
     ALOGI("exit rst %d", rst);
+    write_marker("EA - Early Audio exit");
     exit(rst);
 }
