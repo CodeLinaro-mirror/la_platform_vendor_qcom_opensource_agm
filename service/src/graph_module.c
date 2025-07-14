@@ -71,6 +71,227 @@ struct param_id_mfc_output_media_fmt_t
 /*The capture buffer size should be multiple of 5ms(low-power)*/
 #define LOW_POWER_MODE_BUFFER_SAMPLE_TIME_MS 5
 
+static void get_wma_pro_channel_map(uint8_t *channel_map, int channels, uint32_t channel_mask )
+{
+    switch (channels) {
+    case CHANNEL_1:
+         channel_map[0] = PCM_CHANNEL_C;
+         break;
+    case CHANNEL_2:
+         if (channel_mask == WMAPRO_CHANNEL_MASK_2_L_R) {
+             channel_map[0] = PCM_CHANNEL_L;
+             channel_map[1] = PCM_CHANNEL_R;
+         }
+         if (channel_mask == WMAPRO_CHANNEL_MASK_2_Bl_Br) {
+             channel_map[0] = PCM_CHANNEL_LB;
+             channel_map[1] = PCM_CHANNEL_RB;
+         }
+         break;
+    case CHANNEL_3:
+         if (channel_mask == WMAPRO_CHANNEL_MASK_3_L_C_R) {
+             channel_map[0] = PCM_CHANNEL_L;
+             channel_map[1] = PCM_CHANNEL_C;
+             channel_map[2] = PCM_CHANNEL_R;
+         }
+         break;
+    case CHANNEL_4:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         if (channel_mask == WMAPRO_CHANNEL_MASK_4_L_R_Bl_Br) {
+             channel_map[2] = PCM_CHANNEL_LB;
+             channel_map[3] = PCM_CHANNEL_RB;
+         }
+         if (channel_mask == WMAPRO_CHANNEL_MASK_4_L_R_C_Bc_HT) {
+             channel_map[2] = PCM_CHANNEL_C;
+             channel_map[3] = PCM_CHANNEL_CS;
+         }
+         break;
+    case CHANNEL_5:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_C;
+         channel_map[2] = PCM_CHANNEL_R;
+         if (channel_mask == WMAPRO_CHANNEL_MASK_5_L_C_R_Bl_Br) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+         }
+         if (channel_mask == WMAPRO_CHANNEL_MASK_5_L_C_R_Sl_Sr_HT) {
+             channel_map[3] = PCM_CHANNEL_SL;
+             channel_map[4] = PCM_CHANNEL_SR;
+         }
+         break;
+    case CHANNEL_6:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_C;
+         channel_map[2] = PCM_CHANNEL_R;
+
+         if (channel_mask == WMAPRO_CHANNEL_MASK_5DOT1_L_C_R_Bl_Br_SLF) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+             channel_map[5] = PCM_CHANNEL_LFE;
+         }
+         else if (channel_mask == WMAPRO_CHANNEL_MASK_5DOT1_L_C_R_Sl_Sr_SLF_HT) {
+             channel_map[3] = PCM_CHANNEL_SL;
+             channel_map[4] = PCM_CHANNEL_SR;
+             channel_map[5] = PCM_CHANNEL_LFE;
+         }
+         else if (channel_mask == WMAPRO_CHANNEL_MASK_5DOT1_L_C_R_Bl_Br_Bc) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+             channel_map[5] = PCM_CHANNEL_CS;
+         }
+         else if (channel_mask == WMAPRO_CHANNEL_MASK_5DOT1_L_C_R_Sl_Sr_Bc_HT) {
+             channel_map[3] = PCM_CHANNEL_SL;
+             channel_map[4] = PCM_CHANNEL_SR;
+             channel_map[5] = PCM_CHANNEL_CS;
+         }
+         break;
+    case CHANNEL_7:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_C;
+         channel_map[2] = PCM_CHANNEL_R;
+         if(channel_mask == WMAPRO_CHANNEL_MASK_6DOT1_L_C_R_Bl_Br_Bc_SLF) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+             channel_map[5] = PCM_CHANNEL_CS;
+             channel_map[6] = PCM_CHANNEL_LFE;
+         }
+         else if(channel_mask == WMAPRO_CHANNEL_MASK_6DOT1_L_C_R_Sl_Sr_Bc_SLF_HT) {
+             channel_map[3] = PCM_CHANNEL_SL;
+             channel_map[4] = PCM_CHANNEL_SR;
+             channel_map[5] = PCM_CHANNEL_CS;
+             channel_map[6] = PCM_CHANNEL_LFE;
+         }
+         else if(channel_mask == WMAPRO_CHANNEL_MASK_6DOT1_L_C_R_Bl_Br_SFLOC_SFROC) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+             channel_map[5] = PCM_CHANNEL_FLC;
+             channel_map[6] = PCM_CHANNEL_FRC;
+         }
+         else if(channel_mask == WMAPRO_CHANNEL_MASK_6DOT1_L_C_R_Sl_Sr_SFLOC_SFROC_HT) {
+             channel_map[3] = PCM_CHANNEL_SL;
+             channel_map[4] = PCM_CHANNEL_SR;
+             channel_map[5] = PCM_CHANNEL_FLC;
+             channel_map[6] = PCM_CHANNEL_FRC;
+         }
+         break;
+    case CHANNEL_8:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_C;
+         channel_map[2] = PCM_CHANNEL_R;
+         if (channel_mask == WMAPRO_CHANNEL_MASK_7DOT1_L_C_R_Bl_Br_SLF_SFLOC_SFROC) {
+             channel_map[3] = PCM_CHANNEL_LB;
+             channel_map[4] = PCM_CHANNEL_RB;
+             channel_map[5] = PCM_CHANNEL_LFE;
+             channel_map[6] = PCM_CHANNEL_FLC;
+             channel_map[7] = PCM_CHANNEL_FRC;
+         }
+         else if ( channel_mask == WMAPRO_CHANNEL_MASK_7DOT1_L_C_R_Ls_Rs_SLF_SFLOC_SFROC_HT) {
+             channel_map[3] = PCM_CHANNEL_LS;
+             channel_map[4] = PCM_CHANNEL_RS;
+             channel_map[5] = PCM_CHANNEL_LFE;
+             channel_map[6] = PCM_CHANNEL_LB;
+             channel_map[7] = PCM_CHANNEL_RB;
+         }
+         break;
+    case CHANNEL_10:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         break;
+    case CHANNEL_12:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         break;
+    case CHANNEL_14:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         break;
+   case CHANNEL_16:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         break;
+    case CHANNEL_32:
+         channel_map[0] = PCM_CHANNEL_L;
+         channel_map[1] = PCM_CHANNEL_R;
+         channel_map[2] = PCM_CHANNEL_C;
+         channel_map[3] = PCM_CHANNEL_LS;
+         channel_map[4] = PCM_CHANNEL_RS;
+         channel_map[5] = PCM_CHANNEL_LFE;
+         channel_map[6] = PCM_CHANNEL_CS;
+         channel_map[7] = PCM_CHANNEL_LB;
+         channel_map[8] = PCM_CHANNEL_RB;
+         channel_map[9] = PCM_CHANNEL_TS;
+         channel_map[10] = PCM_CHANNEL_CVH;
+         channel_map[11] = PCM_CHANNEL_MS;
+         channel_map[12] = PCM_CHANNEL_FLC;
+         channel_map[13] = PCM_CHANNEL_FRC;
+         channel_map[14] = PCM_CHANNEL_RLC;
+         channel_map[15] = PCM_CHANNEL_RRC;
+         channel_map[16] = PCM_CHANNEL_LFE2;
+         channel_map[17] = PCM_CHANNEL_SL;
+         channel_map[18] = PCM_CHANNEL_SR;
+         channel_map[19] = PCM_CHANNEL_TFL;
+         channel_map[20] = PCM_CHANNEL_TFR;
+         channel_map[21] = PCM_CHANNEL_TC;
+         channel_map[22] = PCM_CHANNEL_TBL;
+         channel_map[23] = PCM_CHANNEL_TBR;
+         channel_map[24] = PCM_CHANNEL_TSL;
+         channel_map[25] = PCM_CHANNEL_TSR;
+         channel_map[26] = PCM_CHANNEL_TBC;
+         channel_map[27] = PCM_CHANNEL_BFC;
+         channel_map[28] = PCM_CHANNEL_BFL;
+         channel_map[29] = PCM_CHANNEL_BFR;
+         channel_map[30] = PCM_CHANNEL_LW;
+         channel_map[31] = PCM_CHANNEL_RW;
+         break;
+    default:
+        AGM_LOGE("Unsupport channels: %d", channels);
+    }
+}
+
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
     switch (channels) {
@@ -1232,7 +1453,20 @@ int configure_output_media_format(struct module_info *mod,
      *structure and use that channel map if set by client otherwise
      * use the default channel map
      */
-    get_default_channel_map(channel_map, num_channels);
+
+    if (AGM_FORMAT_WMAPRO == media_config.format) {
+        uint32_t channel_mask = sess_obj->stream_config.codec.wmapro_dec.channel_mask;
+        AGM_LOGD("WMA_PRO format, channel_mask =: %d", channel_mask);
+        if (0 >= channel_mask) {
+            AGM_LOGD("Using get_default_channel_map as channel_mask not available");
+            get_default_channel_map(channel_map, num_channels);
+        } else {
+            get_wma_pro_channel_map(channel_map, num_channels, channel_mask);
+        }
+    } else {
+        AGM_LOGD("Using get_default_channel_map");
+        get_default_channel_map(channel_map, num_channels);
+    }
 
     ret = gsl_set_custom_config(graph_obj->graph_handle, payload, payload_size);
     if (ret != 0) {
