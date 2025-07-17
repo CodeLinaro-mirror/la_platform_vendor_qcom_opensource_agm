@@ -42,6 +42,8 @@ enum {
     SND_DEVICE_IDX_SPEAKER_PROTECTED,
     SND_DEVICE_IDX_SPEAKER_MIC,
     SND_DEVICE_IDX_HANDSET_MIC,
+    SND_DEVICE_IDX_DMIC2,
+    SND_DEVICE_IDX_DMIC3,
     SND_DEVICE_IDX_BT_A2DP,
     SND_DEVICE_IDX_BT_A2DP_MIC,
     SND_DEVICE_IDX_BT_SCO_OUT,
@@ -49,6 +51,7 @@ enum {
     SND_DEVICE_IDX_BT_BLE_OUT,
     SND_DEVICE_IDX_BT_BLE_MIC,
     SND_DEVICE_IDX_HAPTICS,
+    SND_DEVICE_IDX_VA_MIC,
     SND_DEVICE_IDX_MAX,
 };
 
@@ -58,6 +61,8 @@ static char *cmp_snd_device_names[] = {
     [SND_DEVICE_IDX_SPEAKER_PROTECTED] = "speaker-protected",
     [SND_DEVICE_IDX_SPEAKER_MIC]       = "speaker-mic",
     [SND_DEVICE_IDX_HANDSET_MIC]       = "handset-mic",
+    [SND_DEVICE_IDX_DMIC2]             = "dmic2",
+    [SND_DEVICE_IDX_DMIC3]             = "dmic3",
     [SND_DEVICE_IDX_BT_A2DP]           = "bt-a2dp",
     [SND_DEVICE_IDX_BT_A2DP_MIC]       = "bt-a2dp-mic",
     [SND_DEVICE_IDX_BT_SCO_OUT]        = "bt-sco",
@@ -65,12 +70,15 @@ static char *cmp_snd_device_names[] = {
     [SND_DEVICE_IDX_BT_BLE_OUT]        = "bt-ble",
     [SND_DEVICE_IDX_BT_BLE_MIC]        = "bt-ble-mic",
     [SND_DEVICE_IDX_HAPTICS]           = "haptics-dev",
+    [SND_DEVICE_IDX_VA_MIC]            = "va-mic",
 };
 
 uint32_t snd_device_enum_to_route_map[SND_DEVICE_IDX_MAX] = {
     [SND_DEVICE_IDX_SPEAKER]     = ROUTE_SPEAKER,
     [SND_DEVICE_IDX_SPEAKER_MIC] = ROUTE_SPEAKER_MIC,
     [SND_DEVICE_IDX_HANDSET_MIC] = ROUTE_HANDSET_MIC,
+    [SND_DEVICE_IDX_DMIC2]       = ROUTE_DMIC2,
+    [SND_DEVICE_IDX_DMIC3]       = ROUTE_DMIC3,
     [SND_DEVICE_IDX_BT_A2DP]     = ROUTE_BT_A2DP,
     [SND_DEVICE_IDX_BT_A2DP_MIC] = ROUTE_BT_A2DP_MIC,
     [SND_DEVICE_IDX_BT_SCO_OUT]  = ROUTE_BT_SCO,
@@ -78,6 +86,7 @@ uint32_t snd_device_enum_to_route_map[SND_DEVICE_IDX_MAX] = {
     [SND_DEVICE_IDX_BT_BLE_OUT]  = ROUTE_BT_BLE,
     [SND_DEVICE_IDX_BT_BLE_MIC]  = ROUTE_BT_BLE_MIC,
     [SND_DEVICE_IDX_HAPTICS]     = ROUTE_HAPTICS,
+    [SND_DEVICE_IDX_VA_MIC]      = ROUTE_VA_MIC,
 };
 
 struct snd_value_enum codec_routing_enum;
