@@ -34,6 +34,7 @@ enum AGM_CMD {
     AGM_CMD_SESSION_CLOSE,
     AGM_CMD_SET_PARAMS_WITH_TAG_TO_ACDB,
     AGM_CMD_SESSION_WRITE,
+    AGM_CMD_SESSION_HEARTBEAT,
     AGM_CMD_MAX
 };
 
@@ -42,6 +43,11 @@ enum AGM_CMD_TYPE {
     AGM_CMD_TYPE_REPLY,
     AGM_CMD_TYPE_CALLBACK,
     AGM_CMD_TYPE_MAX
+};
+
+enum AgmServerStatus {
+    AGM_SERVER_DIED = 0,
+    AGM_SERVER_ALIVE
 };
 
 /* clients and server can run on 32 or 64
