@@ -14,7 +14,6 @@
 #ifdef SOCKET_ENABLED
 #include <agm_conn_server.h>
 #include <android-base/properties.h>
-#include <selinux/android.h>
 #include <chrono>
 #include <errno.h>
 #endif
@@ -74,15 +73,6 @@ extern "C" __attribute__((visibility("default"))) binder_status_t registerServic
         fprintf(fptr,"%d",num);
         fclose(fptr);
     }
-    do {
-        if (context_initialized == -1)
-            context_initialized = selinux_android_setcon("u:r:vendor_agmservice_qti:s0");
-
-        if (context_initialized != -1)
-            break;
-        else
-            sleep(1);
-    } while(1);
 
     while (!checkBinderServiceReady())
         sleep(1);

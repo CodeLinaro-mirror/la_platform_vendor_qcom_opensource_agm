@@ -35,4 +35,5 @@ audio_arch=`getprop ro.boot.audio`
 if [ "$audio_arch" == "audioreach" ]; then
     enable vendor.agm-1-0
     start vendor.agm-1-0
+    start harpaltest
 fi

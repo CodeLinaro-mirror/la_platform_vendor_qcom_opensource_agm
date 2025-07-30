@@ -27,8 +27,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libagm \
-    vendor.qti.hardware.agm-V1-ndk \
-    libselinux
+    vendor.qti.hardware.agm-V1-ndk
 
 ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
 LOCAL_CFLAGS += -DSOCKET_ENABLED
