@@ -75,6 +75,9 @@
     <device name="TDM-LPAIF-RX-QUATERNARY" rate="48000" ch="32" bits="16" />
     <device name="TDM-LPAIF-RX-QUINARY" rate="48000" ch="16" bits="16" />
     <device name="TDM-LPAIF-TX-QUINARY" rate="48000" ch="16" bits="16" />
+    <device name="PCM_DUMMY-TX-0" rate="48000" ch="1" bits="16" />
+    <device name="PCM_DUMMY-RX-0" rate="48000" ch="1" bits="16" />
+    <device name="PCM_DUMMY-TX-1" rate="48000" ch="1" bits="16" />
     <!-- QUATERNARY -->
     <device name="TDM-LPAIF_RXTX-RX-PRIMARY" rate="48000" ch="32" bits="16" />
     <device name="TDM-LPAIF_RXTX-TX-PRIMARY" rate="48000" ch="32" bits="16" />
