@@ -26,11 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022-2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
- *
  */
 
 #ifndef _AGM_INTF_H_
@@ -522,6 +520,12 @@ enum agm_event_id {
     */
 
     AGM_EVENT_WRITE_DONE = 0x2,
+    /**
+    * Indicates early EOS event flagged internally by AGM in case
+    * flush
+    */
+
+    AGM_EVENT_EARLY_EOS_INTERNAL = 0x5,
    /**
     * Indicates early EOS event
     */
