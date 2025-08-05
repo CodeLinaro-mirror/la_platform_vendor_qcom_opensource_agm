@@ -622,10 +622,10 @@ static int agm_compress_drain(struct compress_plugin *plugin)
         pthread_mutex_unlock(&priv->eos_lock);
         return ret;
     }
-
     priv->eos = true;
+    pthread_cond_wait(&priv->eos_cond,&priv->eos_lock);
+    AGM_LOGD("%s: out of eos wait\n", __func__);
     pthread_mutex_unlock(&priv->eos_lock);
-
     return 0;
 }
 
