@@ -38,6 +38,12 @@ AC_ARG_WITH([glib],
       AC_HELP_STRING([--with-glib],
          [enable glib, Build against glib. Use this when building for HLOS systems which use glib]))
 
+AC_ARG_WITH([telematics],
+    AS_HELP_STRING([use telematics (default is no)]),
+    [with_telematics=$withval],
+    [with_telematics=no])
+AM_CONDITIONAL([BUILDSYSTEM_TELEMATICS], [test "x${with_telematics}" = "xyes"])
+
 if (test "x${with_glib}" = "xyes"); then
         PKG_CHECK_MODULES(GTHREAD, gthread-2.0 >= 2.16, dummy=yes,
                                 AC_MSG_ERROR(GThread >= 2.16 is required))

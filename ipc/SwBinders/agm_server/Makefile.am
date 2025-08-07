@@ -12,7 +12,11 @@ AM_CPPFLAGS = -I $(srcdir) -I ${srcdir}/inc \
               -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/qti-agm-service
 
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
+
+if !BUILDSYSTEM_TELEMATICS
 AM_CPPFLAGS += -DDYNAMIC_LOG_ENABLED
+endif
+
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/qti-agm-service/
 
@@ -20,7 +24,6 @@ lib_LTLIBRARIES = libagmserverwrapper.la
 libagmserverwrapper_la_SOURCES   = ${srcdir}/src/agm_death_notifier.cpp ${srcdir}/src/agm_server_wrapper.cpp ${srcdir}/src/agm_callback.cpp
 
 libagmserverwrapper_la_CPPFLAGS = $(AM_CPPFLAGS)
-libagmserverwrapper_la_LIBADD = -L$(top_builddir)/service/.libs -lagm -laudio_log_utils
 libagmserverwrapper_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils -lpthread
 
 lib_LTLIBRARIES += libagmproxy.la
@@ -33,5 +36,11 @@ bin_PROGRAMS = agm_server
 agm_server_SOURCES  = ${srcdir}/src/agm_server_daemon.cpp
 
 agm_server_CPPFLAGS = $(AM_CPPFLAGS)
+if BUILDSYSTEM_TELEMATICS
+agm_server_LDADD    = libagmproxy.la
+libagmserverwrapper_la_LIBADD = -L$(top_builddir)/service/.libs -lagm
+else
 agm_server_LDADD    = libagmproxy.la -laudio_log_utils
+libagmserverwrapper_la_LIBADD = -L$(top_builddir)/service/.libs -lagm -laudio_log_utils
+endif
 agm_server_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils
