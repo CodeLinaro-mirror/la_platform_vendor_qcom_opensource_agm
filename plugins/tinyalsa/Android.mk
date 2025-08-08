@@ -22,6 +22,10 @@ LOCAL_SHARED_LIBRARIES := \
     libagm \
     liblog
 
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
+LOCAL_SHARED_LIBRARIES :=$(filter-out libagm,$(LOCAL_SHARED_LIBRARIES))
+endif
+
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
@@ -60,6 +64,10 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libagm \
     liblog
+
+ifneq ($(filter $(TARGET_BOARD_DERIVATIVE_SUFFIX), _sdv _cdcsdv),)
+LOCAL_SHARED_LIBRARIES :=$(filter-out libagm,$(LOCAL_SHARED_LIBRARIES))
+endif
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
