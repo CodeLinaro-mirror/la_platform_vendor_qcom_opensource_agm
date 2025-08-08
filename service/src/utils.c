@@ -29,6 +29,7 @@
 #define LOG_TAG "AGM"
 
 #include<errno.h>
+#include <string.h>
 
 #include <agm/utils.h>
 
@@ -113,4 +114,23 @@ char *ar_err_get_err_str(uint32_t error)
         return ar_err_code_info[AR_ERR_MAX].ar_err_str;
     else
         return ar_err_code_info[error].ar_err_str;
+}
+
+void ar_write_marker(const char *name)
+{
+#ifdef __ANDROID_U__
+    AGM_LOGE("boot_kpi: %s ", name);
+#else
+    int fd = -1;
+
+    fd = open(KPI_VALUE_PATH, O_WRONLY);
+    if (fd > 0) {
+        (void)write(fd, name, strlen(name));
+    } else {
+        AGM_LOGE("open bootkpi for name %s failed %s\r\n", name, strerror(errno));
+    }
+    if (fd > 0)
+        close(fd);
+#endif
+    return;
 }

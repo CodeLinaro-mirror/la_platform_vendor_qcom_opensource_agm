@@ -36,14 +36,37 @@
 #include <log/log.h>
 #endif
 
+#define KPI_VALUE_PATH          "/sys/kernel/boot_kpi/kpi_values"
+
+#ifdef AR_EARLY_AUDIO
+#define AGM_LOGE(arg, ...)                                              \
+    printf("[E][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGD(arg, ...)                                              \
+    printf("[D][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGI(arg, ...)                                              \
+    printf("[I][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGV(arg, ...)                                              \
+    printf("[V][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#else
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#endif
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
 /*helper to print errors in string form*/
 char *ar_err_get_err_str(uint32_t error);
+/*write boot kpi in kpi file*/
+void ar_write_marker(const char* name);
 
 #endif /*__UTILS_H*/

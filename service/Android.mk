@@ -82,10 +82,16 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+LOCAL_CFLAGS += -DAR_EARLY_AUDIO
+endif
+
 LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
 LOCAL_SRC_FILES     := src/early_audio.c
 
-LOCAL_HEADER_LIBRARIES := libagm_headers
+LOCAL_HEADER_LIBRARIES := \
+    libagm_headers \
+    libarosal_headers
 LOCAL_SHARED_LIBRARIES := \
     liblog \
     libcutils \
