@@ -2027,10 +2027,12 @@ done:
     if (payload)
         free(payload);
 
+#ifdef USE_GAPLESS_CUSTOM_SPR_CONFIG
     if (ret == 0 && graph_obj->state != STARTED) {
+        AGM_LOGD("Graph not STARTED, configure_spr_session_time_reset_info \n");
         ret = configure_spr_session_time_reset_info(spr_mod, graph_obj);
     }
-
+#endif
     return ret;
 }
 
