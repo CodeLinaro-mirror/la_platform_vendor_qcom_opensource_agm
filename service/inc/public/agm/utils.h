@@ -28,6 +28,12 @@
 **/
 
 #ifndef __UTILS_H__
+#define __UTILS_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "ar_osal_error.h"
 
 #ifdef FEATURE_IPQ_OPENWRT
@@ -68,5 +74,9 @@ int ar_err_get_lnx_err_code(uint32_t error);
 char *ar_err_get_err_str(uint32_t error);
 /*write boot kpi in kpi file*/
 void ar_write_marker(const char* name);
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif
 
 #endif /*__UTILS_H*/

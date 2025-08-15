@@ -25,7 +25,7 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-service vendor.agm-1-0 /vendor/bin/hw/vendor.qti.hardware.AGMIPC@1.0-service
+service vendor.agm-service /vendor/bin/hw/vendor.qti.hardware.AGMIPC@1.0-service
   class hal
   user system
   interface vendor.qti.hardware.AGMIPC@1.0::IAGM default
@@ -34,4 +34,17 @@ service vendor.agm-1-0 /vendor/bin/hw/vendor.qti.hardware.AGMIPC@1.0-service
   capabilities BLOCK_SUSPEND SYS_NICE
   ioprio rt 4
   task_profiles ProcessCapacityHigh HighPerformance
+  seclabel u:object_r:hal_audio_service:s0
   writepid /dev/cpuset/foreground/tasks /dev/stune/foreground/tasks
+
+service agm-localsocket-backend /vendor/bin/agm_ls_be
+    class hal
+    user audio
+    group audio system
+    seclabel u:object_r:hal_audio_service:s0
+
+service tdm-clock-output /vendor/bin/agmcap /dev/null -D 100 -d 101 -c 1 -r 48000 -i TDM-LPAIF-TX-PRIMARY -skv 0xB1000001 -dkv 0xA3000008 -ikv 1
+    class hal
+    user audio
+    group audio system
+    seclabel u:object_r:hal_audio_service:s0

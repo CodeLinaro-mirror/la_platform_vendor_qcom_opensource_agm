@@ -30,7 +30,7 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
-ifneq ($(strip $(AUDIO_FEATURE_ENABLED_AGM_HIDL)),true)
+ifeq ($(strip $(AUDIO_FEATURE_ENABLED_AGM_HIDL)),true)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE               := vendor.qti.hardware.AGMIPC@1.0-service
@@ -39,8 +39,15 @@ LOCAL_VENDOR_MODULE        := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+LOCAL_CFLAGS += -DAR_EARLY_AUDIO
+endif
+
 LOCAL_C_INCLUDES           := $(TOP)/vendor/qcom/opensource/agm/ipc/HwBinders/agm_ipc_client/
 LOCAL_SRC_FILES            := src/service.cpp
+
+LOCAL_HEADER_LIBRARIES := \
+    libarosal_headers
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \

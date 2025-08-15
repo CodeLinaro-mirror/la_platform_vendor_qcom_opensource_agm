@@ -12,6 +12,7 @@
 #include <agm/utils.h>
 
 #define TINYMIX "tinymix"
+#define AGM_SERVICE "vendor.qti.hardware.AGMIPC@1.0-service"
 
 // Audio interface configuration
 #define DEFAULT_AIF_ID_RX 7
@@ -369,6 +370,31 @@ end:
     rst = agm_deinit();
     if (rst) {
         AGM_LOGE("agm_deinit failed rst %d", rst);
+    }
+    return rst;
+}
+
+static void handle_sigchld(int sig) {
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+}
+
+int start_agm_service() {
+    pid_t pid = fork();
+    int rst = 0;
+
+    if (pid == -1) {
+        AGM_LOGE("fork failed");
+        rst = -1;
+    } else if (pid == 0) {
+        setsid();
+        environ = env;
+        char *args[] = {AGM_SERVICE, NULL};
+        rst = execvpe(AGM_SERVICE, args, env);
+        AGM_LOGE("execvp %s failed %s %d", AGM_SERVICE, strerror(errno), rst);
+        _exit(127);
+    } else {
+        AGM_LOGD("Started AGM server in background (PID: %d)", pid);
+        signal(SIGCHLD, handle_sigchld);
     }
     return rst;
 }

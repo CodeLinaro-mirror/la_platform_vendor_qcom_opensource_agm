@@ -31,6 +31,9 @@
 #include <vendor/qti/hardware/AGMIPC/1.0/IAGM.h>
 #include <hidl/LegacySupport.h>
 #include "inc/agm_server_wrapper.h"
+#include <android-base/properties.h>
+#include <agm/utils.h>
+#include <unistd.h>
 
 using vendor::qti::hardware::AGMIPC::V1_0::IAGM;
 using vendor::qti::hardware::AGMIPC::V1_0::implementation::AGM;
@@ -39,13 +42,48 @@ using android::hardware::configureRpcThreadpool;
 using android::hardware::joinRpcThreadpool;
 using android::sp;
 
+static inline bool checkBinderServiceReady() {
+#ifdef AR_EARLY_AUDIO
+    static bool flag = false;
+    if (flag) {
+        /* return true if servicemanager online once */
+        return true;
+    } else {
+        flag = android::base::WaitForProperty("hwservicemanager.ready", "true", std::chrono::milliseconds(1000));
+    }
+    if (flag) {
+        AGM_LOGI("hwservicemanager servcie is ready");
+    } else {
+        AGM_LOGI("hwservicemanager servcie is not ready");
+    }
+    return flag;
+#else
+    return true;
+#endif
+}
+
 int main() {
+#ifdef AR_EARLY_AUDIO
+    freopen("/dev/kmsg", "a", stdout);
+    freopen("/dev/kmsg", "a", stderr);
+#endif
+    AGM_LOGI("AGM service startup");
+    ar_write_marker("EA - AGM service startup");
     sp<IAGM> service = new AGM();
     AGM *temp = static_cast<AGM *>(service.get());
     if (temp->is_agm_initialized()) {
+        while (!checkBinderServiceReady()) {
+            usleep(5000);
+        }
         configureRpcThreadpool(16, true /*callerWillJoin*/);
-        if(android::OK !=  service->registerAsService())
+        if(android::OK !=  service->registerAsService()) {
+            AGM_LOGE("Could not register AGM service");
+            ar_write_marker("EA - AGM service could not register");
            return 1;
+        } else {
+            AGM_LOGI("AGM service ready");
+            ar_write_marker("EA - AGM service ready");
+        }
         joinRpcThreadpool();
     }
     return 1;
