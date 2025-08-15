@@ -19,6 +19,10 @@ LOCAL_CFLAGS        += -Wno-tautological-compare -Wno-macro-redefined -Wall
 LOCAL_CFLAGS        += -D_GNU_SOURCE -DACDB_PATH=\"/vendor/etc/acdbdata/\"
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
 
+ifeq ($(call is-board-platform-in-list,lahaina), true)
+LOCAL_CFLAGS        += -DUSE_GAPLESS_CUSTOM_SPR_CONFIG
+endif
+
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
 
@@ -58,7 +62,6 @@ LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
 else
 LOCAL_SHARED_LIBRARIES += libtinyalsa
 endif
-
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
 LOCAL_CFLAGS           += -DDYNAMIC_LOG_ENABLED
