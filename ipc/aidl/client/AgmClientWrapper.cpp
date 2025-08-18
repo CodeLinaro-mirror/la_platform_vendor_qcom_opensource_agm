@@ -901,3 +901,13 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
 int agm_dump(struct agm_dump_info *dump_info) {
     return 0;
 }
+
+int agm_shmem_buf_alloc(struct agm_shmem_info *buf_info){
+    ALOGE("%s Skipping for RBVM", __func__);
+    return -1;
+}
+
+int agm_shmem_buf_free(uint32_t spf_mem_handle) {
+    ALOGE("%s Skipping for RBVM", __func__);
+    return -1;
+}
