@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: session"
@@ -1127,8 +1127,8 @@ static int session_start(struct session_obj *sess_obj)
 
         pthread_mutex_lock(&hwep_lock);
 
-        //For Slimbus/CP EP - First configure the slave ports via device_prepare/start
-        //and then start the master side via graph_start.
+        //For Slimbus/CP/DP/MI2S/TDM EPs - First configure the slave ports via device_prepare/start.
+        //Start the master side via graph_start.
         list_for_each(node, &sess_obj->aif_pool) {
             aif_obj = node_to_item(node, struct aif, node);
             if (!aif_obj) {
@@ -1137,8 +1137,11 @@ static int session_start(struct session_obj *sess_obj)
             }
 
             if ((aif_obj->dev_obj->hw_ep_info.intf == SLIMBUS) ||
-                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY)) {
-                AGM_LOGD("configuring device early - for SLIMBUS/Connectivity Proxy EPs\n");
+                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == DISPLAY_PORT) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == MI2S) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == TDM)) {
+                AGM_LOGD("configuring device early - for SLIMBUS/CP/DP/MI2S/TDM EPs\n");
                 if (aif_obj->state == AIF_OPENED || aif_obj->state == AIF_STOPPED) {
                     agm_trace_begin("device_prepare");
                     ret = device_prepare(aif_obj->dev_obj);
@@ -1180,9 +1183,12 @@ static int session_start(struct session_obj *sess_obj)
                 goto unwind;
             }
 
-            //Continue/SKIP for SLIMBUS/Connectivity Proxy EP as they are started early.
+            //Continue/SKIP for SLIMBUS/CP/DP/MI2S/TDM EPs as they are started early.
             if ((aif_obj->dev_obj->hw_ep_info.intf == SLIMBUS) ||
-                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY)) {
+                (aif_obj->dev_obj->hw_ep_info.intf == BTFM_PROXY) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == DISPLAY_PORT) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == MI2S) ||
+                (aif_obj->dev_obj->hw_ep_info.intf == TDM)) {
                 continue;
             }
 
