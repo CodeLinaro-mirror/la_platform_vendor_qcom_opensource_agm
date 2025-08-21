@@ -521,3 +521,7 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
     ALOGE("%s: agm service is not running\n", __func__);
     return -EAGAIN;
 }
+
+int agm_dump(struct agm_dump_info *dump_info) {
+	    return 0;
+}
