@@ -68,13 +68,8 @@
 #include <binder/IBinder.h>
 #include <log/log.h>
 #include <utils/Log.h>
-#ifdef FEATURE_IPQ_OPENWRT
 #include <ipc_interface.h>
 #include <agm_death_notifier.h>
-#else
-#include <qti-agm-service/ipc_interface.h>
-#include <qti-agm-service/agm_death_notifier.h>
-#endif
 #include <agm/agm_api.h>
 #include <stdio.h>
 #include <stdlib.h>

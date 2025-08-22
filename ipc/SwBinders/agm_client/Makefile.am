@@ -4,10 +4,17 @@ AM_CPPFLAGS = -I $(srcdir) \
 	      -I $(top_srcdir)/ipc/SwBinders/agm_server/inc/ \
 	      -I $(top_srcdir)/service/inc/public/
 
+if !BUILDSYSTEM_TELEMATICS
 AM_CPPFLAGS += -DDYNAMIC_LOG_ENABLED
+endif
 lib_LTLIBRARIES      = libagmclientwrapper.la
 libagmclientwrapper_ladir = $(libdir)
 libagmclientwrapper_la_SOURCES  = src/agm_client_wrapper.cpp
 libagmclientwrapper_la_CPPFLAGS = $(AM_CPPFLAGS)
 libagmclientwrapper_la_LDFLAGS  = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils -lrt
+
+if BUILDSYSTEM_TELEMATICS
+libagmclientwrapper_la_LIBADD   = -L$(top_builddir)/ipc/SwBinders/agm_server/.libs -lagmproxy
+else
 libagmclientwrapper_la_LIBADD   = -L$(top_builddir)/ipc/SwBinders/agm_server/.libs -lagmproxy -laudio_log_utils
+endif
