@@ -544,10 +544,16 @@ static int agm_pcm_drop(struct pcm_plugin *plugin)
     int ret;
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 1;
 
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
-        pthread_cond_wait(&priv->eos_cond, &priv->eos_lock);
+        int rc = pthread_cond_timedwait(&priv->eos_cond, &priv->eos_lock, &ts);
+        if (rc == ETIMEDOUT) {
+            AGM_LOGE("Timeout occurred\n");
+        }
     }
     pthread_mutex_unlock(&priv->eos_lock);
 
