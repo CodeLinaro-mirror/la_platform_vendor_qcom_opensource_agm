@@ -26,11 +26,10 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following
- * license:
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
  */
 #define LOG_TAG "AGM: graph"
 
@@ -411,9 +410,9 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
     struct listnode *temp_node, *node = NULL, *node_list = NULL;
 
     struct gsl_tag_module_info *tag_module_info = NULL;
-    size_t tag_module_info_size;
+    size_t tag_module_info_size = 0;
     struct gsl_tag_module_info_entry *gsl_tag_entry = NULL;
-    struct agm_key_vector_gsl *gkv;
+    struct agm_key_vector_gsl *gkv = NULL;
     int i = 0;
     size_t module_list_count =  0;
     module_info_t *mod, *temp_mod = NULL;
