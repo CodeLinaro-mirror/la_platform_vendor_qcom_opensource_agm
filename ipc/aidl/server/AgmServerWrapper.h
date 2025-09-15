@@ -139,6 +139,8 @@ class ClientInfo : public ISessionOps {
 
     static void onCallback(uint32_t sessionId, struct agm_event_cb_params *eventParams,
                            void *clientData);
+    static std::mutex sCallbackRegistryMutex;
+    static std::unordered_map<uint64_t, std::weak_ptr<IAGMCallback>> sCallbackRegistry;
 };
 
 class AgmServerWrapper : public BnAGM, public ISessionOps {
