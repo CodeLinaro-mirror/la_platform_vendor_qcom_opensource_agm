@@ -395,6 +395,8 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -596,6 +598,8 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
