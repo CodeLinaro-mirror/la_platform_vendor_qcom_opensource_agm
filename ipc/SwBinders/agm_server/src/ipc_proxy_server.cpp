@@ -136,6 +136,7 @@ enum {
     REG_EVENT,
     REG_CB,
     GET_TAG_MODULE_INFO,
+    GET_PARAMS_FROM_ACDB_TUNNEL,
     SESSION_AIF_SET_PARAMS,
     SESSION_SET_PARAMS,
     SET_PARAMS_WITH_TAG,
@@ -558,6 +559,31 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
              return reply.readInt32();
          }
          return -EINVAL;
+    }
+
+    virtual int ipc_agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
+    {
+        android::Parcel data, reply;
+        int count = *size;
+
+        data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+        if (payload != NULL && count != 0) {
+            android::Parcel::WritableBlob blob;
+            android::Parcel::ReadableBlob acdb_params_blob;
+
+            data.writeUint32(count);
+            data.writeBlob(count, false, &blob);
+            memset(blob.data(), 0x0, count);
+            memcpy(blob.data(), payload, count);
+            remote()->transact(GET_PARAMS_FROM_ACDB_TUNNEL, data, &reply);
+            count = (size_t) reply.readUint32();
+            reply.readBlob(count, &acdb_params_blob);
+            memcpy(payload, acdb_params_blob.data(), count);
+            blob.release();
+            acdb_params_blob.release();
+            return reply.readInt32();
+        }
+        return -EINVAL;
     }
 
     virtual int ipc_agm_session_aif_set_params(uint32_t session_id,
@@ -1222,6 +1248,33 @@ android::status_t BnAgmService::onTransact(uint32_t code,
             free(bn_payload);
             reply->writeInt32(rc);
         }
+        break; }
+
+    case GET_PARAMS_FROM_ACDB_TUNNEL: {
+        uint32_t rc;
+        size_t count = 0;
+        void *bn_payload = NULL;
+        android::Parcel::ReadableBlob blob;
+        android::Parcel::WritableBlob acdb_param_blob;
+
+        count = (size_t) data.readUint32();
+        data.readBlob(count, &blob);
+        bn_payload = calloc(count, sizeof(uint8_t));
+        if (bn_payload == NULL) {
+            AGM_LOGE("calloc failed\n");
+            goto get_acdb_param_fail;
+        }
+        memcpy(bn_payload, blob.data(), count);
+        rc = ipc_agm_get_params_from_acdb_tunnel(bn_payload, &count);
+        reply->writeUint32(count);
+        reply->writeBlob(count, false, &acdb_param_blob);
+        memset(acdb_param_blob.data(), 0x0, count);
+        memcpy(acdb_param_blob.data(), bn_payload, count);
+        free(bn_payload);
+    get_acdb_param_fail:
+        reply->writeInt32(rc);
+        acdb_param_blob.release();
+        blob.release();
         break; }
 
     case SESSION_AIF_SET_PARAMS: {
