@@ -26,14 +26,51 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Technologies, Inc. are provided under the following license:
-** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+** Copyright (c) 2022, 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 /* agm_mixer.c all names (variable/functions) should have
    amp_ (Agm Mixer Plugin) */
-#include <agm_mixer_plugin.h>
+#define LOG_TAG "PLUGIN: mixer"
+
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <limits.h>
+#include <linux/ioctl.h>
+
+#include <sound/asound.h>
+
+#include <tinyalsa/asoundlib.h>
+#include <tinyalsa/mixer_plugin.h>
+
+#include <agm/agm_api.h>
+#include <snd-card-def.h>
+
+#include <agm/agm_list.h>
+#include <agm/utils.h>
+
+#ifdef DYNAMIC_LOG_ENABLED
+#include <log_xml_parser.h>
+#define LOG_MASK AGM_MOD_FILE_AGM_MIXER_PLUGIN
+#include <log_utils.h>
+#endif
+
+
+#define ARRAY_SIZE(a)    \
+    (sizeof(a) / sizeof(a[0]))
+
+#define AMP_PRIV_GET_CTL_PTR(p, idx) \
+    (p->ctls + idx)
+
+#define AMP_PRIV_GET_CTL_NAME_PTR(p, idx) \
+    (p->ctl_names[idx])
 
 enum {
     BE_CTL_NAME_MEDIA_CONFIG = 0,
@@ -125,6 +162,77 @@ static char *amp_pcm_rx_ctl_names[] = {
     "flush",
 };
 
+struct amp_get_param_info {
+    void *get_param_payload;
+    int get_param_payload_size;
+};
+
+struct amp_dev_info {
+    char **names;
+    int *idx_arr;
+    int count;
+    struct snd_value_enum dev_enum;
+    enum direction dir;
+
+    /*
+     * Mixer ctl data cache for
+     * "pcm<id> metadata_control"
+     * Unused for BE devs
+     */
+    int *pcm_mtd_ctl;
+
+    /*
+     * Mixer ctl data cache for
+     * "pcm<id> getParam"
+     * Unused for BE devs
+     */
+    struct amp_get_param_info *get_param_info;
+};
+
+struct amp_be_group_info {
+    char **names;
+    int *idx_arr;
+    int count;
+};
+
+struct amp_priv {
+    unsigned int card;
+    void *card_node;
+
+    struct aif_info *aif_list;
+    struct listnode events_list;
+    struct listnode events_paramlist;
+
+    struct amp_dev_info rx_be_devs;
+    struct amp_dev_info tx_be_devs;
+    struct amp_dev_info rx_pcm_devs;
+    struct amp_dev_info tx_pcm_devs;
+    struct amp_dev_info acdb_tunnels;
+
+    struct amp_be_group_info group_be_devs;
+
+    struct snd_control *ctls;
+    char (*ctl_names)[AIF_NAME_MAX_LEN + 16];
+    int ctl_count;
+
+    struct snd_value_enum tx_be_enum;
+    struct snd_value_enum rx_be_enum;
+
+    event_callback event_cb;
+    pthread_mutex_t lock;
+};
+
+struct event_params_node {
+    uint32_t session_id;
+    struct listnode node;
+    struct agm_event_cb_params event_params;
+};
+
+struct mixer_plugin_event_data {
+    struct ctl_event ev;
+    struct listnode node;
+};
+
 static enum agm_media_format alsa_to_agm_fmt(int fmt)
 {
     enum agm_media_format agm_pcm_fmt = AGM_FORMAT_INVALID;
@@ -171,11 +279,6 @@ static void amp_free_dev_info(struct amp_dev_info *adi)
     if (adi->idx_arr) {
         free(adi->idx_arr);
         adi->idx_arr = NULL;
-    }
-
-    if (adi->non_alsa_aif_info_arr) {
-        free(adi->non_alsa_aif_info_arr);
-        adi->non_alsa_aif_info_arr = NULL;
     }
 
     if (adi->pcm_mtd_ctl) {
@@ -386,31 +489,6 @@ static void amp_copy_group_be_names_from_aif_list(struct aif_info *aif_list,
     }
 }
 
-static void amp_copy_non_alsa_be_idx_from_aif_list(struct non_alsa_aif_info *aif_list,
-                size_t aif_cnt, struct amp_dev_info *adi, enum direction dir)
-{
-    struct non_alsa_aif_info *aif_info;
-    struct amp_non_alsa_aif_info *adi_aif_info;
-    int i, j, non_alsa_be_idx = 0;
-
-    for (i = 1; i < adi->count; i++)
-    {
-        for (j = 0; j < aif_cnt; j++) {
-            aif_info = aif_list + j;
-            if (aif_info->dir != dir)
-            continue;
-
-            if (!strncmp(adi->names[i], aif_info->aif_name, strlen(adi->names[i]))) {
-                adi_aif_info = adi->non_alsa_aif_info_arr + non_alsa_be_idx++;
-                adi_aif_info->non_alsa_idx = i;
-                adi_aif_info->card = aif_info->card;
-                adi_aif_info->pcm = aif_info->pcm;
-            }
-        }
-    }
-    adi->non_alsa_aif_info_count = non_alsa_be_idx;
-}
-
 static int amp_get_be_info(struct amp_priv *amp_priv)
 {
     struct amp_dev_info *rx_adi = &amp_priv->rx_be_devs;
@@ -465,77 +543,6 @@ err_backends_get:
     if (aif_list)
         free(aif_list);
     amp_free_be_dev_info(amp_priv);
-    return ret;
-}
-
-static int amp_get_non_alsa_be_info(struct amp_priv *amp_priv)
-{
-    struct amp_dev_info *rx_adi = &amp_priv->rx_be_devs;
-    struct amp_dev_info *tx_adi = &amp_priv->tx_be_devs;
-    struct non_alsa_aif_info *aif_list, *aif_info;
-    size_t non_alsa_be_count = 0;
-    int ret = 0, i;
-
-    rx_adi->non_alsa_aif_info_count = 0;
-    tx_adi->non_alsa_aif_info_count = 0;
-    ret = agm_get_non_alsa_aif_info_list(NULL, &non_alsa_be_count);
-    if (ret)
-        return -EINVAL;
-
-    /* It ok to not to have any non-alsa be */
-    if (non_alsa_be_count == 0)
-        return 0;
-
-    aif_list = calloc(non_alsa_be_count, sizeof(struct non_alsa_aif_info));
-    if (!aif_list) {
-        ret = -ENOMEM;
-        goto done;
-    }
-
-    ret = agm_get_non_alsa_aif_info_list(aif_list, &non_alsa_be_count);
-    if (ret)
-        goto done;
-
-    /* count non alsa rx and tx backends */
-    for (i = 0; i < non_alsa_be_count; i++) {
-        aif_info = aif_list + i;
-        if (aif_info->dir == RX)
-            rx_adi->non_alsa_aif_info_count++;
-        else if (aif_info->dir == TX)
-            tx_adi->non_alsa_aif_info_count++;
-    }
-
-    rx_adi->non_alsa_aif_info_arr = calloc(rx_adi->non_alsa_aif_info_count, sizeof(struct amp_non_alsa_aif_info));
-    tx_adi->non_alsa_aif_info_arr = calloc(tx_adi->non_alsa_aif_info_count, sizeof(struct amp_non_alsa_aif_info));
-
-    if (!rx_adi->non_alsa_aif_info_arr || !tx_adi->non_alsa_aif_info_arr) {
-        ret = -ENOMEM;
-        goto done;
-    }
-
-    /* form the rx backends enum array */
-    amp_copy_non_alsa_be_idx_from_aif_list(aif_list, non_alsa_be_count, rx_adi, RX);
-    amp_copy_non_alsa_be_idx_from_aif_list(aif_list, non_alsa_be_count, tx_adi, TX);
-
-done:
-
-    if (aif_list) {
-        free(aif_list);
-        aif_list = NULL;
-    }
-
-    if (ret) {
-        if (rx_adi->non_alsa_aif_info_arr) {
-            free(rx_adi->non_alsa_aif_info_arr);
-            rx_adi->non_alsa_aif_info_arr = NULL;
-        }
-
-        if (tx_adi->non_alsa_aif_info_arr) {
-            free(tx_adi->non_alsa_aif_info_arr);
-            tx_adi->non_alsa_aif_info_arr = NULL;
-        }
-    }
-
     return ret;
 }
 
@@ -798,13 +805,6 @@ static void amp_register_event_callback(struct mixer_plugin *plugin, int enable)
     }
 }
 
-#ifndef HAS_NON_ALSA_DAI
-int amp_get_non_alsa_be_ctl_count(struct amp_priv *amp_priv)
-{
-    return 0;
-}
-#endif
-
 static int amp_get_be_ctl_count(struct amp_priv *amp_priv)
 {
     struct amp_dev_info *rx_adi = &amp_priv->rx_be_devs;
@@ -883,7 +883,6 @@ static int amp_be_media_fmt_get(struct mixer_plugin *plugin __unused,
 {
     //TODO: AGM should support get function.
     AGM_LOGV("%s: enter\n", __func__);
-    AGM_LOGI("%s: enter\n", __func__);
     return 0;
 }
 
@@ -2044,13 +2043,6 @@ static void amp_create_be_set_param_ctl(struct amp_priv *amp_priv,
                 pval, pdata);
 }
 
-#ifndef HAS_NON_ALSA_DAI
-int amp_form_non_alsa_be_ctls(struct amp_priv *amp_priv, int ctl_idx, int ctl_cnt __unused)
-{
-    return 0;
-}
-#endif
-
 static int amp_form_be_ctls(struct amp_priv *amp_priv, int ctl_idx, int ctl_cnt __unused)
 {
     struct amp_dev_info *rx_adi = &amp_priv->rx_be_devs;
@@ -2346,7 +2338,6 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
     int ret = 0;
     int be_ctl_cnt, pcm_ctl_cnt, total_ctl_cnt = 0;
     int be_grp_ctl_cnt = 0;
-    int non_alsa_be_ctl_cnt = 0;
 
     AGM_LOGI("%s: enter, card %u\n", __func__, card);
 
@@ -2393,10 +2384,6 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
     if (ret)
         goto err_get_be_group_info;
 
-    ret = amp_get_non_alsa_be_info(amp_priv);
-    if (ret)
-        goto err_get_non_alsa_be_info;
-
     ret = amp_get_pcm_info(amp_priv);
     if (ret)
         goto err_get_pcm_info;
@@ -2410,8 +2397,6 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
     total_ctl_cnt += be_ctl_cnt;
     be_grp_ctl_cnt = amp_get_group_be_ctl_count(amp_priv);
     total_ctl_cnt += be_grp_ctl_cnt;
-    non_alsa_be_ctl_cnt = amp_get_non_alsa_be_ctl_count(amp_priv);
-    total_ctl_cnt += non_alsa_be_ctl_cnt;
     pcm_ctl_cnt = amp_get_pcm_ctl_count(amp_priv);
     total_ctl_cnt += pcm_ctl_cnt;
     /* add two static mixer control for acdb param set and get*/
@@ -2436,20 +2421,11 @@ MIXER_PLUGIN_OPEN_FN(agm_mixer_plugin)
             goto err_ctls_alloc;
     }
 
-    if (non_alsa_be_ctl_cnt) {
-        ret = amp_form_non_alsa_be_ctls(amp_priv, be_ctl_cnt + be_grp_ctl_cnt,
-                non_alsa_be_ctl_cnt);
-        if (ret)
-            goto err_ctls_alloc;
-    }
-
-    ret = amp_form_pcm_ctls(amp_priv,
-            be_ctl_cnt + be_grp_ctl_cnt + non_alsa_be_ctl_cnt, pcm_ctl_cnt);
+    ret = amp_form_pcm_ctls(amp_priv, be_ctl_cnt + be_grp_ctl_cnt, pcm_ctl_cnt);
     if (ret)
         goto err_ctls_alloc;
 
-    ret = amp_form_acdb_ctls(amp_priv,
-            be_ctl_cnt + be_grp_ctl_cnt + non_alsa_be_ctl_cnt + pcm_ctl_cnt);
+    ret = amp_form_acdb_ctls(amp_priv, be_ctl_cnt + be_grp_ctl_cnt + pcm_ctl_cnt);
     if (ret)
         goto err_ctls_alloc;
 
@@ -2479,7 +2455,6 @@ err_ctls_alloc:
 err_get_acdb_info:
     amp_free_pcm_dev_info(amp_priv);
 
-err_get_non_alsa_be_info:
 err_get_pcm_info:
     if (be_grp_ctl_cnt)
         amp_free_group_be_dev_info(amp_priv);

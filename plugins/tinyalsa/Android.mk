@@ -39,47 +39,6 @@ endif
 
 include $(BUILD_SHARED_LIBRARY)
 
-# Build codec_pcm_plugin
-include $(CLEAR_VARS)
-
-LOCAL_MODULE        := libcodec_pcm_plugin
-LOCAL_MODULE_OWNER  := qti
-LOCAL_MODULE_TAGS   := optional
-LOCAL_VENDOR_MODULE := true
-
-LOCAL_CFLAGS        += -Wall
-LOCAL_SRC_FILES     := src/codec/codec_pcm_plugin.c
-LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/private
-
-LOCAL_HEADER_LIBRARIES := \
-    libagm_headers \
-    libarosal_headers
-
-LOCAL_SHARED_LIBRARIES := \
-    libsndcardparser \
-    libagmclient \
-    libutils \
-    libcutils \
-    liblog \
-    libcodec_interface
-
-#This assumes we would be using AR code only for Android R and subsequent versions.
-ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
-LOCAL_SHARED_LIBRARIES += libqti-tinyalsa
-else
-LOCAL_SHARED_LIBRARIES += libtinyalsa
-endif
-
-ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
-LOCAL_CFLAGS           += -DDYNAMIC_LOG_ENABLED
-LOCAL_C_INCLUDES       += $(TOP)/external/expat/lib/expat.h
-LOCAL_SHARED_LIBRARIES += libaudio_log_utils
-LOCAL_SHARED_LIBRARIES += libexpat
-LOCAL_HEADER_LIBRARIES += libaudiologutils_headers
-endif
-
-include $(BUILD_SHARED_LIBRARY)
-
 # Build libagm_mixer_plugin
 include $(CLEAR_VARS)
 
@@ -88,22 +47,17 @@ LOCAL_MODULE_OWNER  := qti
 LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 LOCAL_SRC_FILES     := src/agm_mixer_plugin.c
-LOCAL_SRC_FILES     += src/codec/codec_mixer.c
-LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/private
-LOCAL_CFLAGS        := -DHAS_NON_ALSA_DAI
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
-    libarosal_headers \
-    libacdb_headers
+    libarosal_headers
 
 LOCAL_SHARED_LIBRARIES := \
     libsndcardparser \
     libagmclient \
     libcutils \
     libutils \
-    liblog \
-    libcodec_ipc_client
+    liblog
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
