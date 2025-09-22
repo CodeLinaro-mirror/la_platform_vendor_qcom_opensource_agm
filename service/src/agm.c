@@ -139,17 +139,6 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info)
     return device_get_aif_info_list(aif_list, num_aif_info);
 }
 
-int agm_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *num_aif_info)
-{
-    if (!num_aif_info || ((*num_aif_info != 0) && !aif_list)) {
-        AGM_LOGE("Error Invalid params\n");
-        return -EINVAL;
-    }
-
-    return device_get_non_alsa_aif_info_list(aif_list, num_aif_info);
-}
-
-
 int agm_get_group_aif_info_list(struct aif_info *aif_list, size_t *num_groups)
 {
     if (!num_groups || ((*num_groups != 0) && !aif_list)) {
@@ -1095,17 +1084,3 @@ int agm_dump(struct agm_dump_info *dump_info __unused)
     // Placeholder for future enhancements
     return 0;
 }
-
-int agm_get_driver_data(uint32_t module_id,
-                    struct agm_cal_config *cal_config,
-                    void *payload,
-                    size_t *size)
-{
-    if ((!cal_config) || (!size) || (*size && (payload == NULL))) {
-        AGM_LOGE("Error Invalid params\n");
-        return -EINVAL;
-    }
-
-    return session_dummy_get_driver_data(module_id, cal_config, payload, size);
-}
-

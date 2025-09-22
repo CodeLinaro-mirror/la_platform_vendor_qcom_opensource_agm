@@ -195,7 +195,5 @@ int session_obj_set_non_tunnel_mode_config(struct session_obj *sess_obj,
                                    struct agm_media_config *out_media_config,
                                    struct agm_buffer_config *rx_buffer_config,
                                    struct agm_buffer_config *tx_buffer_config);
-int session_dummy_get_driver_data(uint32_t module_id,
-                             struct agm_cal_config *cal_config,
-                             void *payload, size_t *size);
+
 #endif
