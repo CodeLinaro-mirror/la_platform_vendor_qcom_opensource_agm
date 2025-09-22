@@ -920,29 +920,18 @@ int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap)
 
     snprintf(mixer_str, ctl_len, "%s %s", dev_name, "Channel Map");
 
-    if (dev_obj->is_non_alsa)
-    {
-        uint32_t *map = (uint32_t*)payload;
-        map[0] = dev_obj->media_config.channels;
-        if (map[0] == 1)
-            map[1] = 1;
-        else
-            map[1] = 3;
-    } else {
-        ctl = mixer_get_ctl_by_name(mixer, mixer_str);
-        if (!ctl) {
-            AGM_LOGE("Invalid mixer control: %s\n", mixer_str);
-            ret = -ENOENT;
-            goto err_get_ctl;
-        }
-
-        ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
-        if (ret < 0) {
-            AGM_LOGE("Failed to mixer_ctl_get_array\n");
-            goto err_get_ctl;
-        }
+    ctl = mixer_get_ctl_by_name(mixer, mixer_str);
+    if (!ctl) {
+        AGM_LOGE("Invalid mixer control: %s\n", mixer_str);
+        ret = -ENOENT;
+        goto err_get_ctl;
     }
 
+    ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
+    if (ret < 0) {
+        AGM_LOGE("Failed to mixer_ctl_get_array\n");
+        goto err_get_ctl;
+    }
     *chmap = payload;
     goto done;
 
