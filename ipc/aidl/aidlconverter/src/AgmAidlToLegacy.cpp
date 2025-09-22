@@ -230,17 +230,6 @@ void AidlToLegacy::convertAifInfoList(
     }
 }
 
-void AidlToLegacy::convertNonAlsaAifInfoList(
-        const std::vector<::aidl::vendor::qti::hardware::agm::NonAlsaAifInfo> &aidlList,
-        struct non_alsa_aif_info *legacyNonAlsaAifList) {
-    for (unsigned long i = 0; i < aidlList.size(); i++) {
-        strlcpy(legacyNonAlsaAifList[i].aif_name, aidlList[i].aifName.c_str(), AIF_NAME_MAX_LEN);
-        legacyNonAlsaAifList[i].dir = (enum direction)aidlList[i].direction;
-        legacyNonAlsaAifList[i].card = aidlList[i].card;
-        legacyNonAlsaAifList[i].pcm = aidlList[i].pcm;
-    }
-}
-
 void AidlToLegacy::convertAgmEventRegistrationConfig(
         const ::aidl::vendor::qti::hardware::agm::AgmEventRegistrationConfig &aidlConfig,
         struct agm_event_reg_cfg *legacyConfig) {

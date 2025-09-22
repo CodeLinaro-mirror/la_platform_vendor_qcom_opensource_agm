@@ -71,8 +71,6 @@ interface IAGM {
   void ipc_agm_set_params_with_tag(in int sessiondId, in int aifId, in vendor.qti.hardware.agm.AgmTagConfig tagConfig);
   void ipc_agm_set_params_with_tag_to_acdb(in int sessiondId, in int aifId, in byte[] payload);
   void ipc_agm_dump(in vendor.qti.hardware.agm.AgmDumpInfo dumpInfo);
-  vendor.qti.hardware.agm.NonAlsaAifInfo[] ipc_agm_get_non_alsa_aif_info_list(in int numAifInfo);
-  byte[] ipc_agm_get_driver_data(in int moduleId, in vendor.qti.hardware.agm.AgmCalConfig calConfig, in int size);
   parcelable AgmReadWithMetadataReturn {
     vendor.qti.hardware.agm.AgmBuff buffer;
     int capturesSize;
