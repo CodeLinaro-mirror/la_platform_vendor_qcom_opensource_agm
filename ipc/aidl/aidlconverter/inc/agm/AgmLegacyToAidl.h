@@ -20,7 +20,6 @@
 #include <aidl/vendor/qti/hardware/agm/AgmSessionMode.h>
 #include <aidl/vendor/qti/hardware/agm/AgmTagConfig.h>
 #include <aidl/vendor/qti/hardware/agm/AifInfo.h>
-#include <aidl/vendor/qti/hardware/agm/NonAlsaAifInfo.h>
 #include <aidl/vendor/qti/hardware/agm/Direction.h>
 #include <aidl/vendor/qti/hardware/agm/MmapBufInfo.h>
 
@@ -216,15 +215,6 @@ struct LegacyToAidl {
     * @return vector of AifInfo based on legacy aif_info list
     */
     static std::vector<AifInfo> convertAifInfoListToAidl(struct aif_info *agmLegacyAifInfoList,
-                                                         int size);
-    /**
-    * @brief convertNonAlsaAifInfoListToAidl converts legacy non_alsa_aif_info to AIDL
-    * based NonAlsaAifInfo type.
-    * @param agmLegacyNonAlsaAifInfoList  non_alsa_aif_info in legacy types
-    * @param size size of NonAlsaAifInfo list
-    * @return vector of NonAlsaAifInfo based on legacy non_alsa_aif_info list
-    */
-    static std::vector<NonAlsaAifInfo> convertNonAlsaAifInfoListToAidl(struct non_alsa_aif_info *agmLegacyNonAlsaAifInfoList,
                                                          int size);
     /*
     * input buff is legacy agm buffer.

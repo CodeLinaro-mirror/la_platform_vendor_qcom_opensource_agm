@@ -421,18 +421,3 @@ std::vector<AifInfo> LegacyToAidl::convertAifInfoListToAidl(struct aif_info *leg
     }
     return std::move(aidlList);
 }
-
-std::vector<NonAlsaAifInfo> LegacyToAidl::convertNonAlsaAifInfoListToAidl(struct non_alsa_aif_info *legacyList,
-                                                            int listSize) {
-    std::vector<NonAlsaAifInfo> aidlList;
-    aidlList.resize(listSize);
-    if (legacyList != NULL) {
-        for (unsigned long i = 0; i < aidlList.size(); i++) {
-            aidlList[i].aifName = legacyList[i].aif_name;
-            aidlList[i].direction = (Direction)legacyList[i].dir;
-            aidlList[i].card = legacyList[i].card;
-            aidlList[i].pcm = legacyList[i].pcm;
-        }
-    }
-    return std::move(aidlList);
-}

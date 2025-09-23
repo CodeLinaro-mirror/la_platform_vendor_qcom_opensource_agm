@@ -380,7 +380,6 @@ int device_open(struct device_obj *dev_obj)
     config.stop_threshold = INT_MAX;
 
     pcm_flags = (obj->hw_ep_info.dir == AUDIO_OUTPUT) ? PCM_OUT : PCM_IN;
-
     pcm = pcm_open(obj->card_id, obj->pcm_id, pcm_flags,
                 &config);
     if (!pcm || !pcm_is_ready(pcm)) {
@@ -614,36 +613,6 @@ int device_get_aif_info_list(struct aif_info *aif_list, size_t *audio_intfs)
                                           AIF_NAME_MAX_LEN);
             aif_list[copied].dir = dev_obj->hw_ep_info.dir;
             copied++;
-            if (copied == requested)
-                break;
-        }
-        *audio_intfs = copied;
-    }
-    return 0;
-}
-
-int device_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *audio_intfs)
-{
-    struct device_obj *dev_obj;
-    uint32_t copied = 0;
-    uint32_t requested = *audio_intfs;
-    struct listnode *dev_node, *temp;
-
-    if (*audio_intfs == 0){
-        *audio_intfs = num_audio_intfs;
-    } else {
-        list_for_each_safe(dev_node, temp, &device_list) {
-            dev_obj = node_to_item(dev_node, struct device_obj, list_node);
-
-            if (dev_obj->is_non_alsa)
-            {
-                strlcpy(aif_list[copied].aif_name, dev_obj->name,
-                                              AIF_NAME_MAX_LEN);
-                aif_list[copied].dir = dev_obj->hw_ep_info.dir;
-                aif_list[copied].card = dev_obj->card_id;
-                aif_list[copied].pcm = dev_obj->pcm_id;
-                copied++;
-            }
             if (copied == requested)
                 break;
         }
@@ -920,29 +889,18 @@ int device_get_channel_map(struct device_obj *dev_obj, uint32_t **chmap)
 
     snprintf(mixer_str, ctl_len, "%s %s", dev_name, "Channel Map");
 
-    if (dev_obj->is_non_alsa)
-    {
-        uint32_t *map = (uint32_t*)payload;
-        map[0] = dev_obj->media_config.channels;
-        if (map[0] == 1)
-            map[1] = 1;
-        else
-            map[1] = 3;
-    } else {
-        ctl = mixer_get_ctl_by_name(mixer, mixer_str);
-        if (!ctl) {
-            AGM_LOGE("Invalid mixer control: %s\n", mixer_str);
-            ret = -ENOENT;
-            goto err_get_ctl;
-        }
-
-        ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
-        if (ret < 0) {
-            AGM_LOGE("Failed to mixer_ctl_get_array\n");
-            goto err_get_ctl;
-        }
+    ctl = mixer_get_ctl_by_name(mixer, mixer_str);
+    if (!ctl) {
+        AGM_LOGE("Invalid mixer control: %s\n", mixer_str);
+        ret = -ENOENT;
+        goto err_get_ctl;
     }
 
+    ret = mixer_ctl_get_array(ctl, payload, 16 * sizeof(uint32_t));
+    if (ret < 0) {
+        AGM_LOGE("Failed to mixer_ctl_get_array\n");
+        goto err_get_ctl;
+    }
     *chmap = payload;
     goto done;
 
@@ -1122,7 +1080,7 @@ static int parse_virtual_snd_card()
 
     for (i = 0; i < num_nodes; i++) {
         void *node = node_list[i];
-        uint32_t is_backend = 0;
+        uint32_t is_backend = 1;
         char *name = NULL, *so_name = NULL;
 
         snd_card_def_get_int(node, "backend", &is_backend);
@@ -1136,10 +1094,9 @@ static int parse_virtual_snd_card()
             goto done;
         }
         dev_obj->card_id = NON_ALSA_CARD;
-        dev_obj->is_non_alsa = true;
 
         snd_card_def_get_str(node, "so-name", &so_name);
-        if (so_name == NULL)
+	if (so_name == NULL)
             dev_obj->has_no_alsa_ops = true;
 
         snd_card_def_get_int(node, "id", &dev_obj->pcm_id);

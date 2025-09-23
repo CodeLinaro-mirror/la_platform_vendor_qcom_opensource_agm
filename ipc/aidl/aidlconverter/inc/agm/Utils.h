@@ -83,7 +83,6 @@ std::unique_ptr<T, CustomDeletor> allocate(int size) {
 }
 
 using AgmAifUniquePtrType = std::unique_ptr<struct aif_info, CustomDeletor>;
-using AgmNonAlsaAifUniquePtrType = std::unique_ptr<struct non_alsa_aif_info, CustomDeletor>;
 
 /**
 * @brief needsCodecSpecificInfo returns true for compress codecs which

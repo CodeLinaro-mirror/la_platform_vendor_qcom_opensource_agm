@@ -321,24 +321,6 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     return ret;
 }
 
-int agm_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *num_aif_info) {
-    ALOGV("%s: Enter: noOfAif %d, aifListEmpty %d", __func__, *num_aif_info, (aif_list == NULL));
-    auto client = getAgm();
-    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
-
-    std::vector<NonAlsaAifInfo> aidlAifList;
-    auto aidlStatus = client->ipc_agm_get_non_alsa_aif_info_list((int32_t)(*num_aif_info), &aidlAifList);
-
-    if (aif_list != NULL) {
-        AidlToLegacy::convertNonAlsaAifInfoList(aidlAifList, aif_list);
-    }
-
-    *num_aif_info = (size_t)aidlAifList.size();
-    auto ret = statusTFromBinderStatus(aidlStatus);
-    ALOGV("%s: Exit size %d ret %d ", __func__, *num_aif_info);
-    return ret;
-}
-
 int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id, void *payload,
                                         size_t *size) {
     ALOGV("%s session_id =%d, aif_id = %d", __func__, session_id, aif_id);
@@ -669,26 +651,4 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
 
 int agm_dump(struct agm_dump_info *dump_info) {
     return 0;
-}
-
-int agm_get_driver_data(uint32_t module_id,
-        struct agm_cal_config *cal_config,
-        void *payload,
-        size_t *size) {
-    ALOGV("%s module_id =%d", __func__, module_id);
-    auto client = getAgm();
-    RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client);
-
-    auto aidlCalConfig = LegacyToAidl::convertAgmCalConfigToAidl(cal_config);
-    uint32_t aidlSize = *size;
-    std::vector<uint8_t> aidlDriverData;
-    auto status = client->ipc_agm_get_driver_data(module_id, aidlCalConfig, aidlSize,
-                                                                  &aidlDriverData);
-    if (status.isOk()) {
-        if (payload != NULL) memcpy(payload, aidlDriverData.data(), aidlDriverData.size());
-        *size = aidlDriverData.size();
-    }
-    auto ret = statusTFromBinderStatus(status);
-    ALOGV("%s module_id =%d, ret %d, size %d ", __func__, module_id, ret, *size);
-    return ret;
 }
