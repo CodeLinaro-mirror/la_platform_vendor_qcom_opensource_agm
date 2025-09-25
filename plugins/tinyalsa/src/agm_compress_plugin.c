@@ -563,9 +563,6 @@ static int agm_compress_stop(struct compress_plugin *plugin)
         errno = ret;
         return ret;
     }
-    /* stop will reset all the buffers and it called during seek also */
-    priv->bytes_avail = priv->total_buf_size;
-    priv->bytes_copied = 0;
 
     return ret;
 }
