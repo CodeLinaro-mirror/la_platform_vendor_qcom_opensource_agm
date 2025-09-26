@@ -45,3 +45,8 @@ service tdm-clock-output /vendor/bin/agmcap /dev/null -D 100 -d 101 -c 1 -r 4800
     class hal
     user audio
     group audio system
+
+on shutdown
+    stop agm-localsocket-backend
+    stop tdm-clock-output
+    stop vendor.agm-service
