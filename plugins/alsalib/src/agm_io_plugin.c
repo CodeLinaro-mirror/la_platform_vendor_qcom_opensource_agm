@@ -48,7 +48,6 @@
 #include <snd-card-def.h>
 #include "utils.h"
 #include <pthread.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -114,7 +113,6 @@ struct agmio_priv {
     struct agm_buf_info *buf_info;
     struct pcm_plugin_pos_buf_info *pos_buf;
     pthread_t monitor_thread;
-    pthread_mutex_t ssr_lock;
     int SSR_RUNNING;
 /* add private variables here */
 };
@@ -697,13 +695,10 @@ static int agm_io_poll_revents(snd_pcm_ioplug_t *io, struct pollfd *pfd,
 
     eventfd_read(pcm->event_fd, &evfd);
     /*stop aplay or arecord when SSR_RUNNING*/
-    pthread_mutex_lock(&pcm->ssr_lock);
     if (pcm->SSR_RUNNING==1){
         AGM_LOGE("SSR detected , aplay return error and exit !");
-        pthread_mutex_unlock(&pcm->ssr_lock);
         return -EINVAL ;
     }
-    pthread_mutex_unlock(&pcm->ssr_lock);
     AGM_LOGD("%s: exit\n", __func__);
     return 0;
 }
@@ -806,11 +801,9 @@ static void* card_status_monitor(void *arg) {
         }
 
         if (buf[0] == '0') {
-            pthread_mutex_lock(&priv->ssr_lock);
-            eventfd_write(priv->event_fd, 1);
             priv->SSR_RUNNING = 1;
+            eventfd_write(priv->event_fd, 1);
             AGM_LOGE("SSR trigger, card status in CARD_STATUS_OFFLINE !");
-            pthread_mutex_unlock(&priv->ssr_lock);
             break;
         }
     }
@@ -950,7 +943,6 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     *pcmp = priv->io.pcm;
 
     pthread_mutex_init(&priv->eos_lock, (const pthread_mutexattr_t *) NULL);
-    pthread_mutex_init(&priv->ssr_lock, (const pthread_mutexattr_t *) NULL);
     /*Create a thread to exit the playback or recording when the SSR is triggered*/
     ret = pthread_create(&priv->monitor_thread,NULL,card_status_monitor,(void *)priv);
     if (ret){
