@@ -298,6 +298,9 @@ err:
         fclose(file);
         file = NULL;
     }
+    if (snd_card_name)
+        free(snd_card_name);
+
     return ret;
 }
 

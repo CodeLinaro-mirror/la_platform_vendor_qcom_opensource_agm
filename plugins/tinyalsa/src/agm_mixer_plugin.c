@@ -960,6 +960,12 @@ static int amp_pcm_metadata_put(struct mixer_plugin *plugin,
 
     /* pcm control is not 0, set the (session + be) metadata */
     be_adi = amp_get_be_adi(plugin->priv, pcm_adi->dir);
+
+    if (!be_adi) {
+         AGM_LOGE("%s: be_adi is NULL for dir %d\n", __func__, pcm_adi->dir);
+         return -EINVAL;
+    }
+
     be_idx = be_adi->idx_arr[pcm_control];
     ret = agm_session_aif_set_metadata(pcm_idx, be_idx, tlv_size, payload);
     if (ret == -EALREADY)
@@ -1061,6 +1067,11 @@ static int amp_pcm_set_param_put(struct mixer_plugin *plugin,
     if (pcm_control > 0) {
         /* control is not 0, set the (session + be) set_param */
         be_adi = amp_get_be_adi(plugin->priv, pcm_adi->dir);
+        if (!be_adi) {
+          AGM_LOGE("%s: be_adi is NULL for dir %d\n", __func__, pcm_adi->dir);
+          return -EINVAL;
+        }
+
         be_idx = be_adi->idx_arr[pcm_control];
     }
 
@@ -1170,6 +1181,11 @@ static int amp_pcm_tag_info_get(struct mixer_plugin *plugin,
     if (pcm_control > 0) {
         /* control is not 0, get the (session + be) get_tag_info */
         be_adi = amp_get_be_adi(plugin->priv, pcm_adi->dir);
+        if (!be_adi) {
+           AGM_LOGE("%s: be_adi is NULL for dir %d\n", __func__, pcm_adi->dir);
+           return -EINVAL;
+        }
+
         be_idx = be_adi->idx_arr[pcm_control];
     }
 
@@ -1766,6 +1782,9 @@ static void amp_close(struct mixer_plugin **plugin)
     struct mixer_plugin *amp = *plugin;
     struct amp_priv *amp_priv = amp->priv;
 
+    /* unblock mixer event during close */
+    if (amp_priv->event_cb)
+        amp_priv->event_cb(amp);
     amp_register_event_callback(amp, 0);
     amp_subscribe_events(amp, NULL);
     snd_card_def_put_card(amp_priv->card_node);
