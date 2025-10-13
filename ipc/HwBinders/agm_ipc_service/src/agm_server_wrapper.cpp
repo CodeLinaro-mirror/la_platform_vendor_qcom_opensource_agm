@@ -59,6 +59,11 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ *
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "agm_server_wrapper"
@@ -1688,6 +1693,34 @@ Return<int32_t> AGM::ipc_agm_dump(const hidl_vec<AgmDumpInfo>& dump_info) {
 #endif
     return agm_dump(d_info);
 }
+
+Return<void> AGM::ipc_agm_cshm_alloc(uint32_t size, const hidl_vec<AgmCshmInfo>& info, ipc_agm_cshm_alloc_cb hidl_cb_) {
+    agm_cshm_info agm_info;
+    int32_t ret = -EINVAL;
+    hidl_vec<AgmCshmInfo> info_result(1);
+
+    agm_info.type = (agm_cshm_type) info.data()->type;
+    agm_info.flags = info.data()->flags;
+
+    ret = agm_cshm_alloc(size , &agm_info);
+    if(ret == 0) {
+        info_result.data()->fd = agm_info.fd;
+        info_result.data()->memID = agm_info.mem_id;
+    }
+    hidl_cb_(ret, info_result);
+    return Void();
+}
+
+Return<int32_t> AGM::ipc_agm_cshm_msg(uint32_t  mem_id, uint32_t  offset, uint32_t  length, uint32_t  miid,
+                    uint32_t prop_flag) {
+
+    return agm_cshm_msg(mem_id , offset, length, miid, prop_flag);
+}
+
+Return<int32_t> AGM::ipc_agm_cshm_dealloc(uint32_t mem_id) {
+    return agm_cshm_dealloc(mem_id);
+}
+
 
 }  // namespace implementation
 }  // namespace V1_0

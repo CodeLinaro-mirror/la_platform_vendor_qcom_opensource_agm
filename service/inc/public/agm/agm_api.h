@@ -26,72 +26,11 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *
- *     * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
-**
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
-**
-** Redistribution and use in source and binary forms, with or without
-** modification, are permitted (subject to the limitations in the
-** disclaimer below) provided that the following conditions are met:
-**
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**
-**   * Redistributions in binary form must reproduce the above
-**     copyright notice, this list of conditions and the following
-**     disclaimer in the documentation and/or other materials provided
-**     with the distribution.
-**
-**   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
-** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #ifndef _AGM_INTF_H_
@@ -216,6 +155,28 @@ enum agm_session_mode
     AGM_SESSION_NO_CONFIG,       /**< No Config mode*/
     AGM_SESSION_COMPRESS,        /**< Compress mode*/
 };
+
+
+/* Memory type */
+typedef enum {
+  AGM_CSHM_CACHED = 1,
+  AGM_CSHM_UNCACHED
+} agm_cshm_type;
+
+typedef struct {
+  uint32_t mem_id;
+  agm_cshm_type type;
+  int64_t fd;
+  uint32_t flags;
+} agm_cshm_info;
+
+typedef struct {
+  uint32_t mem_id;
+  uint32_t offset;
+  uint32_t length;
+  uint32_t miid;
+  uint32_t flags;
+} agm_msg_config;
 
 struct agm_extern_alloc_buff_info{
     int      alloc_handle;/**< unique handle identifying extern mem allocation */
@@ -1250,6 +1211,39 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
   *  \return 0 on success, error code on failure.
   */
 int agm_dump(struct agm_dump_info *dump_info);
+
+ /**
+  * \brief Allocate shared memory and map it with SPF.
+  *
+  * \param[in] size - Size of memory to alloc in bytes.
+  * \param[in/out] info - Info regarding the allocated shared memory
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info);
+
+ /**
+  * \brief Send a Global MSG to a module.
+  *
+  * \param[in] mem_id - Valid mem_id returned as part of agm_cshm_alloc.
+  * \param[in] offset - Offset from the beginning of allocted memory.
+  * \param[in] length - Length of the memory for module to use.
+  * \param[in] miid   - Module Instance ID of the module for which this
+  *                     MSG is intented.
+  * \param[in] flags - Flag conveying additional info regarding the MSG.
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length, uint32_t miid, uint32_t flags);
+
+ /**
+  * \brief Unmap the shared memory with SPF and Deallocate it.
+  *
+  * \param[in] mem_id - Valid mem_id returned as part of agm_cshm_alloc.
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_dealloc(uint32_t mem_id);
 
 #ifdef __cplusplus
 }  /* extern "C" */
