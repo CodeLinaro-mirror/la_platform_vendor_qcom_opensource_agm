@@ -346,6 +346,12 @@ struct session_obj *session_obj_get_from_pool(uint32_t session_id)
     struct session_obj *obj = NULL;
     struct listnode *node;
 
+
+    if (!sess_pool) {
+        AGM_LOGE("sess_pool is NULL. Initialization may not have completed.");
+        return NULL;
+    }
+
     pthread_mutex_lock(&sess_pool->lock);
     list_for_each(node, &sess_pool->session_list) {
         obj = node_to_item(node, struct session_obj, node);

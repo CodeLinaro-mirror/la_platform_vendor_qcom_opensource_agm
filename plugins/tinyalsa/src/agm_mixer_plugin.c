@@ -1691,7 +1691,7 @@ static int amp_pcm_shmem_alloc_get(struct mixer_plugin *plugin __unused,
 
     tlv_size = tlv->length;
     if (tlv_size == 0) {
-        AGM_LOGE("%s: invalid array size %d\n", __func__, tlv_size);
+        AGM_LOGE("%s: invalid array size %zu\n", __func__, tlv_size);
         ret = -EINVAL;
         return ret;
     }
@@ -1768,7 +1768,7 @@ static int amp_pcm_shmem_free_get(struct mixer_plugin *plugin __unused,
 
     tlv_size = tlv->length;
     if (tlv_size == 0) {
-        AGM_LOGE("%s: invalid array size %d\n", __func__, tlv_size);
+        AGM_LOGE("%s: invalid array size %zu\n", __func__, tlv_size);
         ret = -EINVAL;
         return ret;
     }
