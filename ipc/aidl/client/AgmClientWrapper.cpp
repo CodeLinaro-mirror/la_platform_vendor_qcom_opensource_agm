@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -28,7 +28,7 @@ using ::aidl::vendor::qti::hardware::agm::AgmCallback;
 using ::aidl::vendor::qti::hardware::agm::MmapBufInfo;
 
 static std::shared_ptr<IAGM> gAgmClient = nullptr;
-static bool gAgmServiceDied = false;
+static ::ndk::ScopedAIBinder_DeathRecipient gDeathRecipient;
 std::mutex gLock;
 
 #define RETURN_IF_AGM_SERVICE_NOT_REGISTERED(client)            \
@@ -41,7 +41,8 @@ std::mutex gLock;
 
 void serviceDied(void *cookie) {
     ALOGE("%s : AGM Service died ,cookie : %llu", __func__, (unsigned long long)cookie);
-    gAgmServiceDied = true;
+    std::lock_guard<std::mutex> guard(gLock);
+    gAgmClient = nullptr;
 }
 
 std::shared_ptr<IAGM> getAgm() {
@@ -50,7 +51,7 @@ std::shared_ptr<IAGM> getAgm() {
         const std::string instance = std::string() + IAGM::descriptor + "/default";
         ABinderProcess_startThreadPool();
         auto binder = ::ndk::SpAIBinder(AServiceManager_waitForService(instance.c_str()));
-        ALOGV("got binder %p", binder.get());
+        ALOGV("%s got binder %p", __func__, binder.get());
 
         auto newClient = IAGM::fromBinder(binder);
 
@@ -59,17 +60,18 @@ std::shared_ptr<IAGM> getAgm() {
             return nullptr;
         }
         gAgmClient = newClient;
+        ALOGI("%s gAgmClient %p ", __func__, gAgmClient.get());
 
-        auto deathRecipient =
+        gDeathRecipient =
                 ::ndk::ScopedAIBinder_DeathRecipient(AIBinder_DeathRecipient_new(&serviceDied));
         auto status = ::ndk::ScopedAStatus::fromStatus(
-                AIBinder_linkToDeath(binder.get(), deathRecipient.get(), (void *)serviceDied));
+                AIBinder_linkToDeath(binder.get(), gDeathRecipient.get(), (void *)serviceDied));
 
         if (!status.isOk()) {
             ALOGV("linking service to death failed: %d: %s", status.getStatus(),
                   status.getMessage());
         } else {
-            ALOGV("linked to death %d: %s", status.getStatus(), status.getMessage());
+            ALOGI("linked to death %d: %s", status.getStatus(), status.getMessage());
         }
     }
     ALOGV("%s gAgmClient %p ", __func__, gAgmClient.get());
