@@ -407,7 +407,7 @@ int main(int argc, char *argv[]) {
     freopen("/dev/kmsg", "a", stderr);
 #endif
 
-    rst = play_tone_standalone(argc, argv);
+    // rst = play_tone_standalone(argc, argv);
 
     AGM_LOGI("exit rst %d", rst);
     ar_write_marker("EA - Early Audio exit");
