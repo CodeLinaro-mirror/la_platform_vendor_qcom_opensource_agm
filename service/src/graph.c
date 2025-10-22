@@ -58,6 +58,9 @@
 ** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 ** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: graph"
 
@@ -85,7 +88,7 @@
 #define DEVICE_RX 0
 #define DEVICE_TX 1
 #define FILE_PATH_EXTN_MAX_SIZE 80
-#define ACDB_PATH_MAX_LENGTH 50
+#define ACDB_PATH_MAX_LENGTH 100
 
 #define TAGGED_MOD_SIZE_BYTES 1024
 
