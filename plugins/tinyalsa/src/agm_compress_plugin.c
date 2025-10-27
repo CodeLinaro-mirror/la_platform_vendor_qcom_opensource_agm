@@ -540,7 +540,8 @@ static int agm_compress_stop(struct compress_plugin *plugin)
     /* Unlock drain if its waiting for EOS rendered */
     pthread_mutex_lock(&priv->eos_lock);
     if (priv->eos) {
-        pthread_cond_wait(&priv->eos_cond,&priv->eos_lock);
+        pthread_cond_signal(&priv->eos_cond);
+        priv->eos = false;
     }
 
     pthread_mutex_unlock(&priv->eos_lock);
