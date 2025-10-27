@@ -65,22 +65,39 @@ AC_ARG_WITH([no_ipc],
     [with_no_ipc=no])
 AM_CONDITIONAL([AGM_NO_IPC], [test "x${with_no_ipc}" = "xyes"])
 
+AC_ARG_WITH([ipc_dbus],
+    AS_HELP_STRING([--with-dbus],[enables dbus ipc communication to AGM (default is no)]),
+    [with_ipc_dbus=$withval],
+    [with_ipc_dbus=no])
+AM_CONDITIONAL([AGM_IPC_DBUS], [test "x${with_ipc_dbus}" = "xyes"])
 
+AC_ARG_WITH([ipc_swbinder],
+    AS_HELP_STRING([--with-sw-binder], [enable SwBinder based ipc communication to AGM (default is no)]),
+    [with_ipc_swbinder=$withval],
+    [with_ipc_swbinder=no])
+AM_CONDITIONAL([AGM_IPC_SWBINDER], [test "x${with_ipc_swbinder}" = "xyes"])
+
+AC_ARG_WITH([openwrt],
+    AS_HELP_STRING([use openwrt (default is no)]),
+    [with_openwrt=$withval],
+    [with_openwrt=no])
+AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
 PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST(SPF_CFLAGS)
 
-
+if (test "x${with_openwrt}" = "xno"); then
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
+fi
 
 # Check dependency only if with_no_ipc is not set
-if (test "x${with_no_ipc}" = "xno"); then
+if (test "x${with_ipc_dbus}" = "xyes"); then
 PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.4.12 ], dummy=yes,
                  AC_MSG_ERROR(dbus-1 >= 1.4.12 is required))
-fi
 
 AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
+fi
 
 AC_CHECK_FUNCS([strlcpy])
 AM_CONDITIONAL(USE_G_STR_FUNC, ! test "x$ac_cv_func_strlcpy" = "xyes")
@@ -101,6 +118,10 @@ plugins/tinyalsa/test/Makefile
 plugins/tinyalsa/test/agmtest.pc
 plugins/alsalib/Makefile
 plugins/alsalib/agmalsaplugin.pc
+ipc/SwBinders/agm_server/Makefile
+ipc/SwBinders/agm_server/agmserver.pc
+ipc/SwBinders/agm_client/Makefile
+ipc/SwBinders/agm_client/agmclient.pc
 )
 
 AC_OUTPUT
