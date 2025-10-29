@@ -1126,8 +1126,14 @@ int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
                                    [&](int32_t ret_, hidl_vec<AgmCshmInfo> info_hidl_result)
                                     {
                                         if(!ret_) {
-                                            info->fd = info_hidl_result.data()->fd;
-                                            info->mem_id = info_hidl_result.data()->memID;
+                                            const native_handle_t* handle = info_hidl_result[0].fdHandle.getNativeHandle();
+                                            if (handle && handle->numFds > 0) {
+                                                info->fd = dup(handle->data[0]);
+                                                info->mem_id = info_hidl_result.data()->memID;
+                                            } else {
+                                                ALOGE("Invalid handle received from AGM");
+                                                ret = -EBADFD;
+                                            }
                                         }
                                         ret = ret_;
                                     }

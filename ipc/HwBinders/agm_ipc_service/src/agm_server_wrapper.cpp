@@ -1703,11 +1703,26 @@ Return<void> AGM::ipc_agm_cshm_alloc(uint32_t size, const hidl_vec<AgmCshmInfo>&
     agm_info.flags = info.data()->flags;
 
     ret = agm_cshm_alloc(size , &agm_info);
+
+    native_handle_t* handle = nullptr;
+    handle = native_handle_create(1, 0);
+
+    if (!handle) {
+        ALOGE("%s native_handle_create fails", __func__);
+        goto exit;
+    }
+    handle->data[0] = agm_info.fd;
+
     if(ret == 0) {
-        info_result.data()->fd = agm_info.fd;
+        info_result.data()->fdHandle = hidl_handle(handle);
         info_result.data()->memID = agm_info.mem_id;
     }
     hidl_cb_(ret, info_result);
+
+exit:
+    if(handle != nullptr) {
+        native_handle_delete(handle);
+    }
     return Void();
 }
 

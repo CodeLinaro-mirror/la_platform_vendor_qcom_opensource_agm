@@ -425,6 +425,6 @@ enum AgmCshmCachetype : uint32_t {
 struct AgmCshmInfo {
     uint32_t memID;
     AgmCshmCachetype type;
-    int32_t fd;
+    handle fdHandle;
     int32_t flags;
 };
