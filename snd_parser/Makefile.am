@@ -30,10 +30,3 @@ if USE_GLIB
 libsndcardparser_la_LIBADD += $(GLIB_LIBS)
 libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 endif
-
-libsndcardparser_la_list   = $(top_srcdir)/snd_parser/configs/$(MACHINE_ENABLED)/card-defs.xml
-#install xml files under /etc
-root_etcdir = "/etc"
-root_etc_SCRIPTS = $(libsndcardparser_la_list)
-install-data-hook:
-	chmod  go+r $(DESTDIR)$(root_etcdir)/card-defs.xml
