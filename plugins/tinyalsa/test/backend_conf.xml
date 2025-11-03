@@ -143,5 +143,28 @@
     <device name="AUXPCM-LPAIF_AXI-TX-PRIMARY" rate="48000" ch="2" bits="16" />
     <device name="MI2S-LPAIF_AXI-RX-PRIMARY" rate="48000" ch="2" bits="16" />
     <device name="AUXPCM-LPAIF_AXI-RX-PRIMARY" rate="48000" ch="2" bits="16" />
-</config>
 
+    <!-- CDC_DMA -->
+    <device name="CODEC_DMA-QAIF-TX-0" rate="48000" ch="2" bits="16" />
+    <device name="CODEC_DMA-QAIF-TX-1" rate="48000" ch="2" bits="16" />
+    <device name="CODEC_DMA-QAIF-TX-2" rate="48000" ch="2" bits="16" />
+    <device name="CODEC_DMA-QAIF-RX-2" rate="48000" ch="2" bits="16" />
+    <device name="CODEC_DMA-QAIF-RX-3" rate="48000" ch="2" bits="16" />
+    <device name="CODEC_DMA-QAIF_VA-TX-0" rate="48000" ch="2" bits="16" />
+
+    <!-- QAIF -->
+    <device name="QAIF-QAIF_AUD-RX-0" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-0" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-RX-1" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-1" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-RX-2" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-2" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-RX-3" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-3" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-RX-4" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-4" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-RX-5" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_AUD-TX-5" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_VA-RX-0" rate="48000" ch="1" bits="16" />
+    <device name="QAIF-QAIF_VA-TX-0" rate="48000" ch="1" bits="16" />
+</config>
