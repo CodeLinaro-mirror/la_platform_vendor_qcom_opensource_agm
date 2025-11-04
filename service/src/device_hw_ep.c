@@ -373,7 +373,7 @@ static int populate_cdc_dma_i2s_tdm_pcm_ep_info(hw_ep_info_t *hw_ep_info, char *
         cdc_dma_i2s_tdm_config->lpaif_type = LPAIF_SDR;
     else if (!strcmp(lpaif_type, "LPAIF_WSA2"))
         cdc_dma_i2s_tdm_config->lpaif_type = LPAIF_WSA2;
-    else if ((!strcmp(lpaif_type, "QAIF-TX")) || (!strcmp(lpaif_type, "QAIF-RX")))
+    else if (!strcmp(lpaif_type, "QAIF"))
         cdc_dma_i2s_tdm_config->lpaif_type = LPAIF_QAIF_AUD;
     else if (!strcmp(lpaif_type, "QAIF_VA"))
         cdc_dma_i2s_tdm_config->lpaif_type = LPAIF_QAIF_VA;
