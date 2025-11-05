@@ -24,7 +24,7 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libutils \
     libar-gsl \
-    vendor.qti.hardware.agm-V2-ndk
+    vendor.qti.hardware.agm-V1-ndk
 
 LOCAL_HEADER_LIBRARIES := libagm_headers
 

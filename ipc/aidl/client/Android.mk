@@ -16,7 +16,7 @@ LOCAL_SHARED_LIBRARIES := \
     libbase \
     libcutils \
     libutils \
-    vendor.qti.hardware.agm-V2-ndk \
+    vendor.qti.hardware.agm-V1-ndk \
     libbinder_ndk
 
 LOCAL_STATIC_LIBRARIES := libagmaidltypeconverter libaidlcommonsupport
