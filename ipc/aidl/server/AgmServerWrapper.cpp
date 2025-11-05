@@ -24,6 +24,9 @@ using ndk::ScopedAStatus;
 
 namespace aidl::vendor::qti::hardware::agm {
 
+std::unordered_map<uint64_t, std::weak_ptr<IAGMCallback>> ClientInfo::sCallbackRegistry;
+std::mutex ClientInfo::sCallbackRegistryMutex;
+
 void SessionInfo::dump() {
     ALOGV("session Id %d handle %llx, aif size %d", mSessionId, mHandle, mAifIds.size());
 }
@@ -121,6 +124,12 @@ void ClientInfo::registerCallback(const std::shared_ptr<IAGMCallback> &callback,
     auto callbackInfo =
             std::make_shared<CallbackInfo>(callback, in_sessionId, in_eventType, in_clientData);
     mCallbackInfo.emplace_back(callbackInfo);
+
+    uint64_t callbackId = reinterpret_cast<uint64_t>(callback.get());
+    {
+        std::lock_guard<std::mutex> lock(sCallbackRegistryMutex);
+        sCallbackRegistry[callbackId] = callback;
+    }
 }
 
 void ClientInfo::unregisterCallback(int32_t in_sessionId, int32_t in_eventType,
@@ -137,8 +146,14 @@ void ClientInfo::unregisterCallback(int32_t in_sessionId, int32_t in_eventType,
                             });
 
     std::shared_ptr<IAGMCallback> registeredCallback = nullptr;
+    uint64_t callbackId = 0;
     if (itr != mCallbackInfo.end()) {
         registeredCallback = (*itr)->getCallback();
+        callbackId = reinterpret_cast<uint64_t>(registeredCallback.get());
+        {
+            std::lock_guard<std::mutex> lock(sCallbackRegistryMutex);
+            sCallbackRegistry.erase(callbackId);
+        }
         agm_session_register_cb(in_sessionId, NULL, (enum event_type)in_eventType,
                                 (void *)registeredCallback.get());
         mCallbackInfo.erase(itr);
@@ -254,7 +269,18 @@ void ClientInfo::onCallback(uint32_t sessionId, struct agm_event_cb_params *even
                             void *clientData) {
     uint32_t eventId = eventParams->event_id;
 
-    IAGMCallback *callback = reinterpret_cast<IAGMCallback *>(clientData);
+    std::shared_ptr<IAGMCallback> callback;
+    {
+        std::lock_guard<std::mutex> lock(sCallbackRegistryMutex);
+        auto it = sCallbackRegistry.find((uint64_t)clientData);
+        if (it != sCallbackRegistry.end()) {
+            callback = it->second.lock();
+        }
+    }
+    if (!callback) {
+        ALOGW("callback has already been destroyed");
+        return;
+    }
 
     if (!AIBinder_isAlive(callback->asBinder().get())) {
         ALOGW("callback binder has died");

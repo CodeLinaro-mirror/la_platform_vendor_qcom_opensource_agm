@@ -366,8 +366,8 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
         // and assuming read ptr moved at a constant rate
         if (delta_wall_clk_us > 0 ) {
             __builtin_mul_overflow(delta_wall_clk_us / 1000000,
-                (priv->media_config->rate * priv->media_config->channels),
-                 &delta_wall_clk_frames);
+                priv->media_config->rate,
+                &delta_wall_clk_frames);
             crossed_boundary = delta_wall_clk_frames / priv->total_size_frames;
         }
 
