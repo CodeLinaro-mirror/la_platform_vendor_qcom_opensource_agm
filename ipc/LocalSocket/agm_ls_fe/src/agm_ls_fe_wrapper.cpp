@@ -6,7 +6,7 @@
 #include <utils/Log.h>
 
 #include "ipc_common.h"
-#include "utils.h"
+#include <agm/utils.h>
 #include <agm/agm_api.h>
 #include <cstring>
 #include <iostream>
@@ -855,6 +855,12 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info) {
     if (!rst && *num_aif_info && aif_list)
         read(aif_list, *num_aif_info * sizeof(aif_info));
 
+    return rst;
+}
+
+int agm_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *num_aif_info) {
+    int rst = 0;
+    num_aif_info = 0;
     return rst;
 }
 

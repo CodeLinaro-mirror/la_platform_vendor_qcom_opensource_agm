@@ -86,6 +86,8 @@ ipc/DBus/agm_client/Makefile
 ipc/DBus/agm_client/agmclient.pc
 ipc/DBus/agm_server/Makefile
 ipc/DBus/agm_server/agmserver.pc
+ipc/LocalSocket/agm_ls_fe/Makefile
+ipc/LocalSocket/agm_ls_fe/agm_ls_fe.pc
 snd_parser/Makefile
 snd_parser/sndparser.pc
 plugins/tinyalsa/Makefile
