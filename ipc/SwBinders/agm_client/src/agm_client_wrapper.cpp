@@ -26,10 +26,10 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following
+** Changes from Qualcomm Technologies, Inc. are provided under the following
 ** license:
 **
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -78,7 +78,16 @@ android::sp<IAgmService> get_agm_server()
         AGM_LOGD("Agm client initialized\n");
         android:: sp<android::IBinder> binder =
                    android::defaultServiceManager()->getService(android::String16("AgmService"));
+        if (binder == nullptr) {
+            AGM_LOGE("Failed to get AgmService binder");
+            return nullptr;
+        }
         agm_client = android::interface_cast<IAgmService>(binder);
+        if (agm_client == nullptr) {
+            AGM_LOGE("Failed to cast binder to IAgmService");
+            return nullptr;
+        }
+
         AGM_LOGV("got service handle\n");
         if (Server_death_notifier == NULL) {
             Server_death_notifier = new server_death_notifier();
