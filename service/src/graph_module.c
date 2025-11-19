@@ -2180,7 +2180,11 @@ int configure_spr_session_time_reset_info(struct module_info* spr_mod,
     if (ret != 0) {
         ret = ar_err_get_lnx_err_code(ret);
         AGM_LOGE("failed for PARAM_ID_SPR_SESSION_TIME_RESET_INFO: %d", ret);
-        return ret;
+
+        /* To make backward compatibility with ADSP where latest SPR module */
+        /* configuration is not supported and to avoid failing use case     */
+        /* error is not being propagated                                    */
+        return 0;
     }
 
     AGM_LOGD("configured");
