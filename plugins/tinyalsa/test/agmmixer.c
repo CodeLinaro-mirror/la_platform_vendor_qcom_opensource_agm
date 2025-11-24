@@ -289,8 +289,8 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
 
     ret = mixer_ctl_set_enum_by_string(ctl, val);
     free(mixer_str);
-    if (p_device < 0)
-        free(val);
+    if(val)
+      free(val);// Always free val if it was allocated
 
     return ret;
 }

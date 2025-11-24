@@ -26,10 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following
- * license:
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1345,6 +1343,8 @@ int configure_spr(struct module_info *spr_mod,
         }
     }
 done:
+    if(payload)
+        free (payload);
     return ret;
 }
 
@@ -1390,6 +1390,8 @@ int configure_gapless(struct module_info *gapless_mod,
     }
 
 done:
+    if(reg_ev_payload)
+        free (reg_ev_payload);
     return ret;
 }
 
