@@ -289,8 +289,8 @@ int connect_play_pcm_to_cap_pcm(struct mixer *mixer, unsigned int p_device, unsi
 
     ret = mixer_ctl_set_enum_by_string(ctl, val);
     free(mixer_str);
-    if (p_device < 0)
-        free(val);
+    if(val)
+      free(val);// Always free val if it was allocated
 
     return ret;
 }
@@ -395,6 +395,8 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
@@ -596,6 +598,8 @@ int set_agm_stream_metadata(struct mixer *mixer, int device, uint32_t val, enum 
             free(ckv);
         if (gkv)
             free(gkv);
+        if (prop)
+            free(prop);
         free(metadata);
         return -ENOMEM;
     }
