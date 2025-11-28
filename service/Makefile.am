@@ -6,11 +6,11 @@ h_sources = ./inc/public/agm/agm_api.h \
             ./inc/public/agm/agm_list.h \
             ./inc/public/agm/utils.h
 
-AM_CFLAGS = @SPF_CFLAGS@
-AM_CFLAGS += -I $(srcdir)/inc/public
-AM_CFLAGS += -I $(srcdir)/inc/private -I $(top_srcdir)/snd_parser/inc
-AM_CFLAGS += @KVH2XML_CFLAGS@
-AM_CFLAGS += -Wl,-z,defs
+AM_CFLAGS = -I $(srcdir)/inc/public \
+            -I $(srcdir)/inc/private \
+            -I $(top_srcdir)/snd_parser/inc \
+            -I $(top_builddir)/src/system/core/include/log/
+
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 
@@ -22,6 +22,14 @@ agm_sources = ./src/graph.c \
               ./src/session_obj.c \
               ./src/utils.c \
               ./src/agm.c
+if BUILDSYSTEM_OPENWRT
+agm_sources += ./src/agm_memlogger.c
+AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
+else
+AM_CFLAGS += -Wl,-z,defs \
+             @SPF_CFLAGS@ \
+             @KVH2XML_CFLAGS@
+endif
 
 lib_LTLIBRARIES = libagm.la
 libagm_la_SOURCES = $(agm_sources)
@@ -38,7 +46,11 @@ endif
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG
 endif
+if BUILDSYSTEM_OPENWRT
+libagm_la_LIBADD += -laudio_log_utils -larmemlog
+else
 libagm_la_CFLAGS += -DAGM_MEMLOG_UNSUPPORTED
+endif
 
 if USE_GLIB
 libagm_la_LIBADD += -lglib-2.0
