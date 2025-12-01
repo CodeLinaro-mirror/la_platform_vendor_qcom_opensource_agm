@@ -46,6 +46,7 @@
 #include "graph_module.h"
 #include "metadata.h"
 #include "utils.h"
+#include "device.h"
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -298,6 +299,9 @@ err:
         fclose(file);
         file = NULL;
     }
+    if (snd_card_name)
+        free(snd_card_name);
+
     return ret;
 }
 
