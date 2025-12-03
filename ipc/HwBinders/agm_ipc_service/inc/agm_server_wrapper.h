@@ -38,6 +38,7 @@
 #include <hidl/MQDescriptor.h>
 #include <hidl/Status.h>
 #include <vector>
+#include <set>
 #include <cutils/list.h>
 #include <agm/agm_api.h>
 #include "inc/AGMCallback.h"
@@ -93,11 +94,17 @@ class SrvrClbk
     }
 };
 
+
 typedef struct clbk_data {
    struct listnode list;
    uint64_t clbk_clt_data;
    SrvrClbk *srv_clt_data;
 } clbk_data;
+
+typedef struct  {
+    int pid;
+    std::set<uint32_t>active_mem_ids;
+} agm_cshm_client_info_t;
 
 struct AGM : public IAGM {
     public :
