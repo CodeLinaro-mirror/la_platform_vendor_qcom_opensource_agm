@@ -522,6 +522,7 @@ int parse_snd_card()
            AGM_LOGE("hw_ep_info parsing failed %s\n",
                                 dev_obj->name);
            free(dev_obj);
+           dev_obj = NULL;
            ret = 0;
            continue;
         }
@@ -543,6 +544,11 @@ int parse_snd_card()
       }
       ret = -EAGAIN;
       goto free_device;
+    }
+
+    if(dev_obj){
+      free(dev_obj);
+      dev_obj = NULL;
     }
 
     num_audio_intfs = count;

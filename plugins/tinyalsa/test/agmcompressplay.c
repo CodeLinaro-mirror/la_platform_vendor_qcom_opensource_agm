@@ -54,7 +54,6 @@
  */
 
 /*
-** Changes from Qualcomm Technologies, Inc. are provided under the following license:
 ** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 **/
 
