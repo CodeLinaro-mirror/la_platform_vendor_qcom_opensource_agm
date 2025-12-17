@@ -9,9 +9,4 @@
          <version>1</version>
         <fqname>IAGM/default</fqname>
     </hal>
-    <hal format="aidl">
-        <name>vendor.qti.hardware.agm</name>
-        <version>1</version>
-        <fqname>ICodecIpc/default</fqname>
-    </hal>
 </manifest>
