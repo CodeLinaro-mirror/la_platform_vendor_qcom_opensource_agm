@@ -62,7 +62,10 @@ int main()
         AGM_LOGD("AgmService initialized \n");
         android::ProcessState::self()->startThreadPool();
         AGM_LOGD("AGM service is now ready\n");
-        android::IPCThreadState::self()->joinThreadPool();
+        android::IPCThreadState *ipc = android::IPCThreadState::self();
+        if (ipc != nullptr) {
+            ipc->joinThreadPool();
+        }
         AGM_LOGD("AGM service thread joined\n");
         return 0;
     } else {

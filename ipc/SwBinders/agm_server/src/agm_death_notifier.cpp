@@ -89,15 +89,25 @@ client_info *get_client_handle_from_list(pid_t pid)
 
 void agm_register_client(sp<IBinder> binder)
 {
+    pid_t pid = -1;
     client_info *client_handle = NULL;
-    pid_t pid = IPCThreadState::self()->getCallingPid();
     android::sp<IAGMClient> client_binder =
                                   android::interface_cast<IAGMClient>(binder);
+    IPCThreadState* ipc = IPCThreadState::self();
+    if (ipc != nullptr) {
+        pid = ipc->getCallingPid();
+    } else {
+        ALOGE("IPCThreadState::self() returned null");
+        return;
+    }
+
     Client_death_notifier = new client_death_notifier();
     if (IInterface::asBinder(client_binder) == NULL) {
         return;
     }
+
     IInterface::asBinder(client_binder)->linkToDeath(Client_death_notifier);
+
     AGM_LOGD("%s: Client registered and death notifier linked to AGM\n",
                                                               __func__);
     if (g_client_list_init == false) {
@@ -125,11 +135,19 @@ void agm_register_client(sp<IBinder> binder)
 
 void agm_add_session_obj_handle(uint64_t handle)
 {
+    pid_t pid = -1;
     client_info *client_handle = NULL;
     agm_client_session_handle *hndl = NULL;
+    IPCThreadState* ipc = IPCThreadState::self();
+    if (ipc != nullptr) {
+        pid = ipc->getCallingPid();
+    } else {
+        ALOGE("IPCThreadState::self() returned null");
+        return;
+    }
 
     client_handle =
-          get_client_handle_from_list(IPCThreadState::self()->getCallingPid());
+          get_client_handle_from_list(pid);
     if (client_handle == NULL) {
         AGM_LOGE("%s: Could not find client handle\n", __func__);
         return;
@@ -148,13 +166,22 @@ void agm_add_session_obj_handle(uint64_t handle)
 
 void agm_remove_session_obj_handle(uint64_t handle)
 {
+    pid_t pid = -1;
     client_info *client_handle = NULL;
     struct listnode *node = NULL;
     agm_client_session_handle *hndl = NULL;
     struct listnode *tempnode = NULL;
 
+    IPCThreadState* ipc = IPCThreadState::self();
+    if (ipc != nullptr) {
+        pid = ipc->getCallingPid();
+    } else {
+        ALOGE("IPCThreadState::self() returned null");
+        return;
+    }
+
     client_handle =
-          get_client_handle_from_list(IPCThreadState::self()->getCallingPid());
+          get_client_handle_from_list(pid);
     if (client_handle == NULL) {
         AGM_LOGE("%s: Could not find client handle\n", __func__);
         return;
@@ -173,6 +200,7 @@ void agm_remove_session_obj_handle(uint64_t handle)
 
 void agm_unregister_client(sp<IBinder> binder)
 {
+    pid_t pid = -1;
     android::sp<IAGMClient> client_binder =
                                    android::interface_cast<IAGMClient>(binder);
     client_info *handle = NULL;
@@ -183,7 +211,14 @@ void agm_unregister_client(sp<IBinder> binder)
     pthread_mutex_lock(&g_client_list_lock);
     list_for_each_safe(node, tempnode, &g_client_list) {
         handle = node_to_item(node, client_info, list);
-        if (handle->pid == IPCThreadState::self()->getCallingPid()) {
+        IPCThreadState* ipc = IPCThreadState::self();
+        if (ipc != nullptr) {
+            pid = ipc->getCallingPid();
+        } else {
+            ALOGE("IPCThreadState::self() returned null");
+            continue;
+        }
+        if (handle->pid == pid) {
             if (handle->Client_death_notifier != NULL) {
                 if (IInterface::asBinder(client_binder) != NULL) {
                     IInterface::asBinder(client_binder)->unlinkToDeath(handle->Client_death_notifier);
