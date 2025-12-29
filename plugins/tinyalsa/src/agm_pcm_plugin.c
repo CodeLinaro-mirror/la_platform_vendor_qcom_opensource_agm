@@ -356,7 +356,11 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                                          priv->pos_buf->wall_clk_lsw);
             // Compute delta only if diff is greater than zero
             if (dsp_wall_clk > cached_wall_clk) {
+#if defined( __aarch64__) || defined(__arm64__) || defined(__LP64__) || defined(__x86_64__)
                 __builtin_usubl_overflow(dsp_wall_clk,cached_wall_clk,&sub_res);
+#else
+                __builtin_usubll_overflow(dsp_wall_clk,cached_wall_clk,&sub_res);
+#endif
                 delta_wall_clk_us = (int64_t)sub_res;
             }
         }
