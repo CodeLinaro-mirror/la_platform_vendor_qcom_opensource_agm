@@ -515,7 +515,7 @@ static int agm_pcm_sw_params(struct pcm_plugin *plugin,
     struct agm_pcm_priv *priv = plugin->priv;
     struct agm_session_config *session_config = NULL;
     uint64_t handle = 0;
-    int ret = 0, sess_mode = 0;
+    int ret = 0, sess_mode = 0, data_mode = 0;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
@@ -529,6 +529,16 @@ static int agm_pcm_sw_params(struct pcm_plugin *plugin,
     session_config->sess_mode = sess_mode;
     session_config->start_threshold = (uint32_t)sparams->start_threshold;
     session_config->stop_threshold = (uint32_t)sparams->stop_threshold;
+
+    ret = snd_card_def_get_int(plugin->node, "agm_data_mode", &data_mode);
+    if (ret != 0) {
+        AGM_LOGE("Failed to get agm_data_mode, using default");
+        data_mode = AGM_DATA_BLOCKING; //default value
+    }
+
+    if (session_config->data_mode == AGM_DATA_INVALID) {
+        session_config->data_mode = data_mode;
+    }
 
     ret = agm_session_set_config(priv->handle, session_config,
                                  priv->media_config, priv->buffer_config);
