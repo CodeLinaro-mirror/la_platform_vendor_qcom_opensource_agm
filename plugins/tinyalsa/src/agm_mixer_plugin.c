@@ -227,6 +227,8 @@ struct mixer_plugin_event_data {
     struct listnode node;
 };
 
+static pthread_mutex_t pcm_param_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static enum agm_media_format alsa_to_agm_fmt(int fmt)
 {
     enum agm_media_format agm_pcm_fmt = AGM_FORMAT_INVALID;
@@ -1321,12 +1323,16 @@ static int amp_pcm_get_param_get(struct mixer_plugin *plugin __unused,
     payload = &tlv->tlv[0];
     tlv_size = tlv->length;
 
+    pthread_mutex_lock(&pcm_param_mutex);
+
     if (!pcm_adi->get_param_payload) {
+        pthread_mutex_unlock(&pcm_param_mutex);
         AGM_LOGE("%s: put() for getParam not called\n", __func__);
         return -EINVAL;
     }
 
     if (tlv_size < pcm_adi->get_param_payload_size) {
+        pthread_mutex_unlock(&pcm_param_mutex);
         AGM_LOGE("%s: Buffer size less than expected\n", __func__);
         return -EINVAL;
     }
@@ -1343,6 +1349,7 @@ static int amp_pcm_get_param_get(struct mixer_plugin *plugin __unused,
     free(pcm_adi->get_param_payload);
     pcm_adi->get_param_payload = NULL;
     pcm_adi->get_param_payload_size = 0;
+    pthread_mutex_unlock(&pcm_param_mutex);
     return ret;
 }
 
@@ -1354,6 +1361,8 @@ static int amp_pcm_get_param_put(struct mixer_plugin *plugin __unused,
 
     AGM_LOGV("%s: enter\n", __func__);
 
+    pthread_mutex_lock(&pcm_param_mutex);
+
     if (pcm_adi->get_param_payload) {
         free(pcm_adi->get_param_payload);
         pcm_adi->get_param_payload = NULL;
@@ -1363,9 +1372,14 @@ static int amp_pcm_get_param_put(struct mixer_plugin *plugin __unused,
 
     pcm_adi->get_param_payload = calloc(1, pcm_adi->get_param_payload_size);
     if (!pcm_adi->get_param_payload)
+    {
+        pthread_mutex_unlock(&pcm_param_mutex);
         return -ENOMEM;
+    }
 
     memcpy(pcm_adi->get_param_payload, payload, pcm_adi->get_param_payload_size);
+
+    pthread_mutex_unlock(&pcm_param_mutex);
 
     return 0;
 }
@@ -2435,6 +2449,7 @@ static void amp_close(struct mixer_plugin **plugin)
     amp_free_group_be_dev_info(amp_priv);
     amp_free_be_dev_info(amp_priv);
     amp_free_ctls(amp_priv);
+    pthread_mutex_destroy(&pcm_param_mutex);
     free(amp_priv);
     free(*plugin);
     plugin = NULL;
