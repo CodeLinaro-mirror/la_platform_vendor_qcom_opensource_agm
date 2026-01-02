@@ -367,6 +367,11 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
                 dev_config[index].bits = get_pcm_bit_width(dev_config[index].format);
             }
         }
+        /* force wsa885x_i2c device to 32 bw  */
+        if(intf_name[index] != NULL && strcmp(intf_name[index], "TDM-LPAIF_AUD-RX-SECONDARY") == 0) {
+            dev_config[index].bits = 32;
+            dev_config[index].format = PCM_FORMAT_S32_LE;
+        }
         printf("Backend %s rate ch bit fmt : %d, %d, %d %d\n", intf_name[index],
             dev_config[index].rate, dev_config[index].ch, dev_config[index].bits,
             dev_config[index].format);
