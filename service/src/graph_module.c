@@ -54,6 +54,7 @@
 
 /*qfactor should be set to 23 only for 24_3LE and 24_LE formats*/
 #define GET_Q_FACTOR(format, bit_width) (bit_width - 1)
+#define CHANNEL_MASK(n) ((1U << (n)) - 1)
 
 static void get_default_channel_map(uint8_t *channel_map, int channels)
 {
@@ -322,8 +323,24 @@ static int configure_codec_dma_ep(struct module_info *mod,
 
     ret = device_get_channel_map(dev_obj, &chmap);
     if (ret || chmap == NULL) {
-        AGM_LOGE("get channel map failed");
-        goto done;
+        /*
+         * if the channel map mixer is not exposed by the kernel,
+         * maintain backward compatibility by using the default channel configuration.
+         */
+        if (ret == -ENOENT && chmap == NULL) {
+            AGM_LOGE("get channel map failed, use default media config channels");
+            chmap = (uint32_t *)calloc(2, sizeof(uint32_t));
+            if (chmap) {
+                chmap[0] = media_config.channels;
+                chmap[1] = CHANNEL_MASK(media_config.channels);
+            } else {
+                AGM_LOGE("Not enough memory, failed to set default channel map");
+                goto done;
+            }
+        } else {
+            AGM_LOGE("get channel map failed");
+            goto done;
+        }
     }
 
     if (chmap[0] < media_config.channels) {
