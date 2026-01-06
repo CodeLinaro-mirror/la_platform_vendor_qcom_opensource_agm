@@ -1252,6 +1252,7 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
     int pid = ::android::hardware::IPCThreadState::self()->getCallingPid();
     int32_t ret = 0;
 
+    pthread_mutex_lock(&clbk_data_list_lock);
     if (ipc_client_data) {
         sr_clbk_data = new SrvrClbk (session_id, evt_type, ipc_client_data, pid);
         ALOGV("%s new SrvrClbk= %p, clntdata= %llx, sess id= %d, evt_type= %d \n",
@@ -1261,15 +1262,14 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
         clbk_data_obj = (clbk_data *)calloc(1, sizeof(clbk_data));
         if (clbk_data_obj == NULL) {
             delete sr_clbk_data;
+            sr_clbk_data = NULL;
             ALOGE("%s: Cannot allocate memory for cb data object\n", __func__);
-            return -ENOMEM;
+        } else {
+            clbk_data_obj->clbk_clt_data = clnt_data;
+            clbk_data_obj->srv_clt_data = sr_clbk_data;
+            list_add_tail(&clbk_data_list, &clbk_data_obj->list);
+            ipc_cb = &ipc_callback;
         }
-        pthread_mutex_lock(&clbk_data_list_lock);
-        clbk_data_obj->clbk_clt_data = clnt_data;
-        clbk_data_obj->srv_clt_data = sr_clbk_data;
-        list_add_tail(&clbk_data_list, &clbk_data_obj->list);
-        pthread_mutex_unlock(&clbk_data_list_lock);
-        ipc_cb = &ipc_callback;
     } else {
         /*
          *This condition indicates that the client wants to deregister the
@@ -1277,7 +1277,6 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
          *client data should match with the one that was used to register
          *with AGM.
          */
-        pthread_mutex_lock(&clbk_data_list_lock);
         list_for_each(node, &clbk_data_list) {
             clbk_data_obj = node_to_item(node, clbk_data, list);
             tmp_sr_clbk_data = clbk_data_obj->srv_clt_data;
@@ -1288,28 +1287,29 @@ Return<int32_t> AGM::ipc_agm_session_register_callback(uint32_t session_id,
                 break;
             }
         }
-        pthread_mutex_unlock(&clbk_data_list_lock);
         ipc_cb = NULL;
     }
     if (sr_clbk_data == NULL) {
         ALOGE("server callback data is NULL");
-        return -ENOMEM;
+        ret = -ENOMEM;
+    } else {
+        ret =  agm_session_register_cb(session_id,
+                                       ipc_cb,
+                                       (enum event_type) evt_type,
+                                       (void *) sr_clbk_data);
+        /*
+         * Free client data after deregister
+         */
+        if (!ipc_client_data) {
+            list_remove(node);
+            free(clbk_data_obj);
+            delete sr_clbk_data;
+            clbk_data_obj = NULL;
+            sr_clbk_data = nullptr;
+        }
     }
+    pthread_mutex_unlock(&clbk_data_list_lock);
     ALOGV("%s : Exit ", __func__);
-    ret =  agm_session_register_cb(session_id,
-                                   ipc_cb,
-                                   (enum event_type) evt_type,
-                                   (void *) sr_clbk_data);
-    /*
-     * Free client data after deregister
-     */
-    if (!ipc_client_data) {
-        list_remove(node);
-        free(clbk_data_obj);
-        delete sr_clbk_data;
-        clbk_data_obj = NULL;
-        sr_clbk_data = nullptr;
-    }
     return ret;
 }
 
