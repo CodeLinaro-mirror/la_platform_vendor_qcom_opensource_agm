@@ -768,7 +768,7 @@ void ipc_agm_event_cb(uint32_t session_id, agm_event_cb_params *evt_param,
     write_check(cbFrontEndSocket, &header, sizeof(header));
     write_check(cbFrontEndSocket, &cb, sizeof(cb));
     write_check(cbFrontEndSocket, &session_id, sizeof(session_id));
-    write_check(cbFrontEndSocket, &evt_param,
+    write_check(cbFrontEndSocket, evt_param,
                 sizeof(agm_event_cb_params) + evt_param->event_payload_size);
     write_check(cbFrontEndSocket, &client_data, sizeof(client_data));
 }
