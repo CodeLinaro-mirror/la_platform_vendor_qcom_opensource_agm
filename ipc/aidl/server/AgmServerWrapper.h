@@ -1,7 +1,8 @@
 /*
- * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
- */
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**/
 
 #pragma once
 
@@ -245,9 +246,6 @@ class AgmServerWrapper : public BnAGM, public ISessionOps {
     ::ndk::ScopedAStatus ipc_agm_get_aif_info_list(
             int32_t in_numAifInfo,
             std::vector<::aidl::vendor::qti::hardware::agm::AifInfo> *_aidl_return) override;
-    ::ndk::ScopedAStatus ipc_agm_get_non_alsa_aif_info_list(
-            int32_t in_numAifInfo,
-            std::vector<::aidl::vendor::qti::hardware::agm::NonAlsaAifInfo> *_aidl_return) override;
     ::ndk::ScopedAStatus ipc_agm_get_buffer_timestamp(int32_t in_sessiondId,
                                                       int64_t *_aidl_return) override;
     ::ndk::ScopedAStatus ipc_agm_get_group_aif_info_list(
@@ -286,11 +284,6 @@ class AgmServerWrapper : public BnAGM, public ISessionOps {
     // it returns the client as per caller pid, must be called with lock held
     std::shared_ptr<ClientInfo> getClient_l();
     void removeClient(int pid);
-    ::ndk::ScopedAStatus ipc_agm_get_driver_data(
-            int32_t in_moduleId,
-            const ::aidl::vendor::qti::hardware::agm::AgmCalConfig &in_calConfig,
-            int32_t in_size,
-            std::vector<uint8_t> *_aidl_return) override;
 
     std::mutex mLock;
     // pid vs clientInfo

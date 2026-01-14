@@ -1,7 +1,8 @@
 /*
- * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
- */
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**/
 
 #define LOG_TAG "AgmIpc::AidlToLegacy::Converter"
 
@@ -227,17 +228,6 @@ void AidlToLegacy::convertAifInfoList(
     for (unsigned long i = 0; i < aidlList.size(); i++) {
         strlcpy(legacyAifList[i].aif_name, aidlList[i].aifName.c_str(), AIF_NAME_MAX_LEN);
         legacyAifList[i].dir = (enum direction)aidlList[i].direction;
-    }
-}
-
-void AidlToLegacy::convertNonAlsaAifInfoList(
-        const std::vector<::aidl::vendor::qti::hardware::agm::NonAlsaAifInfo> &aidlList,
-        struct non_alsa_aif_info *legacyNonAlsaAifList) {
-    for (unsigned long i = 0; i < aidlList.size(); i++) {
-        strlcpy(legacyNonAlsaAifList[i].aif_name, aidlList[i].aifName.c_str(), AIF_NAME_MAX_LEN);
-        legacyNonAlsaAifList[i].dir = (enum direction)aidlList[i].direction;
-        legacyNonAlsaAifList[i].card = aidlList[i].card;
-        legacyNonAlsaAifList[i].pcm = aidlList[i].pcm;
     }
 }
 

@@ -1,7 +1,8 @@
 /*
- * Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
- */
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
+**/
 
 #pragma once
 
@@ -83,7 +84,6 @@ std::unique_ptr<T, CustomDeletor> allocate(int size) {
 }
 
 using AgmAifUniquePtrType = std::unique_ptr<struct aif_info, CustomDeletor>;
-using AgmNonAlsaAifUniquePtrType = std::unique_ptr<struct non_alsa_aif_info, CustomDeletor>;
 
 /**
 * @brief needsCodecSpecificInfo returns true for compress codecs which

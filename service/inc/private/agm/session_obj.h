@@ -26,8 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- * Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -195,7 +195,5 @@ int session_obj_set_non_tunnel_mode_config(struct session_obj *sess_obj,
                                    struct agm_media_config *out_media_config,
                                    struct agm_buffer_config *rx_buffer_config,
                                    struct agm_buffer_config *tx_buffer_config);
-int session_dummy_get_driver_data(uint32_t module_id,
-                             struct agm_cal_config *cal_config,
-                             void *payload, size_t *size);
+
 #endif

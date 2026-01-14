@@ -372,16 +372,6 @@ struct aif_info {
 };
 
 /**
- * Non-alsa AIF Info
- */
-struct non_alsa_aif_info {
-    char aif_name[AIF_NAME_MAX_LEN];  /**< AIF name  */
-    enum direction dir;               /**< direction */
-    uint32_t card;                    /**< card id   */
-    uint32_t pcm;                     /**< pcm id    */
-};
-
-/**
  * Session Config
  */
 struct agm_session_config {
@@ -1021,20 +1011,6 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t hndl, enum direction dir);
 int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info);
 
 /**
-  * \brief Get list of non alsa AIF info objects. Subset of agm_get_aif_info_list.
-  *
-  * \param [in] aif_list: list of non alsa aif_info objects
-  * \param [in,out] num_aif_info: number of aif info items in the list.
-  *     if num_aif_info value is listed as zero, AGM will update num_aif_info with
-  *     the number of aif info items in AGM.
-  *     if num_aif_info is greater than zero,
-  *     AGM will copy client specified num_aif_info of items into aif_list.
-  *
-  * \return: 0 on success, error code otherwise
-  */
-int agm_get_non_alsa_aif_info_list(struct non_alsa_aif_info *aif_list, size_t *num_aif_info);
-
-/**
   * \brief Set loopback between capture and playback sessions
   *
   * \param[in] capture_session_id : a non zero capture session id
@@ -1238,26 +1214,6 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
   *  \return 0 on success, error code on failure.
   */
 int agm_dump(struct agm_dump_info *dump_info);
-
-/**
-  * \brief Get drive module data from ACDB without session
-  *
-  * \param[in]     module_id  - client defined module_id
-  *                             against which data is stored
-  * \param[in]     cal_config - OPTIONAL key vector used to look up data
-  * \param[in,out] payload    - buffer where data will be returned, client is
-  *                             responsible to allocate memory for this buffer.
-  *                             If this is set to NULL, the size of the output
-  *                             data will be returned in data_payload_size
-  * \param[in,out] size       - on input it containes the size of data_payload,
-  *                             on output will have the size actually written
-  *
-  *  \return 0 on success, error code on failure.
-  */
-int agm_get_driver_data(uint32_t module_id,
-                    struct agm_cal_config *cal_config,
-                    void *payload,
-                    size_t *size);
 
 #ifdef __cplusplus
 }  /* extern "C" */
