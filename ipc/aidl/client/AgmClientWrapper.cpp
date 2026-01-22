@@ -86,6 +86,13 @@ void serviceDied(void *cookie) {
     callback(callback_cookie);
 }
 
+void onUnlink(void* cookie) {
+    ALOGV("%s : Death recipient unlinked, cookie : %llu", __func__, (unsigned long long)cookie);
+    // This function is called when the death recipient is unlinked from the binder
+    // No action needed here, but function must be implemented when using a non-null cookie
+    gAgmClient = nullptr;
+}
+
 std::shared_ptr<IAGM> getAgm() {
     std::lock_guard<std::mutex> guard(gLock);
     if (gAgmClient == nullptr) {
@@ -105,6 +112,8 @@ std::shared_ptr<IAGM> getAgm() {
 
         gDeathRecipient =
                 ::ndk::ScopedAIBinder_DeathRecipient(AIBinder_DeathRecipient_new(&serviceDied));
+        // Set the onUnlink callback to avoid the warning about non-null cookie without onUnlink callback
+        AIBinder_DeathRecipient_setOnUnlinked(gDeathRecipient.get(), &onUnlink);
         auto status = ::ndk::ScopedAStatus::fromStatus(
                 AIBinder_linkToDeath(binder.get(), gDeathRecipient.get(), (void *)serviceDied));
 
