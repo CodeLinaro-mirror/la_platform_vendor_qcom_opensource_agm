@@ -675,10 +675,10 @@ static int agm_compress_drain(struct compress_plugin *plugin)
      * write and EOS cmds are sequential
      */
     /* TODO: how to handle wake up in SSR scenario */
+    ret = agm_session_eos(handle);
     pthread_mutex_lock(&priv->eos_lock);
     if (!priv->eos_received) {
         priv->eos = true;
-        ret = agm_session_eos(handle);
         if (ret) {
             AGM_LOGE("%s: EOS fail\n", __func__);
             errno = ret;
