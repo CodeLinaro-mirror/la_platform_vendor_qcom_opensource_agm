@@ -705,10 +705,10 @@ static int agm_compress_partial_drain(struct compress_plugin *plugin)
         return ret;
 
     // Send EOS command and wait for EARLY EOS event
+    ret = agm_session_eos(handle);
     pthread_mutex_lock(&priv->early_eos_lock);
     if (!priv->eos_received) {
         priv->early_eos = true;
-        ret = agm_session_eos(handle);
         if (ret) {
             AGM_LOGE("%s: EOS fail\n", __func__);
             pthread_mutex_unlock(&priv->early_eos_lock);
