@@ -12,11 +12,7 @@ LOCAL_CLANG             := true
 LOCAL_TIDY              := true
 LOCAL_CFLAGS            += -v -Wall -Wthread-safety
 
-ifeq ($(call is-board-platform-in-list,lahaina), true)
-LOCAL_VINTF_FRAGMENTS := Manifest_LA_IAGM.xml
-else
 LOCAL_VINTF_FRAGMENTS := Manifest_IAGM.xml
-endif
 
 LOCAL_SRC_FILES     :=  \
     Service.cpp \
