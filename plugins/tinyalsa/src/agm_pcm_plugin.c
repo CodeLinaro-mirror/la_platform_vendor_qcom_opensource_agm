@@ -356,7 +356,11 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
                                          priv->pos_buf->wall_clk_lsw);
             // Compute delta only if diff is greater than zero
             if (dsp_wall_clk > cached_wall_clk) {
+#if defined( __aarch64__) || defined(__arm64__) || defined(__LP64__) || defined(__x86_64__)
                 __builtin_usubl_overflow(dsp_wall_clk,cached_wall_clk,&sub_res);
+#else
+                __builtin_usubll_overflow(dsp_wall_clk,cached_wall_clk,&sub_res);
+#endif
                 delta_wall_clk_us = (int64_t)sub_res;
             }
         }
@@ -511,7 +515,7 @@ static int agm_pcm_sw_params(struct pcm_plugin *plugin,
     struct agm_pcm_priv *priv = plugin->priv;
     struct agm_session_config *session_config = NULL;
     uint64_t handle = 0;
-    int ret = 0, sess_mode = 0;
+    int ret = 0, sess_mode = 0, data_mode = 0;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
@@ -525,6 +529,16 @@ static int agm_pcm_sw_params(struct pcm_plugin *plugin,
     session_config->sess_mode = sess_mode;
     session_config->start_threshold = (uint32_t)sparams->start_threshold;
     session_config->stop_threshold = (uint32_t)sparams->stop_threshold;
+
+    ret = snd_card_def_get_int(plugin->node, "agm_data_mode", &data_mode);
+    if (ret != 0) {
+        AGM_LOGE("Failed to get agm_data_mode, using default");
+        data_mode = AGM_DATA_BLOCKING; //default value
+    }
+
+    if (session_config->data_mode == AGM_DATA_INVALID) {
+        session_config->data_mode = data_mode;
+    }
 
     ret = agm_session_set_config(priv->handle, session_config,
                                  priv->media_config, priv->buffer_config);
