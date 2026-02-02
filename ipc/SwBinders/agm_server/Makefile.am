@@ -12,6 +12,10 @@ AM_CPPFLAGS := -I $(top_srcdir) -I $(PKG_CONFIG_SYSROOT_DIR)/usr/include/agm/\
 
 AM_CPPFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
 AM_CPPFLAGS += -DDYNAMIC_LOG_ENABLED
+if USE_DLT
+AM_CPPFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
+endif
+
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/qti-agm-service/
 
@@ -21,6 +25,10 @@ libagmserverwrapper_la_SOURCES   = ${top_srcdir}/src/agm_death_notifier.cpp ${to
 libagmserverwrapper_la_CPPFLAGS := $(AM_CPPFLAGS)
 libagmserverwrapper_la_LIBADD = -lagm -laudio_log_utils
 libagmserverwrapper_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils -lpthread
+
+if USE_DLT
+libagmserverwrapper_la_LIBADD += $(DLTLOG_LIBS)
+endif
 
 lib_LTLIBRARIES += libagmproxy.la
 libagmproxy_la_SOURCES   = ${top_srcdir}/src/ipc_proxy_server.cpp

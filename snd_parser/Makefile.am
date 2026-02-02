@@ -17,9 +17,16 @@ endif
 AM_CFLAGS += -Wno-unused-parameter
 AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
 
+if USE_DLT
+AM_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
+endif
+
 lib_LTLIBRARIES  = libsndcardparser.la
 libsndcardparser_la_SOURCES   = src/snd-card-parser.c
 libsndcardparser_la_LIBADD = $(GLIB_LIBS) -lexpat -lpthread
 libsndcardparser_la_CFLAGS := $(AM_CFLAGS)
 libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 libsndcardparser_la_LDFLAGS   = -avoid-version -shared
+if USE_DLT
+libsndcardparser_la_LIBADD += $(DLTLOG_LIBS)
+endif

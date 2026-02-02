@@ -52,6 +52,20 @@ AC_ARG_WITH([openwrt],
     [with_openwrt=no])
 AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
 
+AC_ARG_WITH([dltlogging],
+    AC_HELP_STRING([--with-dltlogging], [Enable DLT logging support]),
+    [with_dltlogging="$withval"],
+    [with_dltlogging=no])
+
+AM_CONDITIONAL(USE_DLT, test "x${with_dltlogging}" = "xyes")
+
+if test "x${with_dltlogging}" = "xyes"; then
+    PKG_CHECK_MODULES([DLTLOG], [automotive-dlt])
+    AC_SUBST([DLTLOG_CFLAGS])
+    AC_SUBST([DLTLOG_LIBS])
+    AC_DEFINE([USE_DLT],[1],[Define if using DLT logging])
+fi
+
 AC_CONFIG_FILES([ \
         Makefile \
         sndparser.pc

@@ -18,6 +18,10 @@ AM_CFLAGS += -I ${STAGING_KERNEL_DIR}/include/uapi
 AM_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 
+if USE_DLT
+AM_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
+endif
+
 lib_LTLIBRARIES      = libagm_pcm_plugin.la
 libagm_pcm_plugin_la_SOURCES   = src/agm_pcm_plugin.c
 libagm_pcm_plugin_la_CFLAGS := $(AM_CFLAGS)
@@ -65,4 +69,13 @@ libagm_mixer_passthrough_plugin_la_CFLAGS := $(AM_CFLAGS) -DBYPASS_AGM_IPC
 libagm_mixer_passthrough_plugin_la_LDFLAGS  = -ltinyalsa -lsndcardparser -avoid-version -shared
 libagm_mixer_passthrough_plugin_la_LDFLAGS += -lagm
 libagm_mixer_passthrough_plugin_la_LDFLAGS += -laudio_log_utils
+
+if USE_DLT
+libagm_pcm_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+libagm_pcm_passthrough_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+libagm_compress_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+libagm_compress_passthrough_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+libagm_mixer_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+libagm_mixer_passthrough_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
+endif
 

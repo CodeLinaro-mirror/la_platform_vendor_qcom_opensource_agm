@@ -43,6 +43,11 @@
 #include <log_utils.h>
 #endif
 
+#ifdef USE_DLT
+#include <dlt/dlt.h>
+DltContext agm_dlt_ctx;
+#endif
+
 static bool agm_initialized = 0;
 static pthread_t ats_thread;
 
@@ -66,6 +71,15 @@ static void *ats_init_thread(void *obj __unused)
 int agm_init()
 {
     int ret = 0;
+
+    #ifdef USE_DLT
+    char app_id[DLT_ID_SIZE] = {0};
+    DLT_GET_APPID(app_id);
+    if (app_id[0] == '\0') {
+        DLT_REGISTER_APP("AGM", "Audio Graph Manager");
+    }
+    DLT_REGISTER_CONTEXT(agm_dlt_ctx, "SERV", "AGM Service Core");
+    #endif
 
     if (agm_initialized)
         goto exit;
@@ -109,6 +123,10 @@ int agm_deinit()
         agm_initialized = 0;
     }
 
+    #ifdef USE_DLT
+    DLT_UNREGISTER_CONTEXT(agm_dlt_ctx);
+    DLT_UNREGISTER_APP();
+    #endif
     return 0;
 }
 
