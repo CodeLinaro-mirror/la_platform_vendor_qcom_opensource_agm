@@ -26,9 +26,8 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- *
- * Copyright (c) 2022-2025, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  *
  */
@@ -156,6 +155,27 @@ enum agm_session_mode
     AGM_SESSION_NO_CONFIG,       /**< No Config mode*/
     AGM_SESSION_COMPRESS,        /**< Compress mode*/
 };
+
+/* Memory type */
+typedef enum {
+  CACHED = 1, /**< Indicates that the allocated shared memory is cacheable*/
+  UNCACHED /**< Indicates that the allocated shared memory is non-cacheable*/
+} agm_cshm_type;
+
+typedef struct {
+  uint32_t mem_id; /**< memID of the memory allocated*/
+  agm_cshm_type type; /**< type of the memory allocated*/
+  int64_t fd; /**< fd of the memory allocated*/
+  uint32_t flags; /**reserved flag for future usage*/
+} agm_cshm_info;
+
+typedef struct {
+  uint32_t mem_id; /**< memID of the memory allocated*/
+  uint32_t offset; /**< offset of memory allocated*/
+  uint32_t length; /**< Size of the chunk of memory*/
+  uint32_t miid; /**< module ID to which msg is sent*/
+  uint32_t flags; /**< Flags to provide additional information, if it is a release memory or not*/
+} agm_msg_config;
 
 struct agm_extern_alloc_buff_info{
     int      alloc_handle;/**< unique handle identifying extern mem allocation */
@@ -1217,6 +1237,38 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
   */
 int agm_dump(struct agm_dump_info *dump_info);
 
+/**
+  * \brief Allocate shared memory and map it with SPF.
+  *
+  * \param[in] size - Size of memory to alloc in bytes.
+  * \param[in/out] info - Info regarding the allocated shared memory
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info);
+
+ /**
+  * \brief Send a Global MSG to a module.
+  *
+  * \param[in] mem_id - Valid mem_id returned as part of agm_cshm_alloc.
+  * \param[in] offset - Offset from the beginning of allocted memory.
+  * \param[in] length - Length of the memory for module to use.
+  * \param[in] miid   - Module Instance ID of the module for which this
+  *                     MSG is intented.
+  * \param[in] flags - Flag conveying additional info regarding the MSG.
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length, uint32_t miid, uint32_t flags);
+
+ /**
+  * \brief Unmap the shared memory with SPF and Deallocate it.
+  *
+  * \param[in] mem_id - Valid mem_id returned as part of agm_cshm_alloc.
+  *
+  *  \return 0 on success, error code on failure.
+  */
+int agm_cshm_dealloc(uint32_t mem_id);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif

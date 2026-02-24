@@ -1,6 +1,6 @@
 /**
-* Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
-* SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 ///////////////////////////////////////////////////////////////////////////////
 // THIS FILE IS IMMUTABLE. DO NOT EDIT IN ANY CASE.                          //
@@ -71,6 +71,9 @@ interface IAGM {
   void ipc_agm_set_params_with_tag(in int sessiondId, in int aifId, in vendor.qti.hardware.agm.AgmTagConfig tagConfig);
   void ipc_agm_set_params_with_tag_to_acdb(in int sessiondId, in int aifId, in byte[] payload);
   void ipc_agm_dump(in vendor.qti.hardware.agm.AgmDumpInfo dumpInfo);
+  vendor.qti.hardware.agm.AgmCshmInfo ipc_agm_cshm_alloc(in int size, in vendor.qti.hardware.agm.AgmCshmInfo info);
+  void ipc_agm_cshm_dealloc(in int memID);
+  void ipc_agm_cshm_msg(in int memID, in int offset, in int length, in int miid, in int propFlag);
   parcelable AgmReadWithMetadataReturn {
     vendor.qti.hardware.agm.AgmBuff buffer;
     int capturesSize;

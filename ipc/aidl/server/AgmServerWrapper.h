@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -8,7 +8,6 @@
 #include <agm/agm_api.h>
 #include <aidl/vendor/qti/hardware/agm/BnAGM.h>
 #include <aidl/vendor/qti/hardware/agm/IAGMCallback.h>
-
 #include <log/log.h>
 #include <algorithm>
 #include <unordered_map>
@@ -271,7 +270,11 @@ class AgmServerWrapper : public BnAGM, public ISessionOps {
     ::ndk::ScopedAStatus ipc_agm_dump(
             const ::aidl::vendor::qti::hardware::agm::AgmDumpInfo &in_dumpInfo)
             override;
-
+    ::ndk::ScopedAStatus ipc_agm_cshm_alloc(int32_t size,
+            const AgmCshmInfo &in_info, AgmCshmInfo *_aidl_return) override;
+    ::ndk::ScopedAStatus ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
+            int32_t in_length, int32_t in_miid, int32_t in_prop_flag) override;
+    ::ndk::ScopedAStatus ipc_agm_cshm_dealloc(int32_t mem_id) override;
     void addSessionHandle(uint32_t sessionId, uint64_t handle) override;
     void removeSessionHandle(uint64_t handle) override;
     void connectSessionAif(uint32_t sessionId, uint32_t aifId, bool state) override;

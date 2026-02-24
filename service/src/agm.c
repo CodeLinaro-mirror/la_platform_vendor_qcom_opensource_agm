@@ -128,7 +128,14 @@ int agm_init()
         AGM_LOGE("Session_obj_init failed with %d", ret);
         goto exit;
     }
-
+    ret = gsl_cshm_init(0);
+    if (ret == AR_EUNSUPPORTED) {
+        AGM_LOGD("cshm not supported");
+        ret = 0;
+    } else if (ret != 0) {
+        AGM_LOGE("gsl_cshm_init failed with %d", ret);
+        goto exit;
+    }
     agm_initialized = 1;
 
     ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
@@ -1135,6 +1142,35 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
     }
 
     return session_obj_write_with_metadata(obj, buff, &consumed_size);
+}
+
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+
+    int32_t ret = -EINVAL;
+    gsl_cshm_info_t gsl_info;
+
+    gsl_info.type = (gsl_cshm_cache_type_t) info->type;
+    gsl_info.flag = info->flags;
+    ret = gsl_cshm_alloc(size , &gsl_info);
+    if (!ret) {
+        info->fd = gsl_info.fd;
+        info->mem_id = gsl_info.mem_id;
+    }
+
+    return ret;
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length, uint32_t miid,
+                 uint32_t prop_flag) {
+
+    return gsl_cshm_msg((gsl_mem_id_t) mem_id , offset, length, miid, prop_flag);
+
+}
+
+int agm_cshm_dealloc(uint32_t mem_id) {
+
+    return gsl_cshm_dealloc((gsl_mem_id_t) mem_id);
+
 }
 
 int agm_dump(struct agm_dump_info *dump_info __unused)
