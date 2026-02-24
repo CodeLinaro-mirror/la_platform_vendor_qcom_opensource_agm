@@ -1240,7 +1240,13 @@ android::status_t BnAgmService::onTransact(uint32_t code,
         data.read(&clbk_data_obj->cb_func, sizeof(agm_event_cb));
         clbk_data_obj->evnt = (event_type) data.readUint32();
         clbk_data_obj->client_data = (void *)data.readInt64();
-        clbk_data_obj->pid = IPCThreadState::self()->getCallingPid();
+        IPCThreadState* ipc = IPCThreadState::self();
+        if (ipc != nullptr) {
+            clbk_data_obj->pid = ipc->getCallingPid();
+        } else {
+            clbk_data_obj->pid = -1;   // or 0, or leave unchanged
+            AGM_LOGE("IPCThreadState::self() returned null");
+        }
         sp<IBinder> binder = data.readStrongBinder();
         clbk_data_obj->cb_binder = interface_cast<ICallback>(binder);
         if (clbk_data_obj->cb_func != NULL) {
