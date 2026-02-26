@@ -72,3 +72,8 @@ else
 libagm_mixer_passthrough_plugin_la_LDFLAGS += -lagm
 libagm_mixer_passthrough_plugin_la_LDFLAGS += -laudio_log_utils
 endif
+
+if BUILDSYSTEM_OPENWRT
+SUBDIRS = test
+endif
+
