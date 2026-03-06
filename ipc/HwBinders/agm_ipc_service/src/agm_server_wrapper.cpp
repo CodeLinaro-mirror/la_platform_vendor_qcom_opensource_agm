@@ -73,6 +73,7 @@
 #include <cutils/android_filesystem_config.h>
 #include <pthread.h>
 #include <signal.h>
+#include <mutex>
 #include "gsl_intf.h"
 #include <hwbinder/IPCThreadState.h>
 #include <utils/ProcessCallStack.h>
@@ -92,12 +93,16 @@ static const constexpr int DEBUGGER_SIGNAL = (__SIGRTMIN + 3);
 using AgmCallbackData = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::clbk_data;
 using AgmServerCallback = ::vendor::qti::hardware::AGMIPC::V1_0::implementation::SrvrClbk;
 using ::vendor::qti::hardware::AGMIPC::V1_0::AgmDumpInfo;
+using ::vendor::qti::hardware::AGMIPC::V1_0::implementation::agm_cshm_client_info_t;
 
 static list_declare(client_list);
 static pthread_mutex_t client_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static list_declare(clbk_data_list);
 static pthread_mutex_t clbk_data_list_lock = PTHREAD_MUTEX_INITIALIZER;
+
+std::mutex mAgmCShmClientLock;
+std::vector<std::shared_ptr<agm_cshm_client_info_t>> mAgmCShmClients;
 
 typedef struct {
    struct listnode list;
@@ -146,6 +151,7 @@ void client_death_notifier::serviceDied(uint64_t cookie,
 {
     ALOGI("Client died (pid): %llu",(unsigned long long) cookie);
 
+    int pid = (int) cookie;
     struct listnode *node = NULL;
     struct listnode *tempnode = NULL;
     agm_client_session_handle *session_handle = NULL;
@@ -212,7 +218,34 @@ void client_death_notifier::serviceDied(uint64_t cookie,
             free(handle);
         }
     }
+
     pthread_mutex_unlock(&client_list_lock);
+
+    mAgmCShmClientLock.lock();
+    auto &cshmClients = mAgmCShmClients;
+
+    for (auto itr = cshmClients.begin(); itr != cshmClients.end(); itr++ ) {
+        auto client = *itr;
+        if (client->pid == pid) {
+            ALOGI("%s: Client with pid %d died", __func__, pid);
+            auto itr_memid = client->active_mem_ids.begin();
+            int status = -EINVAL;
+            while(itr_memid != client->active_mem_ids.end()) {
+                status = agm_cshm_dealloc(*itr_memid);
+                if(status)
+                {
+                    ALOGV("%s: Delloc for mem_id %d success", __func__, *itr_memid);
+                }
+                else
+                    ALOGE("%s: Dealloc failed", __func__);
+                itr_memid =  client->active_mem_ids.erase(itr_memid);
+            }
+            itr = cshmClients.erase(itr);
+            break;
+        }
+    }
+    mAgmCShmClientLock.unlock();
+
     ALOGV("%s: exit\n", __func__);
 }
 
@@ -1697,7 +1730,9 @@ Return<int32_t> AGM::ipc_agm_dump(const hidl_vec<AgmDumpInfo>& dump_info) {
 Return<void> AGM::ipc_agm_cshm_alloc(uint32_t size, const hidl_vec<AgmCshmInfo>& info, ipc_agm_cshm_alloc_cb hidl_cb_) {
     agm_cshm_info agm_info;
     int32_t ret = -EINVAL;
+    int pid = ::android::hardware::IPCThreadState::self()->getCallingPid();
     hidl_vec<AgmCshmInfo> info_result(1);
+    bool is_new_client = true;
 
     agm_info.type = (agm_cshm_type) info.data()->type;
     agm_info.flags = info.data()->flags;
@@ -1717,6 +1752,25 @@ Return<void> AGM::ipc_agm_cshm_alloc(uint32_t size, const hidl_vec<AgmCshmInfo>&
         info_result.data()->fdHandle = hidl_handle(handle);
         info_result.data()->memID = agm_info.mem_id;
     }
+
+    mAgmCShmClientLock.lock();
+    for(auto& client: mAgmCShmClients) {
+        if (client->pid == pid) {
+            ALOGI("%s: Client with pid %d already registered, add new mem_id", __func__, pid);
+            is_new_client = false;
+            client->active_mem_ids.insert(agm_info.mem_id);
+            break;
+        }
+    }
+
+    if (is_new_client) {
+        auto client = std::make_shared<agm_cshm_client_info_t>();
+        client->pid = pid;
+        client->active_mem_ids.insert(agm_info.mem_id);
+        mAgmCShmClients.push_back(client);
+    }
+
+    mAgmCShmClientLock.unlock();
     hidl_cb_(ret, info_result);
 
 exit:
@@ -1733,7 +1787,34 @@ Return<int32_t> AGM::ipc_agm_cshm_msg(uint32_t  mem_id, uint32_t  offset, uint32
 }
 
 Return<int32_t> AGM::ipc_agm_cshm_dealloc(uint32_t mem_id) {
-    return agm_cshm_dealloc(mem_id);
+    int32_t ret = 0;
+    std::lock_guard<std::mutex> lock(mAgmCShmClientLock);
+
+    ret = agm_cshm_dealloc(mem_id);
+
+    if(ret) {
+        ALOGE("%s: Dealloc failed, not removing mem_id 0x%x", __func__, mem_id);
+    } else {
+        int pid = ::android::hardware::IPCThreadState::self()->getCallingPid();
+        for(auto itr = mAgmCShmClients.begin(); itr != mAgmCShmClients.end(); itr++) {
+            auto &client = *itr;
+            if (client->pid == pid) {
+                auto mItr = client->active_mem_ids.find(mem_id);
+                if (mItr != client->active_mem_ids.end()) {
+                    client->active_mem_ids.erase(mItr);
+                }
+                else {
+                    ALOGE("%s: mem_id 0x%x does not belong to client with pid %d", __func__, mem_id, pid);
+                    ret = -EINVAL;
+                }
+                /* If client has no active mem_id's, remove it from list */
+                if (client->active_mem_ids.size() == 0)
+                    itr = mAgmCShmClients.erase(itr);
+                break;
+            }
+        }
+    }
+    return ret;
 }
 
 
