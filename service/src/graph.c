@@ -408,7 +408,7 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
 {
     struct graph_obj *graph_obj = NULL;
     int ret = 0;
-    struct listnode *temp_node, *node = NULL, *node_list = NULL;
+    struct listnode *temp_node = NULL, *node = NULL, *node_list = NULL;
 
     struct gsl_tag_module_info *tag_module_info = NULL;
     size_t tag_module_info_size;
@@ -498,7 +498,9 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, NULL);
                     /*Remove the module from the node_sess list*/
-                    list_remove(node_list);
+                    if (node_list != NULL) {
+                        list_remove(node_list);
+                    }
                     goto tag_list;
                 }
             }
@@ -543,7 +545,9 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
                     ADD_MODULE(*mod, dev_obj);
                     /*Remove the module from node_hw list*/
-                    list_remove(node_list);
+                    if (node_list != NULL) {
+                        list_remove(node_list);
+                    }
                     goto tag_list;
                 }
             }
@@ -582,13 +586,15 @@ close_graph:
 free_graph_obj:
     /*free the list of modules associated with this graph_object*/
     list_for_each_safe(node, temp_node, &graph_obj->tagged_mod_list) {
-        list_remove(node);
-        temp_mod = node_to_item(node, module_info_t, list);
-        if (temp_mod->gkv) {
-            free(temp_mod->gkv->kv);
-            free(temp_mod->gkv);
+        if (node != NULL) {
+            list_remove(node);
+            temp_mod = node_to_item(node, module_info_t, list);
+            if (temp_mod->gkv) {
+                free(temp_mod->gkv->kv);
+                free(temp_mod->gkv);
+            }
+            free(temp_mod);
         }
-        free(temp_mod);
     }
     pthread_mutex_destroy(&graph_obj->lock);
     free(graph_obj);
@@ -601,7 +607,7 @@ done:
 int graph_close(struct graph_obj *graph_obj)
 {
     int ret = 0;
-    struct listnode *temp_node,*node = NULL;
+    struct listnode *temp_node = NULL,*node = NULL;
     module_info_t *temp_mod = NULL;
 
     if (graph_obj == NULL) {
@@ -618,13 +624,15 @@ int graph_close(struct graph_obj *graph_obj)
     }
     /*free the list of modules associated with this graph_object*/
     list_for_each_safe(node, temp_node, &graph_obj->tagged_mod_list) {
-        list_remove(node);
-        temp_mod = node_to_item(node, module_info_t, list);
-        if (temp_mod->gkv) {
-            free(temp_mod->gkv->kv);
-            free(temp_mod->gkv);
+        if (node != NULL) {
+            list_remove(node);
+            temp_mod = node_to_item(node, module_info_t, list);
+            if (temp_mod->gkv) {
+                free(temp_mod->gkv->kv);
+                free(temp_mod->gkv);
+            }
+            free(temp_mod);
         }
-        free(temp_mod);
     }
     pthread_mutex_unlock(&graph_obj->lock);
     pthread_mutex_destroy(&graph_obj->lock);
@@ -1202,7 +1210,7 @@ int graph_change(struct graph_obj *graph_obj,
     struct gsl_cmd_graph_select change_graph;
     module_info_t *mod = NULL;
     struct agm_key_vector_gsl *gkv;
-    struct listnode *node, *temp_node = NULL;
+    struct listnode *node = NULL, *temp_node = NULL;
 
     if (graph_obj == NULL) {
         AGM_LOGE("invalid graph object\n");

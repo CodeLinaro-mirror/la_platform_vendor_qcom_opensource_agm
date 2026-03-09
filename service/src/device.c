@@ -320,7 +320,7 @@ int device_get_aif_info_list(struct aif_info *aif_list, size_t *audio_intfs)
     struct device_obj *dev_obj;
     uint32_t copied = 0;
     uint32_t requested = *audio_intfs;
-    struct listnode *dev_node, *temp;
+    struct listnode *dev_node = NULL, *temp = NULL;
 
     if (*audio_intfs == 0){
         *audio_intfs = num_audio_intfs;
@@ -343,7 +343,7 @@ int device_get_aif_info_list(struct aif_info *aif_list, size_t *audio_intfs)
 int device_get_obj(uint32_t device_idx, struct device_obj **dev_obj)
 {
     int i = 0;
-    struct listnode *dev_node, *temp;
+    struct listnode *dev_node = NULL, *temp = NULL;
     struct device_obj *obj;
 
     if (device_idx > num_audio_intfs) {
@@ -479,7 +479,7 @@ int parse_snd_card()
     unsigned int count = 0, i = 0;
     FILE *fp;
     int ret = 0;
-    struct listnode *dev_node, *temp;
+    struct listnode *dev_node = NULL, *temp = NULL;
     struct device_obj *dev_obj = NULL;
 
     fp = fopen(PCM_DEVICE_FILE, "r");

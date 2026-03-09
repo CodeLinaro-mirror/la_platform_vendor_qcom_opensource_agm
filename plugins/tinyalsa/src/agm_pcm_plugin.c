@@ -745,7 +745,7 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     struct agm_session_config *session_config;
     struct agm_media_config *media_config;
     struct agm_buffer_config *buffer_config;
-    uint64_t handle;
+    uint64_t handle = NULL;
     enum agm_session_mode sess_mode = AGM_SESSION_DEFAULT;
     int ret = 0, session_id = device;
     void *card_node, *pcm_node;

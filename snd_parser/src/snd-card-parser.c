@@ -450,7 +450,7 @@ void *snd_card_def_get_card(unsigned int card)
     int bytes_read, len = 0;
     char *snd_card_name = NULL;
     bool card_found = false;
-    struct listnode *snd_card_node, *temp;
+    struct listnode *snd_card_node = NULL, *temp = NULL;
     struct xml_userdata card_data;
     struct snd_dev_def_card *card_def = NULL;
     char filename[MAX_PATH];
@@ -559,7 +559,7 @@ void snd_card_def_put_card(void *card_node)
 {
     struct snd_dev_def_card *defs = (struct snd_dev_def_card *)card_node;
     struct snd_dev_def_card *card_def = NULL;
-    struct listnode *snd_card_node, *temp;
+    struct listnode *snd_card_node = NULL, *temp = NULL;
 
     if (!defs)
         return;
@@ -582,7 +582,7 @@ void *snd_card_def_get_node(void *card_node, unsigned int id, enum snd_node_type
 {
     struct snd_dev_def_card *card_def = (struct snd_dev_def_card *)card_node;
     struct snd_dev_def *dev_def = NULL;
-    struct listnode *dev_node, *temp, *devs_list;
+    struct listnode *dev_node = NULL, *temp = NULL, *devs_list = NULL;
 
     if (!card_def)
         return NULL;
@@ -613,7 +613,7 @@ void *snd_card_def_get_node(void *card_node, unsigned int id, enum snd_node_type
 int snd_card_def_get_num_node(void *card_node, enum snd_node_type type)
 {
     struct snd_dev_def_card *card_def = (struct snd_dev_def_card *)card_node;
-    struct listnode *temp, *dev_node, *devs_list;
+    struct listnode *temp = NULL, *dev_node = NULL, *devs_list = NULL;
     int num_devs = 0;
 
     if (!card_def)
@@ -642,7 +642,7 @@ int snd_card_def_get_nodes_for_type(void *card_node, enum snd_node_type type,
 {
     struct snd_dev_def_card *card_def = (struct snd_dev_def_card *)card_node;
     struct snd_dev_def *dev_def;
-    struct listnode *temp, *dev_node, *devs_list;
+    struct listnode *temp = NULL, *dev_node = NULL, *devs_list = NULL;
     int num_devs = 0, i = 0;
 
     if (!card_def)
@@ -682,7 +682,7 @@ int snd_card_def_get_int(void *node, const char *prop, int *val)
 {
     struct snd_dev_def *dev_def = (struct snd_dev_def *)node;
     struct snd_prop_val_pair *pv_pair;
-    struct listnode *pv_pair_node, *temp;
+    struct listnode *pv_pair_node = NULL, *temp = NULL;
     int ret = -EINVAL;
 
     if (!dev_def)
@@ -716,7 +716,7 @@ int snd_card_def_get_str(void *node, const char *prop, char **val)
 {
     struct snd_dev_def *dev_def = (struct snd_dev_def *)node;
     struct snd_prop_val_pair *pv_pair;
-    struct listnode *pv_pair_node, *temp;
+    struct listnode *pv_pair_node = NULL, *temp = NULL;
     int ret = -EINVAL;
 
     if (!dev_def)
