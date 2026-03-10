@@ -553,14 +553,17 @@ static int agm_pcm_drop(struct pcm_plugin *plugin)
 
 static int agm_pcm_close(struct pcm_plugin *plugin)
 {
-    struct agm_pcm_priv *priv = plugin->priv;
+    struct agm_pcm_priv *priv = NULL;
     uint64_t handle;
     int ret = 0;
-
+    if(!plugin) {
+      AGM_LOGE("%s: plugin is NULL\n", __func__);
+      return -EINVAL;
+    }
+    priv = plugin->priv;
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
-        return ret;
-
+        goto cleanup;
     ret = agm_session_close(handle);
     errno = ret;
 
@@ -568,10 +571,11 @@ static int agm_pcm_close(struct pcm_plugin *plugin)
     free(priv->buffer_config);
     free(priv->media_config);
     free(priv->session_config);
-    free(plugin->priv);
-    free(plugin);
-
-    return ret;
+cleanup:
+  if(plugin->priv)
+      free(plugin->priv);
+  free(plugin);
+  return ret;
 }
 
 static snd_pcm_sframes_t agm_pcm_get_avail(struct pcm_plugin *plugin)
