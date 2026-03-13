@@ -26,10 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following
-** license:
-**
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 #define LOG_TAG "PLUGIN: compress"
@@ -791,14 +789,18 @@ static int agm_compress_poll(struct compress_plugin *plugin,
 
 void agm_compress_close(struct compress_plugin *plugin)
 {
-    struct agm_compress_priv *priv = plugin->priv;
+    struct agm_compress_priv *priv = NULL;
     uint64_t handle;
     int ret = 0;
-
+    if(!plugin) {
+      AGM_LOGE("%s: plugin is NULL\n", __func__);
+      return;
+    }
+    priv = plugin->priv;
     AGM_LOGV("%s:%d\n", __func__, __LINE__);
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
-        return;
+        goto cleanup;
 
     ret = agm_session_register_cb(priv->session_id, NULL,
                                   AGM_EVENT_DATA_PATH, plugin);
@@ -831,10 +833,11 @@ void agm_compress_close(struct compress_plugin *plugin)
     pthread_mutex_unlock(&priv->poll_lock);
 
     /* Make sure callbacks are not running at this point */
-    free(plugin->priv);
-    free(plugin);
-
-    return;
+cleanup:
+  if(plugin->priv)
+      free(plugin->priv);
+  free(plugin);
+  return;
 }
 
 struct compress_plugin_ops agm_compress_ops = {

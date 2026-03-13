@@ -424,7 +424,7 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
     size_t arraysize = 0;
     module_info_t *stream_module_list = NULL;
     module_info_t *hw_ep_module = NULL;
-
+    module_info_t *add_module = NULL;
     list_declare(node_sess);
     list_init(&node_sess);
     list_declare(node_hw);
@@ -499,7 +499,12 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     mod->miid = gsl_tag_entry->module_entry[0].module_iid;
                     mod->mid = gsl_tag_entry->module_entry[0].module_id;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
-                    ADD_MODULE(*mod, NULL);
+                    add_module = ADD_MODULE(*mod, NULL);
+                    if(!add_module) {
+                      AGM_LOGE("no memory to allocate add_module");
+                      ret = -ENOMEM;
+                      goto free_graph_obj;
+                    }
                     /*Remove the module from the node_sess list*/
                     list_remove(node_list);
                     goto tag_list;
@@ -544,7 +549,12 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                           gkv->num_kvs * sizeof(struct agm_key_value));
                     mod->gkv = gkv;
                     AGM_LOGD("miid %x mid %x tag %x", mod->miid, mod->mid, mod->tag);
-                    ADD_MODULE(*mod, dev_obj);
+                    add_module = ADD_MODULE(*mod, dev_obj);
+                    if(!add_module) {
+                      AGM_LOGE("no memory to allocate add_module");
+                      ret = -ENOMEM;
+                      goto free_graph_obj;
+                    }
                     /*Remove the module from node_hw list*/
                     list_remove(node_list);
                     goto tag_list;
@@ -1021,14 +1031,12 @@ int graph_read(struct graph_obj *graph_obj, void *buffer, size_t *size)
         AGM_LOGE("invalid graph object\n");
         return -EINVAL;
     }
-
     /*TODO: Update the write api to take timeStamps/other buffer meta data*/
     gsl_buff.timestamp = 0x0;
     /*TODO: get the FLAG info from client e.g. FLAG_EOS)*/
     gsl_buff.flags = 0;
     gsl_buff.size = *size;
     gsl_buff.addr = (uint8_t *)(buffer);
-
     ret = gsl_read(graph_obj->graph_handle,
                     SHMEM_ENDPOINT, &gsl_buff, (uint32_t *)&size_read);
     if ((ret != 0) || (size_read == 0)) {
@@ -1038,7 +1046,6 @@ int graph_read(struct graph_obj *graph_obj, void *buffer, size_t *size)
     }
     *size = size_read;
     graph_obj->buf_info.timestamp = gsl_buff.timestamp;
-
     return ret;
 }
 
@@ -1093,7 +1100,7 @@ int graph_add(struct graph_obj *graph_obj,
         bool mod_present = false;
         size_t arraysize;
         module_info_t *hw_ep_module = NULL;
-
+        module_info_t *add_module = NULL;
         get_hw_ep_module_list_array(&hw_ep_module, &arraysize);
         if (dev_obj->hw_ep_info.dir == AUDIO_OUTPUT)
             mod = &hw_ep_module[0];
@@ -1157,7 +1164,12 @@ int graph_add(struct graph_obj *graph_obj,
             gkv = NULL;
             AGM_LOGD("Adding the new module tag %x mid %x miid %x\n",
                                     mod->tag, mod->mid, mod->miid);
-            ADD_MODULE(*mod, dev_obj);
+            add_module = ADD_MODULE(*mod, dev_obj);
+            if (!add_module) {
+              AGM_LOGE("no memory to allocate add_module");
+              ret = -ENOMEM;
+              goto done;
+            }
         }
     }
     /* Configure the newly added modules only if graph is in start state,
