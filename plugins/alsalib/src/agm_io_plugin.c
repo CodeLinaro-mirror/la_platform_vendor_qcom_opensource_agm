@@ -504,7 +504,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     }
     priv->pcm_node = pcm_node;
 
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm_node, "session_mode", (int *)&sess_mode);
 
     session_id = priv->device;
     ret = agm_session_open(session_id, sess_mode, &handle);
