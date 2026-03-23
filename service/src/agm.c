@@ -56,8 +56,17 @@
 #include "spf_main.h"
 #endif
 
+#ifdef AGM_USE_CUTILS
+#include <cutils/properties.h>
+#endif
+#include <stdatomic.h>
+#include <sched.h>
+
 #define RETRY_INTERVAL_US 500 * 1000
 static bool agm_initialized = 0;
+static bool ats_thread_started = false;
+//Stop init retries when AGM is deinitialized
+static atomic_bool ats_stop_requested = ATOMIC_VAR_INIT(false);
 static pthread_t ats_thread;
 static const int MAX_RETRIES = 120;
 
@@ -67,6 +76,8 @@ static void *ats_init_thread(void *obj __unused)
     int retry = 0;
 
     while(retry++ < MAX_RETRIES) {
+        if (atomic_load(&ats_stop_requested))
+            break;
         ret = ats_init();
         if (0 != ret) {
             AGM_LOGE("ats_init failed retry %d err %d", retry, ret);
@@ -118,15 +129,17 @@ int agm_init()
 #ifndef AGM_MEMLOG_UNSUPPORTED
     agm_memlog_init();
 #endif
-    pthread_attr_init (&tattr);
+    pthread_attr_init(&tattr);
+    pthread_attr_setinheritsched(&tattr, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
     pthread_attr_getschedparam (&tattr, &param);
-    param.sched_priority = SCHED_FIFO;
+    param.sched_priority = sched_get_priority_min(SCHED_FIFO);
     pthread_attr_setschedparam (&tattr, &param);
 
     ret = session_obj_init();
     if (0 != ret) {
         AGM_LOGE("Session_obj_init failed with %d", ret);
-        goto exit;
+        goto cleanup_attr;
     }
     ret = gsl_cshm_init(0);
     if (ret == AR_EUNSUPPORTED) {
@@ -138,11 +151,27 @@ int agm_init()
     }
     agm_initialized = 1;
 
-    ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
-                                           ats_init_thread, NULL);
-    if (ret)
-        AGM_LOGE(" ats init thread creation failed\n");
+    bool enable_ats_thread = true;
+    atomic_store(&ats_stop_requested, false);
+#ifdef AGM_USE_CUTILS
+    enable_ats_thread = property_get_bool("persist.vendor.audio.atsthread.enable", true);
+#endif
 
+    if (enable_ats_thread) {
+        ret = pthread_create(&ats_thread, (const pthread_attr_t *) &tattr,
+                                           ats_init_thread, NULL);
+        if (ret) {
+            AGM_LOGE("ats init thread creation failed");
+            ats_thread_started = false;
+        } else {
+            ats_thread_started = true;
+        }
+    } else {
+        AGM_LOGI("ats init is disabled");
+    }
+
+cleanup_attr:
+    (void)pthread_attr_destroy(&tattr);
 exit:
     return ret;
 }
@@ -152,6 +181,14 @@ int agm_deinit()
     int ret = 0;
     //close all sessions first
     if (agm_initialized) {
+        atomic_store(&ats_stop_requested, true); /* stop init retries */
+        if (ats_thread_started) {
+            /* Ensure ats_init_thread() has exited before tearing ATS down.
+             * This avoids ats_init()/ats_deinit() running concurrently.
+             */
+            (void)pthread_join(ats_thread, NULL);
+            ats_thread_started = false;
+        }
         AGM_LOGD("Deinitializing ATS...");
         ats_deinit();
 /*
