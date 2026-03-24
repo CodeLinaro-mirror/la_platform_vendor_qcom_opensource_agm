@@ -52,6 +52,12 @@ libagm_la_LIBADD = -ltinyalsa -lar_osal -lar_gsl -lats
 libagm_la_LIBADD += -laudio_log_utils
 
 libagm_la_CFLAGS := $(AM_CFLAGS) -DACDB_PATH=\"/etc/acdbdata/\" -DACDB_DELTA_FILE_PATH="/data/audio/delta"
+
+if USE_DLT
+libagm_la_LIBADD += $(DLTLOG_LIBS)
+libagm_la_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
+endif
+
 if BUILDSYSTEM_OPENWRT
 libagm_la_LIBADD += -lglib-2.0
 endif

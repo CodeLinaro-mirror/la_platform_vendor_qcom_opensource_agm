@@ -29,7 +29,8 @@
 
 /*
 ** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **
 ** Redistribution and use in source and binary forms, with or without
 ** modification, are permitted (subject to the limitations in the
@@ -66,10 +67,31 @@
 #include "ar_osal_error.h"
 #include <log/log.h>
 
+#ifdef USE_DLT
+#include <dlt/dlt.h>
+#include <stdio.h>
+
+// Declare the DLT context
+extern DLT_DECLARE_CONTEXT(agm_dlt_ctx);
+
+// DLT Wrapper: Formats the string before sending to DLT
+#define AGM_DLT_WRAPPER(level, fmt, ...) do { \
+    char _buf[256]; \
+    snprintf(_buf, sizeof(_buf), "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__); \
+    DLT_LOG(agm_dlt_ctx, level, DLT_STRING(_buf)); \
+} while(0)
+
+#define AGM_LOGE(arg,...) AGM_DLT_WRAPPER(DLT_LOG_ERROR, arg, ##__VA_ARGS__)
+#define AGM_LOGD(arg,...) AGM_DLT_WRAPPER(DLT_LOG_DEBUG, arg, ##__VA_ARGS__)
+#define AGM_LOGI(arg,...) AGM_DLT_WRAPPER(DLT_LOG_INFO,  arg, ##__VA_ARGS__)
+#define AGM_LOGV(arg,...) AGM_DLT_WRAPPER(DLT_LOG_VERBOSE, arg, ##__VA_ARGS__)
+
+#else //USE_DLT is NOT defined
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#endif
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
