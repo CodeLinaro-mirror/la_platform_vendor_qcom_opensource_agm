@@ -54,8 +54,8 @@
  * the Free Software Foundation, Inc.,
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #include <stdint.h>
@@ -367,12 +367,16 @@ static void capture_samples(char *name, unsigned int card, unsigned int device,
     }
 
     compress = compress_open(card, device, COMPRESS_OUT, &config);
-    if (!compress || !is_compress_ready(compress)) {
+    if (!compress) {
         fprintf(stderr, "Unable to open Compress device %d:%d\n",
             card, device);
+        goto mixer_exit;
+    }
+
+    if (!is_compress_ready(compress)) {
         fprintf(stderr, "ERR: %s\n", compress_get_error(compress));
         goto mixer_exit;
-    };
+    }
 
     if (verbose)
         fprintf(finfo, "%s: Opened compress device\n", __func__);
