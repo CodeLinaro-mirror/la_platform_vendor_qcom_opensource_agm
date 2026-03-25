@@ -8,6 +8,7 @@ LOCAL_VENDOR_MODULE  := true
 
 LOCAL_CFLAGS         := -Wno-unused-parameter -Wall
 LOCAL_CFLAGS         += -DCARD_DEF_FILE=\"/vendor/etc/card-defs.xml\"
+LOCAL_CFLAGS         += -DCARD_DEF_FILE_NATIVE=\"/vendor/etc/card-defs-native.xml\"
 
 LOCAL_C_INCLUDES            := $(LOCAL_PATH)/inc
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/inc

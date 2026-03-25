@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -273,4 +274,10 @@ struct LegacyToAidl {
     */
     static void convertMmapBufferInfoToAidl(struct agm_buf_info *legacyBufferInfo,
                                             MmapBufInfo *aidlBufferInfo, int flags);
+
+    /**
+    * @brief convertfdToAidl converts int fd to native handle to AIDL based nativehandle
+    * @param fd  fd sent during alloc and dealloc.
+    */
+    static aidl::android::hardware::common::NativeHandle convertfdToAidl(int fd);
 };

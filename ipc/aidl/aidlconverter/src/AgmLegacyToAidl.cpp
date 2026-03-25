@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -312,6 +313,12 @@ aidl::android::hardware::common::NativeHandle fdToNativeHandle(int fd, int intTo
     handle.fds.emplace_back(dup(fd));
     if (intToCopy != -1) handle.ints.emplace_back(intToCopy);
     return std::move(handle);
+}
+
+aidl::android::hardware::common::NativeHandle LegacyToAidl::convertfdToAidl(int fd) {
+    aidl::android::hardware::common::NativeHandle aidlfd;
+            aidlfd = fdToNativeHandle(fd, fd);
+            return std::move(aidlfd);
 }
 
 AgmBuff LegacyToAidl::convertAgmBufferToAidl(struct agm_buff *legacyBuffer, bool externalMemory,

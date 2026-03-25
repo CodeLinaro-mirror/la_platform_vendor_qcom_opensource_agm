@@ -141,3 +141,6 @@ LOCAL_HEADER_LIBRARIES += libaudiologutils_headers
 endif
 
 include $(BUILD_SHARED_LIBRARY)
+
+# Build agmpluginnative
+include $(LOCAL_PATH)/agmpluginnative.mk

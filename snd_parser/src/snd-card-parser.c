@@ -25,9 +25,9 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+*  ​​​​​Changes from Qualcomm Technologies, Inc. are provided under the following license:
 *
-*  Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+*  Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 *  SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -45,6 +45,7 @@
 
 #define MAX_PATH 256
 #define BUF_SIZE 1024
+#define SND_CARD_VIRTUAL_ID 100
 
 
 struct snd_prop_val_pair {
@@ -515,7 +516,11 @@ void *snd_card_def_get_card(unsigned int card)
 
     card_def = NULL;
     /* read XML */
-    file = fopen(CARD_DEF_FILE, "r");
+    if (card == SND_CARD_VIRTUAL_ID) {
+        file = fopen(CARD_DEF_FILE, "r");
+    } else {
+        file = fopen(CARD_DEF_FILE_NATIVE, "r");
+    }
     if (!file) {
         pthread_rwlock_unlock(&snd_rwlock);
         if (snd_card_name != NULL )

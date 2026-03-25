@@ -951,4 +951,29 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_dump(const AgmDumpInfo &in_dumpInfo) {
     return ScopedAStatus::ok();
 }
+
+::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_cshm_alloc(
+                int32_t size, const AgmCshmInfo &in_info, AgmCshmInfo *_aidl_return) {
+
+    agm_cshm_info agm_info;
+    agm_info.type = (agm_cshm_type) in_info.type;
+    agm_info.flags = in_info.flags;
+    int status = agm_cshm_alloc(size, &agm_info);
+    if(!status) {
+        _aidl_return->allocHandle = LegacyToAidl::convertfdToAidl(agm_info.fd);
+        _aidl_return->memID = agm_info.mem_id;
+    }
+    return status_tToBinderResult(status);
+}
+::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_cshm_msg(int32_t in_mem_id, int32_t in_offset,
+            int32_t in_length, int32_t in_miid, int32_t in_prop_flag) {
+
+    return status_tToBinderResult(
+            agm_cshm_msg(in_mem_id , in_offset, in_length, in_miid, in_prop_flag));
+}
+
+::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_cshm_dealloc(int32_t mem_id) {
+    return status_tToBinderResult(agm_cshm_dealloc(mem_id));
+}
+
 }
