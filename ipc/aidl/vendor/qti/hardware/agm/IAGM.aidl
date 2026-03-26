@@ -1,7 +1,7 @@
 /**
-* Copyright (c) 2023,2025 Qualcomm Innovation Center, Inc. All rights reserved.
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 * SPDX-License-Identifier: BSD-3-Clause-Clear
-*/
+**/
 
 package vendor.qti.hardware.agm;
 
@@ -17,7 +17,6 @@ import vendor.qti.hardware.agm.AgmSessionConfig;
 import vendor.qti.hardware.agm.AgmSessionMode;
 import vendor.qti.hardware.agm.AgmTagConfig;
 import vendor.qti.hardware.agm.AifInfo;
-import vendor.qti.hardware.agm.NonAlsaAifInfo;
 import vendor.qti.hardware.agm.Direction;
 import vendor.qti.hardware.agm.IAGMCallback;
 import vendor.qti.hardware.agm.MmapBufInfo;
@@ -542,20 +541,4 @@ interface IAGM {
     * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
     */
     void ipc_agm_dump(in AgmDumpInfo dumpInfo);
-
-    /**
-    * Get list of non alsa AIF info objects
-    * @param numAifInfo number of aif info items in the list.
-    * if numAifInfo value is listed as zero, AGM will update numAifInfo with
-    * the number of non alsa aif info items in AGM.
-    * if numAifInfo is greater than zero,
-    * AGM will copy client specified numAifInfo of items into out result.
-    * @return NonAlsaAifInfo[] vector of non alsa based AifInfo objects
-    * @throws ServiceSpecificException with one of the values defined in Status.aidl
-    * These exceptions are used to preserve the linux error codes over AIDL.
-    * check converstion details at: aidlconverter/inc/agm/BinderStatus.h
-    */
-    NonAlsaAifInfo[] ipc_agm_get_non_alsa_aif_info_list(in int numAifInfo);
-
-    byte[] ipc_agm_get_driver_data(in int moduleId, in AgmCalConfig calConfig, in int size);
 }

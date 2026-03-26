@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2023-2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
- */
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
+**/
 
 
 #define NDEBUG 0
@@ -837,25 +837,6 @@ AgmServerWrapper::~AgmServerWrapper() {
     return ScopedAStatus::ok();
 }
 
-::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_non_alsa_aif_info_list(
-        int32_t in_numAifInfo, std::vector<NonAlsaAifInfo> *_aidl_return) {
-    ALOGV("%s numberOfAif = %d ", __func__, in_numAifInfo);
-
-    AgmNonAlsaAifUniquePtrType agmLegacyNonAlsaAifInfoListUPtr(nullptr, free);
-
-    if (in_numAifInfo != 0) {
-        agmLegacyNonAlsaAifInfoListUPtr =
-                VALUE_OR_RETURN(allocate<non_alsa_aif_info>(sizeof(struct non_alsa_aif_info) * in_numAifInfo));
-    }
-    struct non_alsa_aif_info *agmLegacyNonAlsaAifInfoList = agmLegacyNonAlsaAifInfoListUPtr.get();
-    size_t numberOfAifs = (size_t)in_numAifInfo;
-    int32_t ret = agm_get_non_alsa_aif_info_list(agmLegacyNonAlsaAifInfoList, &numberOfAifs);
-    ALOGV("%s got agmAifs = %d, ret %d  ", __func__, numberOfAifs, ret);
-
-    *_aidl_return = LegacyToAidl::convertNonAlsaAifInfoListToAidl(agmLegacyNonAlsaAifInfoList, numberOfAifs);
-    return ScopedAStatus::ok();
-}
-
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_buffer_timestamp(int32_t in_sessiondId,
                                                                     int64_t *_aidl_return) {
     uint64_t timestampLegacy;
@@ -961,43 +942,4 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_dump(const AgmDumpInfo &in_dumpInfo) {
     return ScopedAStatus::ok();
 }
-
-::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_driver_data(
-        int32_t in_moduleId,
-        const ::aidl::vendor::qti::hardware::agm::AgmCalConfig &in_calConfig,
-        int32_t in_size,
-        std::vector<uint8_t> *_aidl_return) {
-
-    auto numKvPairs = in_calConfig.kv.size();
-    RETURN_IF_KVPAIR_EXCEEDS_RANGE(numKvPairs);
-
-    ALOGV("%s : in_moduleId = %d, calKeys %d, size = %d", __func__, in_moduleId,
-        numKvPairs, in_size);
-
-    auto allocSize = sizeof(struct agm_cal_config) + numKvPairs * sizeof(struct agm_key_value);
-    auto agmLegacyCalConfig = VALUE_OR_RETURN(allocate<agm_cal_config>(allocSize));
-    uint8_t *agmLegacyPayload = NULL;
-    size_t payloadSize = (size_t)in_size;
-
-    if (payloadSize) {
-        agmLegacyPayload = (uint8_t *)calloc(1, payloadSize);
-        if (agmLegacyPayload == NULL) {
-            ALOGE("%s: Cannot allocate memory for agm payload ", __func__);
-            return status_tToBinderResult(-ENOMEM);
-        }
-    }
-
-    AidlToLegacy::convertAgmCalConfig(in_calConfig, agmLegacyCalConfig.get());
-    int32_t ret = agm_get_driver_data(in_moduleId, agmLegacyCalConfig.get(), agmLegacyPayload,
-                                      &payloadSize);
-
-    ALOGV("%s: got size %d, ret %d ", __func__, payloadSize, ret);
-    _aidl_return->resize(payloadSize);
-
-    if (agmLegacyPayload) memcpy(_aidl_return->data(), agmLegacyPayload, payloadSize);
-
-    free(agmLegacyPayload);
-    return status_tToBinderResult(ret);
-}
-
 }
