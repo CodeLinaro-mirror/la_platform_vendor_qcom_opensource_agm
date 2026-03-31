@@ -25,6 +25,10 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "PLUGIN: AGMCTL"
@@ -1177,6 +1181,9 @@ static int agmctl_read_bytes(snd_ctl_ext_t *ext, snd_ctl_ext_key_t key,
         break;
     case AGM_FE_CTL_NAME_EVENT:
         rc = agmctl_pcm_event_get(&agmctl->controls[key], data, len);
+        break;
+    case AGM_BE_CTL_NAME_METADATA:
+    case AGM_FE_CTL_NAME_METADATA:
         break;
     default:
         rc = -EINVAL;
