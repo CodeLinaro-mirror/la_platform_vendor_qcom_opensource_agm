@@ -28,38 +28,9 @@
 **/
 
 /*
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
-**
-** Redistribution and use in source and binary forms, with or without
-** modification, are permitted (subject to the limitations in the
-** disclaimer below) provided that the following conditions are met:
-**
-**    * Redistributions of source code must retain the above copyright
-**      notice, this list of conditions and the following disclaimer.
-**
-**    * Redistributions in binary form must reproduce the above
-**      copyright notice, this list of conditions and the following
-**      disclaimer in the documentation and/or other materials provided
-**      with the distribution.
-**
-**    * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
-**      contributors may be used to endorse or promote products derived
-**      from this software without specific prior written permission.
-**
-** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
-** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
 #define LOG_TAG "agm_server_wrapper_dbus"
@@ -104,7 +75,7 @@ typedef struct {
        Used to de-register callbacks when client dies abruptly */
     GList *callbacks;
 
-    char buf[16392];
+    void *buf;
     uint32_t buf_size;
     int thread_state;
     pthread_mutex_t lock;
@@ -505,6 +476,12 @@ static agm_session_data * get_session_data(agm_module_dbus_data *mdata,
                         g_hash_table_lookup(mdata->sessions,
                                        GUINT_TO_POINTER(session_id))) == NULL) {
         ses_data = (agm_session_data *)malloc(sizeof(agm_session_data));
+        if (ses_data == NULL) {
+            AGM_LOGE("Failed to allocate session data");
+            return NULL;
+        }
+        ses_data->buf = NULL;
+        ses_data->buf_size = 0;
         ses_data->session_id = session_id;
         ss << ses_data->session_id;
         obj_length = sizeof(char)*(strlen(AGM_OBJECT_PATH)) +
@@ -2091,6 +2068,23 @@ static void ipc_agm_session_set_config(DBusConnection *conn,
                             "agm_session_set_config failed.");
         return;
     }
+    pthread_mutex_lock(&ses_data->lock);
+    if (ses_data->buf == NULL || ses_data->buf_size != buffer_config.size) {
+        if (ses_data->buf != NULL) {
+            free(ses_data->buf);
+            ses_data->buf = NULL;
+        }
+        ses_data->buf = (void*) calloc(1, buffer_config.size);
+        if (ses_data->buf == NULL) {
+            AGM_LOGE("Cannot allocate memory for buffer\n");
+            pthread_mutex_unlock(&ses_data->lock);
+            agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
+                                "Cannot allocate memory for buffer");
+            return;
+        }
+        ses_data->buf_size = buffer_config.size;
+    }
+    pthread_mutex_unlock(&ses_data->lock);
 
     reply = dbus_message_new_method_return(msg);
     dbus_connection_send(conn, reply, NULL);
@@ -2407,6 +2401,11 @@ static void ipc_agm_session_close(DBusConnection *conn,
         agm_dbus_send_error(mdata->conn, msg, DBUS_ERROR_FAILED,
                             "agm_session_close failed.");
         return;
+    }
+
+    if (ses_data->buf != NULL) {
+        free(ses_data->buf);
+        ses_data->buf = NULL;
     }
 
     for (node = ses_data->callbacks; node != NULL; node = node->next) {
