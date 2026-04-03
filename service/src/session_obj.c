@@ -2170,21 +2170,35 @@ int session_obj_set_config(struct session_obj *sess_obj,
                  struct agm_buffer_config *buffer_config)
 {
     int ret = 0;
+    if (!sess_obj || !stream_config || !media_config || !buffer_config) {
+        AGM_LOGE("Invalid input parameters");
+        return -EINVAL;
+    }
     pthread_mutex_lock(&sess_obj->lock);
 
     sess_obj->stream_config = *stream_config;
 
+    if (sess_obj->graph == NULL) {
+        AGM_LOGE("Graph is NULL, sess_id %u config skipped", sess_obj->sess_id);
+        ret = -EINVAL;
+        pthread_mutex_unlock(&sess_obj->lock);
+        return ret;
+    }
     if (sess_obj->stream_config.dir == TX) {
         /*Capture session config*/
         sess_obj->in_media_config = *media_config;
         sess_obj->in_buffer_config = *buffer_config;
 
         ret = graph_set_pcm_encoder_params(sess_obj->graph);
-        if (ret < 0)
+        if (ret < 0) {
             AGM_LOGE("Failed to set pcm_encoder_params ret %d",  ret);
+            goto done;
+        }
         ret = graph_set_stream_mfc_config(sess_obj->graph);
-        if (ret < 0)
+        if (ret < 0) {
             AGM_LOGE("Failed to set stream mfc config ret %d", ret);
+            goto done;
+        }
     } else {
         /*Playback session config*/
         sess_obj->out_media_config = *media_config;
@@ -2197,11 +2211,14 @@ int session_obj_set_config(struct session_obj *sess_obj,
          */
         if (sess_obj->state == SESSION_STARTED || sess_obj->state == SESSION_STOPPED) {
             ret = graph_set_media_config_datapath(sess_obj->graph);
-            if (ret < 0)
+            if (ret < 0) {
                 AGM_LOGE("Failed to set media config on datapath ret %d", ret);
+                goto done;
+            }
         }
     }
 
+done:
     pthread_mutex_unlock(&sess_obj->lock);
     return ret;
 }

@@ -2036,6 +2036,10 @@ int graph_set_media_config_datapath(struct graph_obj *graph_obj)
     int ret = 0;
     struct listnode *node = NULL;
     module_info_t *mod = NULL;
+    if (graph_obj == NULL) {
+        AGM_LOGE("graph_set_media_config_datapath: graph_obj is NULL");
+        return -EINVAL;
+    }
     struct session_obj *sess_obj = graph_obj->sess_obj;
 
     if (is_media_config_needed_on_datapath(sess_obj->out_media_config.format)) {
@@ -2061,7 +2065,10 @@ int graph_set_pcm_encoder_params(struct graph_obj *graph_obj)
     int ret = 0;
     struct listnode *node = NULL;
     module_info_t *mod = NULL;
-
+    if (graph_obj == NULL) {
+        AGM_LOGE("graph_set_pcm_encoder_params: graph_obj is NULL");
+        return -EINVAL;
+    }
     list_for_each(node, &graph_obj->tagged_mod_list) {
         mod = node_to_item(node, module_info_t, list);
         if (mod->tag == STREAM_PCM_ENCODER) {
@@ -2080,6 +2087,10 @@ int graph_set_stream_mfc_config(struct graph_obj *graph_obj)
       int ret = 0;
       struct listnode *node = NULL;
       module_info_t *mod = NULL;
+      if (graph_obj == NULL) {
+          AGM_LOGE("graph_set_stream_mfc_config: graph_obj is NULL");
+          return -EINVAL;
+      }
       struct session_obj *sess_obj = graph_obj->sess_obj;
 
       list_for_each(node, &graph_obj->tagged_mod_list) {
