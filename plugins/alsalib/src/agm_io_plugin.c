@@ -773,6 +773,13 @@ static int agm_hw_constraint(struct agmio_priv* priv)
     return 0;
 }
 
+void cleanup_sndcard_fd(void *fd_ptr){
+    int fd = *(int *)fd_ptr;
+    if(fd >=0) {
+        close(fd);
+    }
+}
+
 static void* card_status_monitor(void *arg) {
     struct agmio_priv *priv = (struct agmio_priv *)arg;
     int fd = -1;
@@ -783,6 +790,8 @@ static void* card_status_monitor(void *arg) {
         AGM_LOGE("Open %s failed: %s", SNDCARD_PATH, strerror(errno));
         return NULL;
     }
+
+    pthread_cleanup_push(cleanup_sndcard_fd,&fd);
 
     pfd.fd = fd;
     pfd.events = POLLPRI;
@@ -807,7 +816,7 @@ static void* card_status_monitor(void *arg) {
             break;
         }
     }
-    close(fd);
+    pthread_cleanup_pop(1);
     return NULL;
 }
 SND_PCM_PLUGIN_DEFINE_FUNC(agm)
