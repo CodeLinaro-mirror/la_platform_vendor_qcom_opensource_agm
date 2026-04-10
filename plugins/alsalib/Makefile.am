@@ -11,6 +11,10 @@ AM_CFLAGS += $(GLIB_CFLAGS)
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -D__LINUX__
 AM_CFLAGS += -I $(top_srcdir)/../../snd_parser/inc
 
+if USE_SYSLOG
+AM_CFLAGS += -DAGM_USE_SYSLOG
+endif
+
 if USE_G_STR_FUNC
 AM_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
@@ -18,7 +22,8 @@ endif
 
 if BUILD_ALSALIB
 
-lib_LTLIBRARIES      = libasound_module_pcm_agm.la
+alsaplugindir = $(libdir)/alsa-lib
+alsaplugin_LTLIBRARIES      = libasound_module_pcm_agm.la
 libasound_module_pcm_agm_la_SOURCES   = src/agm_io_plugin.c
 libasound_module_pcm_agm_la_CFLAGS = $(AM_CFLAGS)
 libasound_module_pcm_agm_la_LDFLAGS = -avoid-version -shared \
@@ -33,7 +38,7 @@ libasound_module_pcm_agm_la_LDFLAGS += -L$(top_builddir)/ipc/DBus/agm_client/.li
 libasound_module_pcm_agm_la_LIBADD  = -lasound -lsndcardparser -lagmclient
 endif
 
-lib_LTLIBRARIES      += libasound_module_ctl_agm.la
+alsaplugin_LTLIBRARIES      += libasound_module_ctl_agm.la
 libasound_module_ctl_agm_la_SOURCES   = src/agm_ctl_plugin.c
 libasound_module_ctl_agm_la_CFLAGS = $(AM_CFLAGS)
 

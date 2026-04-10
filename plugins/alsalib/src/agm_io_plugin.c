@@ -25,7 +25,12 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
+
 #define LOG_TAG "PLUGIN: AGMIO"
 #include <stdio.h>
 #include <sys/poll.h>
@@ -37,7 +42,7 @@
 #include <agm/agm_api.h>
 #include <agm/agm_list.h>
 #include <snd-card-def.h>
-#include "utils.h"
+#include <agm/utils.h>
 
 #define ARRAY_SIZE(a)   (sizeof(a)/sizeof(a[0]))
 
@@ -504,7 +509,7 @@ SND_PCM_PLUGIN_DEFINE_FUNC(agm)
     }
     priv->pcm_node = pcm_node;
 
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm_node, "session_mode", (int *)&sess_mode);
 
     session_id = priv->device;
     ret = agm_session_open(session_id, sess_mode, &handle);
