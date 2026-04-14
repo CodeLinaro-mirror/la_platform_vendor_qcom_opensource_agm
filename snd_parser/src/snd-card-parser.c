@@ -402,7 +402,7 @@ static void snd_free_card_devs_def(struct listnode *dev_list)
 {
     struct snd_dev_def *dev_def = NULL;
     struct snd_prop_val_pair *pv_pair;
-    struct listnode *pv_pair_node, *dev_node, *temp, *temp2;
+    struct listnode *pv_pair_node = NULL, *dev_node = NULL, *temp = NULL, *temp2 = NULL;
 
     list_for_each_safe(dev_node, temp, dev_list) {
         dev_def = node_to_item(dev_node, struct snd_dev_def, list_node);

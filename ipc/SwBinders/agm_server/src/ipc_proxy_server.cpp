@@ -788,10 +788,10 @@ void ipc_cb (uint32_t session_id, struct agm_event_cb_params *event_params,
     pthread_mutex_lock(&clbk_data_list_lock);
     list_for_each(node, &clbk_data_list) {
         handle = node_to_item(node, clbk_data, list);
-        AGM_LOGV("%s: session_id %d, client_data %p\n",
-                   __func__, handle->session_id, handle->client_data);
         if (handle != NULL && handle->session_id == session_id &&
                               handle->client_data == client_data) {
+            AGM_LOGV("%s: session_id %d, client_data %p\n",
+                   __func__, handle->session_id, handle->client_data);
             AGM_LOGV("%s: Found handle %p\n", __func__, handle);
             break;
         }
