@@ -77,18 +77,17 @@ AC_ARG_WITH([ipc_swbinder],
     [with_ipc_swbinder=no])
 AM_CONDITIONAL([AGM_IPC_SWBINDER], [test "x${with_ipc_swbinder}" = "xyes"])
 
-AC_ARG_WITH([openwrt],
-    AS_HELP_STRING([use openwrt (default is no)]),
-    [with_openwrt=$withval],
-    [with_openwrt=no])
-AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
+AC_ARG_WITH([armemlog],
+    AS_HELP_STRING([use armemlog (default is no)]),
+    [with_armemlog=$withval],
+    [with_armemlog=no])
+AM_CONDITIONAL([MEMLOGGER_SUPPORTED], [test "x${with_armemlog}" = "xyes"])
+
 PKG_CHECK_MODULES([SPF], [spf])
 AC_SUBST(SPF_CFLAGS)
 
-if (test "x${with_openwrt}" = "xno"); then
 PKG_CHECK_MODULES([KVH2XML], [kvh2xml])
 AC_SUBST([KVH2XML_CFLAGS])
-fi
 
 # Check dependency only if with_no_ipc is not set
 if (test "x${with_ipc_dbus}" = "xyes"); then
