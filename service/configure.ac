@@ -52,5 +52,11 @@ AC_ARG_WITH([openwrt],
     [with_openwrt=no])
 AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
 
+AC_ARG_ENABLE([card-state-unsupported],
+    AS_HELP_STRING([--enable-card-state-unsupported], [Enable card state unsupported (default is no)]),
+    [card_state_unsupported=$enableval],
+    [card_state_unsupported=no])
+AM_CONDITIONAL([ENABLE_CARD_STATE_UNSUPPORTED], [test "x$card_state_unsupported" = "xyes"])
+
 AC_CONFIG_FILES([ Makefile agm.pc ])
 AC_OUTPUT
