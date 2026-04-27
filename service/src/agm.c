@@ -66,7 +66,7 @@
 static bool agm_initialized = 0;
 static bool ats_thread_started = false;
 //Stop init retries when AGM is deinitialized
-static atomic_bool ats_stop_requested = ATOMIC_VAR_INIT(false);
+static atomic_bool ats_stop_requested = false;
 static pthread_t ats_thread;
 static const int MAX_RETRIES = 120;
 
