@@ -1457,6 +1457,10 @@ int graph_register_for_events(struct graph_obj *gph_obj,
     }
     pthread_mutex_unlock(&gph_obj->lock);
 
+    if (reg_ev_payload) {
+        free(reg_ev_payload);
+    }
+
     gph_obj->buf_info.timestamp = 0;
 done:
     return ret;
