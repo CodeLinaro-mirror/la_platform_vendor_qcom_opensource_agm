@@ -73,6 +73,22 @@ enum pcm_channel_map
    PCM_CHANNEL_FRC = 14,
    PCM_CHANNEL_RLC = 15,
    PCM_CHANNEL_RRC = 16,
+   PCM_CHANNEL_LFE2 = 17,
+   PCM_CHANNEL_SL = 18,
+   PCM_CHANNEL_SR = 19,
+   PCM_CHANNEL_TFL = 20,
+   PCM_CHANNEL_TFR = 21,
+   PCM_CHANNEL_TC = 22,
+   PCM_CHANNEL_TBL = 23,
+   PCM_CHANNEL_TBR = 24,
+   PCM_CHANNEL_TSL = 25,
+   PCM_CHANNEL_TSR = 26,
+   PCM_CHANNEL_TBC = 27,
+   PCM_CHANNEL_BFC = 28,
+   PCM_CHANNEL_BFL = 29,
+   PCM_CHANNEL_BFR = 30,
+   PCM_CHANNEL_LW = 31,
+   PCM_CHANNEL_RW = 32,
 };
 /* Payload of the PARAM_ID_MFC_OUTPUT_MEDIA_FORMAT parameter in the
  Media Format Converter Module. Following this will be the variable payload for channel_map. */
@@ -916,6 +932,65 @@ void populateChannelMap(uint16_t *pcmChannel, uint8_t numChannel)
         pcmChannel[13] = PCM_CHANNEL_FRC;
         pcmChannel[14] = PCM_CHANNEL_RLC;
         pcmChannel[15] = PCM_CHANNEL_RRC;
+    } else if (numChannel == 24) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LS;
+        pcmChannel[4] = PCM_CHANNEL_RS;
+        pcmChannel[5] = PCM_CHANNEL_LFE;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
+        pcmChannel[9] = PCM_CHANNEL_TS;
+        pcmChannel[10] = PCM_CHANNEL_TFC;
+        pcmChannel[11] = PCM_CHANNEL_MS;
+        pcmChannel[12] = PCM_CHANNEL_FLC;
+        pcmChannel[13] = PCM_CHANNEL_FRC;
+        pcmChannel[14] = PCM_CHANNEL_RLC;
+        pcmChannel[15] = PCM_CHANNEL_RRC;
+        pcmChannel[16] = PCM_CHANNEL_LFE2;
+        pcmChannel[17] = PCM_CHANNEL_SL;
+        pcmChannel[18] = PCM_CHANNEL_SR;
+        pcmChannel[19] = PCM_CHANNEL_TFL;
+        pcmChannel[20] = PCM_CHANNEL_TFR;
+        pcmChannel[21] = PCM_CHANNEL_TC;
+        pcmChannel[22] = PCM_CHANNEL_TBL;
+        pcmChannel[23] = PCM_CHANNEL_TBR;
+    } else if (numChannel == 32) {
+        pcmChannel[0] = PCM_CHANNEL_L;
+        pcmChannel[1] = PCM_CHANNEL_R;
+        pcmChannel[2] = PCM_CHANNEL_C;
+        pcmChannel[3] = PCM_CHANNEL_LS;
+        pcmChannel[4] = PCM_CHANNEL_RS;
+        pcmChannel[5] = PCM_CHANNEL_LFE;
+        pcmChannel[6] = PCM_CHANNEL_CS;
+        pcmChannel[7] = PCM_CHANNEL_LB;
+        pcmChannel[8] = PCM_CHANNEL_RB;
+        pcmChannel[9] = PCM_CHANNEL_TS;
+        pcmChannel[10] = PCM_CHANNEL_TFC;
+        pcmChannel[11] = PCM_CHANNEL_MS;
+        pcmChannel[12] = PCM_CHANNEL_FLC;
+        pcmChannel[13] = PCM_CHANNEL_FRC;
+        pcmChannel[14] = PCM_CHANNEL_RLC;
+        pcmChannel[15] = PCM_CHANNEL_RRC;
+        pcmChannel[16] = PCM_CHANNEL_LFE2;
+        pcmChannel[17] = PCM_CHANNEL_SL;
+        pcmChannel[18] = PCM_CHANNEL_SR;
+        pcmChannel[19] = PCM_CHANNEL_TFL;
+        pcmChannel[20] = PCM_CHANNEL_TFR;
+        pcmChannel[21] = PCM_CHANNEL_TC;
+        pcmChannel[22] = PCM_CHANNEL_TBL;
+        pcmChannel[23] = PCM_CHANNEL_TBR;
+        pcmChannel[23] = PCM_CHANNEL_TBR;
+        pcmChannel[24] = PCM_CHANNEL_TSL;
+        pcmChannel[25] = PCM_CHANNEL_TSR;
+        pcmChannel[26] = PCM_CHANNEL_TBC;
+        pcmChannel[27] = PCM_CHANNEL_BFC;
+        pcmChannel[28] = PCM_CHANNEL_BFL;
+        pcmChannel[29] = PCM_CHANNEL_BFR;
+        pcmChannel[30] = PCM_CHANNEL_LW;
+        pcmChannel[31] = PCM_CHANNEL_RW;
     }
 }
 

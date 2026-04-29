@@ -113,6 +113,12 @@ enum  channel_num{
     CHANNEL_6,
     CHANNEL_7,
     CHANNEL_8,
+    CHANNEL_10 = 10,
+    CHANNEL_12 = 12,
+    CHANNEL_14 = 14,
+    CHANNEL_16 = 16,
+    CHANNEL_24 = 24,
+    CHANNEL_32 = 32,
 };
 
 struct module_info {
