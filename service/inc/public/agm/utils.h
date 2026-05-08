@@ -28,7 +28,20 @@
 **/
 
 #ifndef __UTILS_H__
+#define __UTILS_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include<errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+
 #include "ar_osal_error.h"
+
+#include <stdio.h>
 
 #ifdef AGM_USE_SYSLOG
 #include <stdint.h>
@@ -54,14 +67,55 @@
 #include <log/log.h>
 #endif
 
+#ifdef AR_EARLY_AUDIO
+#define AGM_LOGE(arg, ...)                                              \
+    printf("[E][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGD(arg, ...)                                              \
+    printf("[D][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGI(arg, ...)                                              \
+    printf("[I][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#define AGM_LOGV(arg, ...)                                              \
+    printf("[V][%s][%s][%d]:" arg "\n", LOG_TAG, __func__, __LINE__,    \
+           ##__VA_ARGS__);                                              \
+    fflush(stdout)
+#else
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#endif
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
 /*helper to print errors in string form*/
 char *ar_err_get_err_str(uint32_t error);
+
+#define KPI_VALUE_PATH          "/sys/kernel/boot_kpi/kpi_values"
+
+static void inline ar_write_marker(const char *name) {
+    int fd = -1;
+
+    fd = open(KPI_VALUE_PATH, O_WRONLY);
+    if (fd >= 0) {
+        (void)write(fd, name, strlen(name));
+    } else {
+        AGM_LOGE("open boot marker for name %s failed: %s\r\n",
+                 name, strerror(errno));
+    }
+    if (fd > 0)
+        close(fd);
+
+    return;
+}
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif
 
 #endif /*__UTILS_H*/
