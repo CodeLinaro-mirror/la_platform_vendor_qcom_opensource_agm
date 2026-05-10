@@ -22,7 +22,8 @@ agm_sources = ./src/graph.c \
               ./src/session_obj.c \
               ./src/utils.c \
               ./src/agm.c
-if BUILDSYSTEM_OPENWRT
+
+if MEMLOGGER_SUPPORTED
 agm_sources += ./src/agm_memlogger.c
 AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
 else
@@ -46,7 +47,7 @@ endif
 if USE_SYSLOG
 libagm_la_CFLAGS += -DAGM_USE_SYSLOG
 endif
-if BUILDSYSTEM_OPENWRT
+if MEMLOGGER_SUPPORTED
 libagm_la_LIBADD += -laudio_log_utils -larmemlog
 else
 libagm_la_CFLAGS += -DAGM_MEMLOG_UNSUPPORTED

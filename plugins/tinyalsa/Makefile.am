@@ -11,7 +11,7 @@ if USE_G_STR_FUNC
 AM_CFLAGS += -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat
 endif
 AM_CFLAGS += -DAGM_USE_SYSLOG
-if !BUILDSYSTEM_OPENWRT
+if !MEMLOGGER_SUPPORTED
 AM_CFLAGS += @KVH2XML_CFLAGS@
 endif
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\)
