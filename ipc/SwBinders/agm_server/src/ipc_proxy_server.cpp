@@ -191,11 +191,10 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
 		data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
 		data.writeStrongBinder(IInterface::asBinder(clt_binder));
 		remote()->transact(UNREG_CLIENT, data, &reply);
-		clt_binder = nullptr;
 
+		clt_binder = NULL;
 		AGM_LOGD("%s: UNREG_CLIENT sent, clt_binder cleared\n", __func__);
 		return 0;
-
 	}
 
         virtual int ipc_agm_audio_intf_set_media_config(uint32_t audio_intf,
