@@ -57,6 +57,26 @@
 #include <log_utils.h>
 #endif
 
+#ifdef ENABLE_TIMESTAMP
+typedef struct pal_extern_alloc_buff_info {
+    int      alloc_handle;/**< unique memory handle identifying extern mem allocation */
+    uint32_t alloc_size;  /**< size of external allocation */
+    uint32_t offset;      /**< offset of buffer within extern allocation */
+} pal_extern_alloc_buff_info_t;
+
+/** PAL buffer structure used for reading/writing buffers from/to the stream */
+struct pal_buffer {
+    uint8_t *buffer;               /**<  buffer pointer */
+    size_t size;                   /**< number of bytes */
+    size_t offset;                 /**< offset in buffer from where valid byte starts */
+    struct timespec *ts;           /**< timestmap */
+    uint32_t flags;                /**< flags */
+    size_t metadata_size;          /**< size of metadata buffer in bytes */
+    uint8_t *metadata;             /**< metadata buffer. Can contain multiple metadata*/
+    pal_extern_alloc_buff_info_t alloc_info; /**< holds info for extern buff */
+    uint64_t frame_index;          /**< frame index of the buffer */
+};
+#endif
 /* 2 words of uint32_t = 64 bits of mask */
 #define PCM_MASK_SIZE (2)
 #define PCM_FORMAT_BIT(x) ((uint64_t)1 << x)
@@ -603,18 +623,52 @@ static int agm_pcm_readi_frames(struct pcm_plugin *plugin, struct snd_xferi *x)
     void *buff;
     size_t count;
     int ret = 0;
+#ifdef ENABLE_TIMESTAMP
+    struct agm_buff agm_buffer = {0};
+    struct pal_buffer *palBuffer;
+    uint32_t captured_size;
+#endif
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
 
-    buff = x->buf;
+    buff  = x->buf;
     count = x->frames * (priv->media_config->channels *
             agm_format_to_bits(priv->media_config->format) / 8);
-    ret = agm_session_read(handle, buff, &count);
-    errno = ret;
+
+#ifdef ENABLE_TIMESTAMP
+    palBuffer = (struct pal_buffer *)buff;
+    agm_buffer.addr = (uint8_t *)palBuffer->buffer;
+    if (!agm_buffer.addr) {
+        ALOGE("%s: null buffer pointer", __func__);
+        return -EINVAL;
+    }
+
+    captured_size  = (uint32_t)count;
+    agm_buffer.size = count;
+
+    AGM_LOGV("%s: palBuffer:%p addr:%p size:%zu\n",
+             __func__, palBuffer, agm_buffer.addr, agm_buffer.size);
+
+    ret = agm_session_read_with_metadata(handle, &agm_buffer, &captured_size);
+    if (ret > 0 && ret == (int)captured_size)
+        ret = 0;
+    else
+        errno = ret;
+
+    AGM_LOGV("%s: ret:%d timestamp:%llu\n",
+             __func__, ret, (unsigned long long)agm_buffer.timestamp);
+
+    if (palBuffer->ts)
+        palBuffer->ts->tv_nsec = (long)agm_buffer.timestamp;
 
     return ret;
+#else
+    ret = agm_session_read(handle, buff, &count);
+    errno = ret;
+    return ret;
+#endif
 }
 
 static int agm_pcm_ttstamp(struct pcm_plugin *plugin, int *tstamp __unused)
@@ -664,7 +718,6 @@ static int agm_pcm_start(struct pcm_plugin *plugin)
 
     ret = agm_session_start(handle);
     errno = ret;
-
     return ret;
 }
 
