@@ -700,16 +700,33 @@ int device_set_metadata(struct device_obj *dev_obj, uint32_t size,
                                                 uint8_t *metadata)
 {
    int ret = 0;
+   struct agm_meta_data_gsl temp = {0};
 
    pthread_mutex_lock(&dev_obj->lock);
+   /* If device is still open by other sessions, don't wipe the GKV.
+    * Clearing metadata while other sessions rely on it causes
+    * gsl_get_tags_with_module_info() to fail with -ENODEV. */
+   ret = metadata_copy(&temp, size, metadata);
+   if (ret) {
+       AGM_LOGE("copy meta data failed rst %d\n", ret);
+       goto done;
+   }
+   if (dev_obj->refcnt.open > 0 && temp.gkv.num_kvs == 0) {
+       AGM_LOGI("device_set_metadata: skip clearing GKV, "
+                "device %s still in use (refcnt=%d)\n",
+                dev_obj->name, dev_obj->refcnt.open);
+       goto done;
+   }
    metadata_free(&dev_obj->metadata);
-   ret = metadata_copy(&(dev_obj->metadata), size, metadata);
+   dev_obj->metadata = temp;
+   memset(&temp, 0, sizeof(temp));
 #ifdef AGM_DEBUG_METADATA
    AGM_LOGI("Setting device metadata for %s\n", dev_obj->name);
    metadata_print(&(dev_obj->metadata));
 #endif
+done:
    pthread_mutex_unlock(&dev_obj->lock);
-
+   metadata_free(&temp);
    return ret;
 }
 
