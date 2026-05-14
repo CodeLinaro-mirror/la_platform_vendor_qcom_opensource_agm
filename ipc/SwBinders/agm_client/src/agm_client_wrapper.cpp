@@ -113,6 +113,11 @@ int agm_aif_set_media_config(uint32_t audio_intf,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_audio_intf_set_media_config(audio_intf,
                                                             media_config);
     }
@@ -127,6 +132,11 @@ int agm_session_set_config(uint64_t handle,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_set_config(handle, session_config,
                                                 media_config, buffer_config);
     }
@@ -148,6 +158,11 @@ int agm_aif_set_metadata(uint32_t audio_intf, uint32_t size, uint8_t *metadata){
     if(!agm_server_died)
     {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_audio_intf_set_metadata(audio_intf, size,
                                                                   metadata);
     }
@@ -160,6 +175,11 @@ int agm_session_set_metadata(uint32_t session_id, uint32_t size,
     if(!agm_server_died)
     {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_set_metadata(session_id, size,
                                                                metadata);
     }
@@ -172,6 +192,11 @@ int agm_session_aif_set_metadata(uint32_t session_id, uint32_t audio_intf,
     if(!agm_server_died)
     {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_audio_inf_set_metadata(session_id,
                                                  audio_intf, size, metadata);
     }
@@ -183,6 +208,11 @@ int agm_session_close(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_close(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -193,6 +223,11 @@ int agm_session_prepare(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_prepare(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -203,6 +238,11 @@ int agm_session_start(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_start(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -213,6 +253,11 @@ int agm_session_stop(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_stop(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -223,6 +268,11 @@ int agm_session_pause(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_pause(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -233,6 +283,11 @@ int agm_session_resume(uint64_t handle)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_resume(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -245,6 +300,11 @@ int agm_session_open(uint32_t session_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_open(session_id, sess_mode, handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -256,6 +316,11 @@ int  agm_session_aif_connect(uint32_t session_id, uint32_t audio_intf,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_audio_inf_connect(session_id,
                                                      audio_intf, state);
     }
@@ -270,6 +335,11 @@ int agm_session_read(uint64_t handle, void *buf, size_t *byte_count)
         android::sp<IAgmService> agm_client = get_agm_server();
         if(!handle)
            return -EINVAL;
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
 
         return agm_client->ipc_agm_session_read(handle, buf, byte_count);
     }
@@ -284,6 +354,11 @@ int agm_session_write(uint64_t handle, void *buf, size_t *byte_count)
         android::sp<IAgmService> agm_client = get_agm_server();
         if(!handle)
            return -EINVAL;
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
 
         return agm_client->ipc_agm_session_write(handle, buf, byte_count);
     }
@@ -297,6 +372,11 @@ int agm_session_set_loopback(uint32_t capture_session_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_set_loopback(capture_session_id,
                                                playback_session_id, state);
     }
@@ -308,6 +388,11 @@ size_t agm_get_hw_processed_buff_cnt(uint64_t handle, enum direction dir)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_get_hw_processed_buff_cnt(handle, dir);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -318,6 +403,11 @@ int agm_get_aif_info_list(struct aif_info *aif_list, size_t *num_aif_info)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_get_aif_info_list(aif_list, num_aif_info);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -329,6 +419,11 @@ int agm_session_aif_get_tag_module_info(uint32_t session_id, uint32_t aif_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_aif_get_tag_module_info(session_id,
                                                        aif_id, payload, size);
     }
@@ -340,6 +435,11 @@ int agm_aif_set_params(uint32_t aif_id,void *payload, size_t size)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_aif_set_params(aif_id,
                                                           payload, size);
     }
@@ -352,6 +452,11 @@ int agm_session_aif_set_params(uint32_t session_id, uint32_t aif_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_aif_set_params(session_id, aif_id,
                                                               payload, size);
     }
@@ -363,6 +468,11 @@ int agm_session_set_params(uint32_t session_id, void *payload, size_t size)
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_set_params(session_id, payload,
                                                                     size);
     }
@@ -375,6 +485,11 @@ int agm_set_params_with_tag(uint32_t session_id, uint32_t aif_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_set_params_with_tag(session_id, aif_id,
                                                               tag_config);
     }
@@ -387,6 +502,11 @@ int agm_session_register_for_events(uint32_t session_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_register_for_events(session_id,
                                                              evt_reg_cfg);
     }
@@ -398,6 +518,11 @@ int agm_session_register_cb(uint32_t session_id, agm_event_cb cb,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_register_cb(session_id, cb, event,
                                                                 client_data);
     }
@@ -410,6 +535,11 @@ int agm_session_set_ec_ref(uint32_t capture_session_id, uint32_t aif_id,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_set_ec_ref(capture_session_id,
                                                           aif_id, state);
     }
@@ -422,6 +552,11 @@ int agm_session_aif_set_cal(uint32_t session_id, uint32_t audio_intf,
 {
     if (!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_aif_set_cal(session_id, audio_intf,
                                                                   cal_config);
     }
@@ -433,6 +568,11 @@ int agm_session_eos(uint64_t handle)
 {
     if(!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_eos(handle);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -443,6 +583,11 @@ int agm_get_session_time(uint64_t handle, uint64_t *timestamp)
 {
     if(!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            AGM_LOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_get_session_time(handle, timestamp);
     }
     AGM_LOGE("%s: agm service is not running\n", __func__);
@@ -454,6 +599,11 @@ int agm_session_get_params(uint32_t session_id, void *payload, size_t size)
     if(!agm_server_died)
     {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            ALOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_get_params(session_id, payload, size);
     }
     ALOGE("%s: agm service is not running\n", __func__);
@@ -464,6 +614,11 @@ int agm_get_buffer_timestamp(uint32_t session_id, uint64_t *timestamp)
 {
     if(!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            ALOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_get_buffer_timestamp(session_id, timestamp);
     }
     ALOGE("%s: agm service is not running\n", __func__);
@@ -476,6 +631,11 @@ int agm_set_gapless_session_metadata(uint64_t handle,
 {
     if(!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            ALOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_set_gapless_session_metadata(handle, type,
                                                                 silence);
     }
@@ -488,6 +648,11 @@ int agm_session_get_buf_info(uint32_t session_id, struct agm_buf_info *buf_info,
 {
     if(!agm_server_died) {
         android::sp<IAgmService> agm_client = get_agm_server();
+        // Check if agm_client is valid before dereferencing
+        if (agm_client == NULL) {
+            ALOGE("%s: Failed to get agm service\n", __func__);
+            return -ENODEV;
+        }
         return agm_client->ipc_agm_session_get_buf_info(session_id, buf_info,
                                                         flag);
     }
