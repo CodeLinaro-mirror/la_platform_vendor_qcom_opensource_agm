@@ -842,6 +842,7 @@ Return<int32_t> AGM::ipc_agm_session_set_config(uint64_t hndl,
     session_config_local = (struct agm_session_config*)
                                   calloc(1, sizeof(struct agm_session_config));
     if (session_config_local == NULL) {
+        free(media_config_local);
         ALOGE("%s: Cannot allocate memory for session_config_local\n", __func__);
         return -ENOMEM;
     }
@@ -853,6 +854,8 @@ Return<int32_t> AGM::ipc_agm_session_set_config(uint64_t hndl,
     buffer_config_local = (struct agm_buffer_config*)
                                    calloc(1, sizeof(struct agm_buffer_config));
     if (buffer_config_local == NULL) {
+        free(session_config_local);
+        free(media_config_local);
         ALOGE("%s: Cannot allocate memory for buffer_config_local\n", __func__);
         return -ENOMEM;
     }
@@ -1250,6 +1253,7 @@ Return<int32_t> AGM::ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
     out_media_config_local = (struct agm_media_config*)
                                     calloc(1, sizeof(struct agm_media_config));
     if (out_media_config_local == NULL) {
+        free(in_media_config_local);
         ALOGE("%s: Cannot allocate memory for media_config_local\n", __func__);
         return -ENOMEM;
     }
@@ -1269,6 +1273,8 @@ Return<int32_t> AGM::ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
     session_config_local = (struct agm_session_config*)
                                   calloc(1, sizeof(struct agm_session_config));
     if (session_config_local == NULL) {
+        free(in_media_config_local);
+        free(out_media_config_local);
         ALOGE("%s: Cannot allocate memory for session_config_local\n", __func__);
         return -ENOMEM;
     }
@@ -1280,6 +1286,9 @@ Return<int32_t> AGM::ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
     in_buffer_config_local = (struct agm_buffer_config*)
                                    calloc(1, sizeof(struct agm_buffer_config));
     if (in_buffer_config_local == NULL) {
+        free(in_media_config_local);
+        free(out_media_config_local);
+        free(session_config_local);
         ALOGE("%s: Cannot allocate memory for buffer_config_local\n", __func__);
         return -ENOMEM;
     }
@@ -1287,6 +1296,10 @@ Return<int32_t> AGM::ipc_agm_session_set_non_tunnel_mode_config(uint64_t hndl,
     out_buffer_config_local = (struct agm_buffer_config*)
                                    calloc(1, sizeof(struct agm_buffer_config));
     if (out_buffer_config_local == NULL) {
+        free(in_media_config_local);
+        free(out_media_config_local);
+        free(session_config_local);
+        free(in_buffer_config_local);
         ALOGE("%s: Cannot allocate memory for buffer_config_local\n", __func__);
         return -ENOMEM;
     }

@@ -156,7 +156,7 @@ int main(int argc, char **argv)
     FILE *file;
     struct riff_wave_header riff_wave_header;
     struct chunk_header chunk_header;
-    struct chunk_fmt chunk_fmt;
+    struct chunk_fmt chunk_fmt = {0};
     unsigned int card = 100, device = 100;
     bool haptics = false;
     char *intf_name = NULL;
@@ -298,9 +298,13 @@ void play_sample(FILE *file, unsigned int card, unsigned int device,
     config.rate = fmt.sample_rate;
     config.period_size = 1024;
     config.period_count = 4;
-    if (fmt.bits_per_sample == 32)
+    if (fmt.bits_per_sample == 32) {
         config.format = PCM_FORMAT_S32_LE;
-    else if (fmt.bits_per_sample == 24)
+        /* set period_count to 2 if channels count is more than equal to 32*/
+        if (config.channels >= 32) {
+            config.period_count = 2;
+        }
+    } else if (fmt.bits_per_sample == 24)
         config.format = PCM_FORMAT_S24_3LE;
     else if (fmt.bits_per_sample == 16)
         config.format = PCM_FORMAT_S16_LE;
