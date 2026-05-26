@@ -85,7 +85,7 @@ void stream_close(int sig)
 
 static void usage(void)
 {
-    printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
+    printf(" Usage: %s file.wav in /data [-help print usage] [-D card] [-d device]\n"
            " [-c channels] [-r rate] [-b bits]\n"
            " [-num_intf num of interfaces followed by interface name]\n"
            " [-i intf_name] : Can be multiple if num_intf is more than 1\n"
@@ -137,6 +137,19 @@ int main(int argc, char **argv)
     devicepp_kv[0] = dppkv;
 
     filename = argv[1];
+
+    // Validate filename to prevent path traversal
+    if (strstr(filename, "..") != NULL) {
+        printf("Invalid filename provided.\n");
+        return 1;
+    }
+    // Ensure the filename is within /data directory
+    const char *allowed_prefix = "/data/";
+    if (strncmp(filename, allowed_prefix, strlen(allowed_prefix)) != 0) {
+        printf("Filename must be under /data directory.\n");
+        return 1;
+    }
+
     file = fopen(filename, "rb");
     if (!file) {
         printf("Unable to open file '%s'\n", filename);
