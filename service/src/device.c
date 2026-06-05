@@ -1091,7 +1091,7 @@ static int parse_virtual_snd_card()
                                           SND_NODE_TYPE_PCM,
                                           node_list, num_nodes);
     if (ret) {
-        AGM_LOGI("%s: failed to get non-alsa pcm node list, err %d, continuing\n", ret);
+        AGM_LOGI("failed to get non-alsa pcm node list, err %d, continuing\n", ret);
         goto done;
     }
 
@@ -1216,7 +1216,7 @@ static int wait_for_snd_card_to_online()
 
             buf[sizeof(buf) - 1] = '\0';
             card_status = SND_CARD_STATUS_NONE;
-            sscanf(buf , "%d", &card_status);
+            { int _tmp = 0; sscanf(buf , "%d", &_tmp); card_status = (snd_card_status_t)_tmp; }
 
             if (card_status == SND_CARD_STATUS_ONLINE) {
                 AGM_LOGV("snd sysfs node open successful");
