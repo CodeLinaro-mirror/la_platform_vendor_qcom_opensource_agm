@@ -82,7 +82,7 @@ static void sigint_handler(int sig)
 
 static void usage(void)
 {
-    printf(" Usage: %s file.wav [-help print usage] [-D card] [-d device]\n"
+    printf(" Usage: file.wav in /data [-help print usage] [-D card] [-d device]\n"
            " [-c channels] [-r rate] [-b bits] [-p period_size]\n"
            " [-n n_periods] [-T capture time] [-i intf_name] [-dkv device_kv]\n"
            " [-dppkv deviceppkv] : Assign 0 if no device pp in the graph\n"
@@ -109,6 +109,7 @@ int main(int argc, char **argv)
     unsigned int period_count = 4;
     unsigned int cap_time = 0;
     char *intf_name = NULL;
+    char *filename;
     unsigned int device_kv = 0;
     struct device_config config;
     enum pcm_format format;
@@ -123,9 +124,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    file = fopen(argv[1], "wb");
+    filename = argv[1];
+
+    // Validate filename to prevent path traversal
+    if (strstr(filename, "..") != NULL) {
+        printf("Invalid filename provided.\n");
+        return 1;
+    }
+    // Ensure the filename is within /data directory
+    const char *allowed_prefix = "/data/";
+    if (strncmp(filename, allowed_prefix, strlen(allowed_prefix)) != 0) {
+        printf("Filename must be under /data directory.\n");
+        return 1;
+    }
+
+    file = fopen(filename, "wb");
     if (!file) {
-        printf("Unable to create file '%s'\n", argv[1]);
+        printf("Unable to create file '%s'\n", filename);
         return 1;
     }
 
