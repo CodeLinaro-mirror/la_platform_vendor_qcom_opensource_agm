@@ -164,6 +164,11 @@ int main(int argc, char **argv)
             argv++;
     }
 
+    if (c_intf_name == NULL || p_intf_name == NULL) {
+        printf(" Error : Invalid capture or playback interface, exiting");
+        return 1;
+    }
+
     ret = get_device_media_config(BACKEND_CONF_FILE, c_intf_name, &capture_config);
     if (ret) {
         printf("Invalid input, assigning default values for : %s\n", c_intf_name);
