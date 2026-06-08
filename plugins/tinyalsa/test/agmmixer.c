@@ -26,9 +26,9 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
-** SPDX-License-Identifier: BSD-3-Clause-Clear
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+** SPDX-License-Identifier: BSD-3-Clause
 */
 
 #include <errno.h>
@@ -1165,7 +1165,8 @@ int configure_mfc(struct mixer *mixer, int device, char *intf_name, int tag,
     size = payloadSize + padBytes;
 
     ret = agm_mixer_set_param(mixer, device, stype, (void *)payloadInfo, (int)size);
-    free(payloadInfo);
+    if (payloadInfo)
+        free(payloadInfo);
 
     return ret;
 }
