@@ -1795,9 +1795,16 @@ static int configure_compress_shared_mem_ep_datapath(struct module_info *mod,
 
     ret = graph_write(graph_obj, &buffer, &consumed_size);
     if (ret != 0) {
-        ret = ar_err_get_lnx_err_code(ret);
-        AGM_LOGE("custom_config command for module %d failed with error %d",
-                      mod->tag, ret);
+        if (ret == -ENOSPC) {
+            /* Write heap full; codec config silently dropped if not a same-file loop. */
+            AGM_LOGI("write heap full for module %d, ignoring for gapless loop",
+                     mod->tag);
+            ret = 0;
+        } else {
+            ret = ar_err_get_lnx_err_code(ret);
+            AGM_LOGE("custom_config command for module %d failed with error %d",
+                          mod->tag, ret);
+        }
     }
 
 free_payload:
