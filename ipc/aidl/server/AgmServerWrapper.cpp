@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -338,6 +339,16 @@ void AgmServerWrapper::removeClient(int pid) {
 
 std::shared_ptr<ClientInfo> AgmServerWrapper::getClient_l() {
     int pid = AIBinder_getCallingPid();
+    if (pid == 0) {
+        /*
+        * AIBinder_getCallingPid() returns 0 sometimes for intra-process (same-PID) calls
+        * made from non-binder-pool threads (e.g. AHAL worker threads). Map these
+        * to the caller's actual PID so that register and unregister operations
+        * from all AHAL threads share the same ClientInfo entry, preventing stale
+        * callbacks from surviving a power-policy cycle.
+        */
+        pid = getpid();
+    }
     if (mClients.count(pid) == 0) {
         ALOGV("%s new client pid %d, total clients %zu ", __func__, pid, mClients.size());
         mClients[pid] = std::make_shared<ClientInfo>(pid);
