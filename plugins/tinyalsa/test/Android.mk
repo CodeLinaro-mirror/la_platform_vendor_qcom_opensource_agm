@@ -7,11 +7,17 @@ LOCAL_MODULE_TAGS   := optional
 LOCAL_VENDOR_MODULE := true
 
 LOCAL_CFLAGS        += -Wno-unused-parameter -Wno-unused-result
+
 LOCAL_SRC_FILES     := agmmixer.c
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
     libacdb_headers
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
@@ -53,6 +59,10 @@ endif
 
 LOCAL_SHARED_LIBRARIES += \
     libagmmixer
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 include $(BUILD_EXECUTABLE)
 include $(CLEAR_VARS)
