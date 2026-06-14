@@ -20,6 +20,11 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.agm-V1-ndk \
     libbinder_ndk
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
+
 LOCAL_STATIC_LIBRARIES := libagmaidltypeconverter libaidlcommonsupport
 
 LOCAL_HEADER_LIBRARIES := libagm_headers
