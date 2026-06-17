@@ -1322,7 +1322,7 @@ int configure_spr(struct module_info *spr_mod,
     if (!payload) {
         AGM_LOGE("No memory to allocate for payload");
         ret = -ENOMEM;
-        goto done;
+        return ret;
     }
     header = (struct apm_module_param_data_t*)payload;
     spr_hwep_delay = (struct param_id_spr_delay_path_end_t *)(payload
@@ -1344,7 +1344,7 @@ int configure_spr(struct module_info *spr_mod,
             }
         }
     }
-done:
+    free(payload);
     return ret;
 }
 

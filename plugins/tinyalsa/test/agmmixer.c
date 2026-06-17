@@ -370,7 +370,7 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
 {
     char *control = "metadata";
     struct mixer_ctl *ctl;
-    char *mixer_str;
+    char *mixer_str = NULL;
     struct agm_key_value *gkv = NULL, *ckv = NULL;
     struct prop_data *prop = NULL;
     uint8_t *metadata = NULL;
@@ -391,12 +391,8 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
     ckv = calloc(num_ckv, sizeof(struct agm_key_value));
     prop = calloc(1, prop_size);
     if (!gkv || !ckv || !prop) {
-        if (ckv)
-            free(ckv);
-        if (gkv)
-            free(gkv);
-        free(metadata);
-        return -ENOMEM;
+        ret = -ENOMEM;
+        goto cleanup;
     }
 
     if (d == PLAYBACK) {
@@ -429,29 +425,31 @@ int set_agm_audio_intf_metadata(struct mixer *mixer, char *intf_name, enum dir d
     ctl_len = strlen(intf_name) + 1 + strlen(control) + 1;
     mixer_str = calloc(1, ctl_len);
     if (!mixer_str) {
-        free(metadata);
-        return -ENOMEM;
+        ret = -ENOMEM;
+        goto cleanup;
     }
     snprintf(mixer_str, ctl_len, "%s %s", intf_name, control);
 
     ctl = mixer_get_ctl_by_name(mixer, mixer_str);
     if (!ctl) {
         printf("Invalid mixer control: %s\n", mixer_str);
-        free(gkv);
-        free(ckv);
-        free(prop);
-        free(metadata);
-        free(mixer_str);
-        return ENOENT;
+        ret = -ENOENT;
+        goto cleanup;
     }
 
     ret = mixer_ctl_set_array(ctl, metadata, sizeof(num_gkv) + sizeof(num_ckv) + gkv_size + ckv_size + prop_size);
 
-    free(gkv);
-    free(ckv);
-    free(prop);
-    free(metadata);
-    free(mixer_str);
+cleanup:
+    if (gkv)
+        free(gkv);
+    if (ckv)
+        free(ckv);
+    if (prop)
+        free(prop);
+    if (metadata)
+        free(metadata);
+    if (mixer_str)
+        free(mixer_str);
     return ret;
 }
 
