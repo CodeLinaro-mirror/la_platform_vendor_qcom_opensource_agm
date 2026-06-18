@@ -12,6 +12,9 @@ AM_CFLAGS += -I $(top_srcdir)/service/inc/public -I $(top_srcdir)/snd_parser/inc
 AM_CFLAGS += @GLIB_CFLAGS@ -Dstrlcpy=g_strlcpy -Dstrlcat=g_strlcat -include glib.h
 AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CFLAGS += -Wno-unused-parameter
+if ENABLE_TIMESTAMP
+AM_CFLAGS += -DENABLE_TIMESTAMP
+endif
 
 endif
 
