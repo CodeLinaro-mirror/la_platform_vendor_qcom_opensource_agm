@@ -27,43 +27,15 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *
- *     * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: API"
 #include <agm/agm_api.h>
 #include <agm/device.h>
 #include <agm/session_obj.h>
+#include "gsl_intf.h"
 #include <agm/utils.h>
 #include "ats.h"
 #include <stdio.h>
@@ -133,7 +105,18 @@ int agm_init()
         AGM_LOGE("Session_obj_init failed with %d", ret);
         goto exit;
     }
+
     agm_initialized = 1;
+
+    ret = gsl_cshm_init(0);
+    if (ret == AR_EUNSUPPORTED) {
+        AGM_LOGD("cshm not supported");
+        ret = 0;
+    } else if (ret != 0) {
+        AGM_LOGE("gsl_cshm_init failed with %d", ret);
+        agm_deinit();
+        goto exit;
+    }
 
 exit:
     return ret;
@@ -1097,6 +1080,35 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buff
     }
 
     return session_obj_write_with_metadata(obj, buff, &consumed_size);
+}
+
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+
+    int32_t ret = -EINVAL;
+    gsl_cshm_info_t gsl_info;
+
+    gsl_info.type = (gsl_cshm_cache_type_t) info->type;
+    gsl_info.flag = info->flags;
+    ret = gsl_cshm_alloc(size , &gsl_info);
+    if (!ret) {
+        info->fd = gsl_info.fd;
+        info->mem_id = gsl_info.mem_id;
+    }
+
+    return ret;
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length, uint32_t miid,
+                 uint32_t prop_flag) {
+
+    return gsl_cshm_msg((gsl_mem_id_t) mem_id , offset, length, miid, prop_flag);
+
+}
+
+int agm_cshm_dealloc(uint32_t mem_id) {
+
+    return gsl_cshm_dealloc((gsl_mem_id_t) mem_id);
+
 }
 
 int agm_dump(struct agm_dump_info *dump_info __unused)

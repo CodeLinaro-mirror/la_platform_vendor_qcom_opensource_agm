@@ -25,6 +25,11 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ *
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #pragma once
@@ -52,6 +57,9 @@ using AgmSessionMode = ::vendor::qti::hardware::AGMIPC::V1_0::AgmSessionMode;
 using AgmGaplessSilenceType = ::vendor::qti::hardware::AGMIPC::V1_0::AgmGaplessSilenceType;
 using AgmBuff = ::vendor::qti::hardware::AGMIPC::V1_0::AgmBuff;
 using AgmEventReadWriteDonePayload = ::vendor::qti::hardware::AGMIPC::V1_0::AgmEventReadWriteDonePayload;
+using AgmCshmCachetype = ::vendor::qti::hardware::AGMIPC::V1_0::AgmCshmCachetype;
+using AgmCshmInfo = ::vendor::qti::hardware::AGMIPC::V1_0::AgmCshmInfo;
+
 using android::hardware::hidl_handle;
 using android::hardware::hidl_memory;
 

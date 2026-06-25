@@ -26,8 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ *
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -1108,6 +1109,61 @@ int agm_session_write_datapath_params(uint32_t session_id, struct agm_buff *buf)
         return agm_client->ipc_agm_session_write_datapath_params(
                                             session_id, buf_hidl);
     }
+    return -EINVAL;
+}
+
+int agm_cshm_alloc(uint32_t size, agm_cshm_info *info) {
+
+    int ret = -EINVAL;
+
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        hidl_vec<AgmCshmInfo> info_hidl(1);
+
+        info_hidl.data()->type =(AgmCshmCachetype) info->type;
+        info_hidl.data()->flags = info->flags;
+        auto status = agm_client->ipc_agm_cshm_alloc(size, info_hidl,
+                                   [&](int32_t ret_, hidl_vec<AgmCshmInfo> info_hidl_result)
+                                    {
+                                        if(!ret_) {
+                                            const native_handle_t* handle = info_hidl_result[0].fdHandle.getNativeHandle();
+                                            if (handle && handle->numFds > 0) {
+                                                info->fd = dup(handle->data[0]);
+                                                info->mem_id = info_hidl_result.data()->memID;
+                                            } else {
+                                                ALOGE("Invalid handle received from AGM");
+                                                ret = -EBADFD;
+                                            }
+                                        }
+                                        ret = ret_;
+                                    }
+                                                       );
+        if (!status.isOk()) {
+            ALOGE("%s: HIDL call failed. ret=%d\n", __func__, ret);
+        }
+    }
+
+    return ret;
+}
+
+int agm_cshm_msg(uint32_t mem_id, uint32_t offset, uint32_t length,
+                    uint32_t miid, uint32_t prop_flag) {
+
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        return agm_client->ipc_agm_cshm_msg(mem_id, offset, length, miid, prop_flag);
+    }
+
+    return -EINVAL;
+}
+
+int agm_cshm_dealloc(uint32_t mem_id)  {
+
+    if (!agm_server_died) {
+        android::sp<IAGM> agm_client = get_agm_server();
+        return agm_client->ipc_agm_cshm_dealloc(mem_id);
+    }
+
     return -EINVAL;
 }
 
