@@ -1,5 +1,4 @@
 /*
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
@@ -19,6 +18,7 @@
 #include <aidlcommonsupport/NativeHandle.h>
 #include <cutils/ashmem.h>
 #include <cutils/native_handle.h>
+#include <cutils/properties.h>
 #include "gsl_intf.h"
 using ndk::ScopedAStatus;
 
@@ -358,8 +358,15 @@ std::shared_ptr<ClientInfo> AgmServerWrapper::getClient_l() {
 }
 
 AgmServerWrapper::AgmServerWrapper() {
-    mInitialized = (agm_init() == 0);
-    ALOGI("%s created", __func__);
+    char audioType[PROPERTY_VALUE_MAX];
+    property_get("ro.boot.audio", audioType, "");
+    mIsAudioReach = (strcmp(audioType, "audioreach") == 0);
+    if (mIsAudioReach) {
+        mInitialized = (agm_init() == 0);
+    } else {
+        mInitialized = true;
+    }
+    ALOGI("%s created, isAudioReach=%d", __func__, mIsAudioReach);
 }
 
 AgmServerWrapper::~AgmServerWrapper() {
@@ -376,27 +383,33 @@ AgmServerWrapper::~AgmServerWrapper() {
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_start(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_start(in_handle));
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_stop(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_stop(in_handle));
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_suspend(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_suspend(in_handle));
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_close(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     removeSessionHandle(in_handle);
     return status_tToBinderResult(agm_session_close(in_handle));
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_eos(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_eos(in_handle));
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_flush(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_flush(in_handle));
 }
 
@@ -406,6 +419,7 @@ AgmServerWrapper::~AgmServerWrapper() {
     std::lock_guard<std::mutex> guard(mLock);
     ALOGV("%s called with sessionId = %llx register %d eventType %d", __func__,
           (unsigned long long)in_sessionId, in_register, in_eventType);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto client = getClient_l();
     if (in_register)
@@ -419,6 +433,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_get_buf_info(int32_t in_sessionId,
                                                                     int32_t in_flag,
                                                                     MmapBufInfo *_aidl_return) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     struct agm_buf_info agmLegacyBufferInfo;
 
     memset(&agmLegacyBufferInfo, 0, sizeof(struct agm_buf_info));
@@ -433,6 +448,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         int32_t in_sessionId, const std::vector<uint8_t> &in_buffer,
         std::vector<uint8_t> *_aidl_return) {
     ALOGV("%s sessionId %d, size %zu ", __func__, in_sessionId, in_buffer.size());
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto agmLegacyPayload = VALUE_OR_RETURN(allocate<uint8_t>(in_buffer.size()));
 
@@ -458,6 +474,10 @@ AgmServerWrapper::~AgmServerWrapper() {
                                                             int64_t *_aidl_return) {
     enum agm_session_mode sessionMode = static_cast<agm_session_mode>(in_sessionMode);
     ALOGV("%s: sessionId =%d sessionMode =%d", __func__, in_sessionId, sessionMode);
+    if (!mIsAudioReach) {
+        *_aidl_return = 0;
+        return ScopedAStatus::ok();
+    }
 
     uint64_t handle = 0;
     int ret = agm_session_open(in_sessionId, sessionMode, &handle);
@@ -474,16 +494,19 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_pause(int64_t in_handle) {
     ALOGV("%s handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_pause(in_handle));
 }
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_prepare(int64_t in_handle) {
     ALOGV("%s handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_prepare(in_handle));
 }
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_read(int64_t in_handle, int32_t in_count,
                                                             std::vector<uint8_t> *_aidl_return) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto agmLegacyBuffer = VALUE_OR_RETURN(allocate<void>(in_count));
     void *agmLegacyBufferPtr = agmLegacyBuffer.get();
     size_t bytesRead = (size_t)in_count;
@@ -496,6 +519,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_read_with_metadata(
         int64_t in_handle, const AgmBuff &in_buffer, int32_t in_capturedSize,
         IAGM::AgmReadWithMetadataReturn *_aidl_return) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     struct agm_buff agmLegacyBuffer;
     uint32_t captured_size = in_capturedSize;
 
@@ -535,6 +559,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_register_for_events(
         int32_t in_sessionId, const AgmEventRegistrationConfig &in_evt_reg_cfg) {
     ALOGV("%s sessionId %d ", __func__, in_sessionId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto allocSize = sizeof(struct agm_event_reg_cfg) + in_evt_reg_cfg.eventConfigPayload.size();
     auto agmLegacyEventRegConfig = VALUE_OR_RETURN(allocate<agm_event_reg_cfg>(allocSize));
     AidlToLegacy::convertAgmEventRegistrationConfig(in_evt_reg_cfg, agmLegacyEventRegConfig.get());
@@ -545,12 +570,14 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_resume(int64_t in_handle) {
     ALOGV("%s called with handle = %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_resume(in_handle));
 }
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_set_config(
         int64_t in_handle, const AgmSessionConfig &in_sessionConfig,
         const AgmMediaConfig &in_mediaConfig, const AgmBufferConfig &in_bufferConfig) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto agmLegacyMediaConfig =
             VALUE_OR_RETURN(allocate<agm_media_config>(sizeof(struct agm_media_config)));
     auto agmLegacySessionConfig =
@@ -571,6 +598,7 @@ AgmServerWrapper::~AgmServerWrapper() {
                                                                   int32_t in_aif_id,
                                                                   bool in_state) {
     ALOGV("%s sessionId %d aifId %d state %d ", __func__, in_sessionId, in_aif_id, in_state);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_session_set_ec_ref(in_sessionId, in_aif_id, in_state));
 }
 
@@ -579,6 +607,7 @@ AgmServerWrapper::~AgmServerWrapper() {
                                                                     bool in_state) {
     ALOGV("%s capture session %d playback session %d state %d ", __func__, in_captureSessionId,
           in_playbackSessionId, in_state);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(
             agm_session_set_loopback(in_captureSessionId, in_playbackSessionId, in_state));
 }
@@ -586,6 +615,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_set_metadata(
         int32_t in_sessionId, const std::vector<uint8_t> &in_metadata) {
     ALOGV("%s sessionId %d,  size %zu ", __func__, in_sessionId, in_metadata.size());
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto metadataLegacy = VALUE_OR_RETURN(allocate<uint8_t>(in_metadata.size()));
     memcpy(metadataLegacy.get(), in_metadata.data(), in_metadata.size());
     return status_tToBinderResult(
@@ -596,6 +626,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         int64_t in_handle, const AgmSessionConfig &in_sessionConfig,
         const AgmMediaConfig &in_inMediaConfig, const AgmMediaConfig &in_outMediaConfig,
         const AgmBufferConfig &in_inBufferConfig, const AgmBufferConfig &in_outBufferConfig) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto agmLegacyInMediaConfig =
             VALUE_OR_RETURN(allocate<agm_media_config>(sizeof(struct agm_media_config)));
     auto agmLegacyOutMediaConfig =
@@ -623,6 +654,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         int32_t in_sessionId, const std::vector<uint8_t> &in_payload) {
     size_t payloadSize = in_payload.size();
     ALOGV("%s : sessionId = %d size = %zu", __func__, in_sessionId, payloadSize);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto legacyPayload = VALUE_OR_RETURN(allocate<void>(payloadSize));
     memcpy(legacyPayload.get(), in_payload.data(), payloadSize);
@@ -635,6 +667,10 @@ AgmServerWrapper::~AgmServerWrapper() {
                                                              int32_t *_aidl_return) {
     size_t count = (size_t)in_buff.size();
     ALOGV("%s called with handle = %llx, ref_count %zu ", __func__, (unsigned long long)in_handle, count);
+    if (!mIsAudioReach) {
+        *_aidl_return = 0;
+        return ScopedAStatus::ok();
+    }
 
     auto buffer = VALUE_OR_RETURN(allocate<void>(count));
     memcpy(buffer.get(), in_buff.data(), count);
@@ -646,6 +682,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_write_datapath_params(
         int32_t in_sessionId, const AgmBuff &in_buff) {
     ALOGW("%s sessionId %d", __func__, in_sessionId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     struct agm_buff agmLegacyBuffer;
     uint32_t bufSize = in_buff.buffer.size();
     agmLegacyBuffer.addr = nullptr;
@@ -668,6 +705,10 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_write_with_metadata(int64_t in_handle,
                                                                            const AgmBuff &in_buff,
                                                                            int32_t *_aidl_return) {
+    if (!mIsAudioReach) {
+        *_aidl_return = 0;
+        return ScopedAStatus::ok();
+    }
     struct agm_buff agmLegacyBuffer;
     uint32_t bufSize = in_buff.size;
     agmLegacyBuffer.addr = nullptr;
@@ -716,6 +757,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_aif_group_set_media_config(
         int32_t in_groupId, const AgmGroupMediaConfig &in_config) {
     ALOGV("%s called with aif_id = %d", __func__, in_groupId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto agmLegacyConfig = VALUE_OR_RETURN(
             allocate<agm_group_media_config>(sizeof(struct agm_group_media_config)));
@@ -727,6 +769,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_aif_set_media_config(
         int32_t in_aifId, const AgmMediaConfig &in_config) {
     ALOGV("%s called with aif_id = %d", __func__, in_aifId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto agmLegacyConfig =
             VALUE_OR_RETURN(allocate<agm_media_config>(sizeof(struct agm_media_config)));
@@ -738,6 +781,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_aif_set_metadata(
         int32_t in_aifId, const std::vector<uint8_t> &in_metadata) {
     ALOGV("%s called with aif_id = %d,  size %zu", __func__, in_aifId, in_metadata.size());
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto agmLegacyMetadata = VALUE_OR_RETURN(allocate<uint8_t>(in_metadata.size()));
     memcpy(agmLegacyMetadata.get(), in_metadata.data(), in_metadata.size());
@@ -749,6 +793,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_aif_set_params(
         int32_t in_aifId, const std::vector<uint8_t> &in_payload) {
     ALOGV(" %s: aifId %d size %zu", __func__, in_aifId, in_payload.size());
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto agmLegacyPayload = VALUE_OR_RETURN(allocate<uint8_t>(in_payload.size()));
     memcpy(agmLegacyPayload.get(), in_payload.data(), in_payload.size());
@@ -761,6 +806,7 @@ AgmServerWrapper::~AgmServerWrapper() {
                                                                    int32_t in_aifId,
                                                                    bool in_state) {
     ALOGV("%s sessionId %d,aifId %d, state %d ", __func__, in_sessionId, in_aifId, in_state);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     connectSessionAif(in_sessionId, in_aifId, in_state);
     return status_tToBinderResult(agm_session_aif_connect(in_sessionId, in_aifId, in_state));
@@ -771,6 +817,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         std::vector<uint8_t> *_aidl_return) {
     ALOGV("%s : in_sessionId = %d, aif_id =%d, size = %d", __func__, in_sessionId, in_aifId,
           in_size);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     uint8_t *agmLegacyPayload = NULL;
     size_t payloadSize = (size_t)in_size;
@@ -800,6 +847,7 @@ AgmServerWrapper::~AgmServerWrapper() {
     auto numKvPairs = in_calConfig.kv.size();
     ALOGV("%s : sessionId = %d, aifId = %d calKeys %zu", __func__, in_sessionId, in_aifId,
           numKvPairs);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     RETURN_IF_KVPAIR_EXCEEDS_RANGE(numKvPairs);
     auto allocSize = sizeof(struct agm_cal_config) + numKvPairs * sizeof(struct agm_key_value);
@@ -812,6 +860,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_session_aif_set_metadata(
         int32_t in_sessionId, int32_t in_aifId, const std::vector<uint8_t> &in_metadata) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto agmLegacyMetadata = VALUE_OR_RETURN(allocate<uint8_t>(in_metadata.size()));
     memcpy(agmLegacyMetadata.get(), in_metadata.data(), in_metadata.size());
     return status_tToBinderResult(agm_session_aif_set_metadata(
@@ -823,6 +872,7 @@ AgmServerWrapper::~AgmServerWrapper() {
     size_t payloadSize = in_payload.size();
     ALOGV("%s : sessionId = %d, aif_id =%d, size = %zu", __func__, in_sessionId, in_aifId,
           payloadSize);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto legacyPayload = VALUE_OR_RETURN(allocate<void>(payloadSize));
     memcpy(legacyPayload.get(), in_payload.data(), payloadSize);
@@ -833,6 +883,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_aif_info_list(
         int32_t in_numAifInfo, std::vector<AifInfo> *_aidl_return) {
     ALOGV("%s numberOfAif = %d ", __func__, in_numAifInfo);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     AgmAifUniquePtrType agmLegacyAifInfoListUPtr(nullptr, free);
 
@@ -851,6 +902,10 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_buffer_timestamp(int32_t in_sessiondId,
                                                                     int64_t *_aidl_return) {
+    if (!mIsAudioReach) {
+        *_aidl_return = 0;
+        return ScopedAStatus::ok();
+    }
     uint64_t timestampLegacy;
     int ret = agm_get_buffer_timestamp(in_sessiondId, &timestampLegacy);
     *_aidl_return = timestampLegacy;
@@ -859,6 +914,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_group_aif_info_list(
         int32_t in_numberOfGroups, std::vector<AifInfo> *_aidl_return) {
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     AgmAifUniquePtrType agmLegacyAifInfoListUPtr(nullptr, free);
     if (in_numberOfGroups != 0) {
         agmLegacyAifInfoListUPtr =
@@ -876,6 +932,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_hw_processed_buff_cnt(int64_t in_handle,
                                                                          Direction in_direction) {
     ALOGV("%s handle %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     enum direction legacyDir = (enum direction)(in_direction);
     return status_tToBinderResult(agm_get_hw_processed_buff_cnt(in_handle, legacyDir));
 }
@@ -884,6 +941,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         const std::vector<uint8_t> &in_payload, std::vector<uint8_t> *_aidl_return) {
     size_t payloadSize = in_payload.size();
     ALOGV("%s :size = %zu", __func__, payloadSize);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
 
     auto legacyPayload = VALUE_OR_RETURN(allocate<void>(payloadSize));
     memcpy(legacyPayload.get(), in_payload.data(), payloadSize);
@@ -895,6 +953,10 @@ AgmServerWrapper::~AgmServerWrapper() {
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_get_session_time(int64_t in_handle,
                                                                 int64_t *_aidl_return) {
+    if (!mIsAudioReach) {
+        *_aidl_return = 0;
+        return ScopedAStatus::ok();
+    }
     uint64_t timestampLegacy;
     int ret = agm_get_session_time(in_handle, &timestampLegacy);
     *_aidl_return = timestampLegacy;
@@ -902,12 +964,14 @@ AgmServerWrapper::~AgmServerWrapper() {
 }
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_sessionid_flush(int32_t in_sessiondId) {
     ALOGV("%s sessionId %d", __func__, in_sessiondId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     return status_tToBinderResult(agm_sessionid_flush(in_sessiondId));
 }
 
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_set_gapless_session_metadata(
         int64_t in_handle, AgmGaplessSilenceType in_type, int32_t in_silence) {
     ALOGV("%s handle %llx", __func__, (unsigned long long)in_handle);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     enum agm_gapless_silence_type agmLegacySilenceType =
             static_cast<agm_gapless_silence_type>(in_type);
     return status_tToBinderResult(
@@ -918,6 +982,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         const std::vector<uint8_t> &in_payload) {
     size_t payloadSize = in_payload.size();
     ALOGV("%s :size = %zu", __func__, payloadSize);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto legacyPayload = VALUE_OR_RETURN(allocate<void>(payloadSize));
 
     memcpy(legacyPayload.get(), in_payload.data(), payloadSize);
@@ -927,6 +992,7 @@ AgmServerWrapper::~AgmServerWrapper() {
 ::ndk::ScopedAStatus AgmServerWrapper::ipc_agm_set_params_with_tag(
         int32_t in_sessiondId, int32_t in_aifId, const AgmTagConfig &in_tagConfig) {
     ALOGV("%s : sessionId = %d, aif_id = %d", __func__, in_sessiondId, in_aifId);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     int tkvSize = in_tagConfig.kv.size();
     RETURN_IF_KVPAIR_EXCEEDS_RANGE(tkvSize);
 
@@ -945,6 +1011,7 @@ AgmServerWrapper::~AgmServerWrapper() {
         int32_t in_sessionId, int32_t in_aifId, const std::vector<uint8_t> &in_payload) {
     size_t payloadSize = in_payload.size();
     ALOGV("%s : sessionId = %d size = %zu", __func__, in_sessionId, payloadSize);
+    if (!mIsAudioReach) return ScopedAStatus::ok();
     auto legacyPayload = VALUE_OR_RETURN(allocate<void>(payloadSize));
     memcpy(legacyPayload.get(), in_payload.data(), payloadSize);
     return status_tToBinderResult(agm_set_params_with_tag_to_acdb(
