@@ -67,5 +67,8 @@ LOCAL_SHARED_LIBRARIES += libexpat
 LOCAL_HEADER_LIBRARIES += libaudiologutils_headers
 endif
 
-include $(BUILD_SHARED_LIBRARY)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+LOCAL_CFLAGS += -DAR_EARLY_AUDIO
+endif
 
+include $(BUILD_SHARED_LIBRARY)

@@ -55,7 +55,8 @@
 #define SNDCARD_PATH "/sys/kernel/snd_card/card_state"
 #define PCM_DEVICE_FILE "/proc/asound/pcm"
 #define MAX_RETRY 100 /*Device will try these many times before return an error*/
-#define RETRY_INTERVAL 1 /*Retry interval in seconds*/
+#define RETRY_200 200 /*Retry INTERVAL 200 times*/
+#define RETRY_INTERVAL 5000 /*Retry interval in milliseconds*/
 
 #ifdef DYNAMIC_LOG_ENABLED
 #include <log_xml_parser.h>
@@ -1074,7 +1075,7 @@ close_file:
 static int wait_for_snd_card_to_online()
 {
     int ret = 0;
-    uint32_t retries = MAX_RETRY;
+    uint32_t retries = MAX_RETRY * RETRY_200;
     int fd = -1;
     char buf[12];
     snd_card_status_t card_status = SND_CARD_STATUS_NONE;
@@ -1101,7 +1102,7 @@ static int wait_for_snd_card_to_online()
             }
         }
         retries--;
-        sleep(RETRY_INTERVAL);
+        usleep(RETRY_INTERVAL);
     } while ( retries > 0);
 
     if (0 == retries) {
@@ -1310,9 +1311,9 @@ bool get_file_path_extn(char* file_path_extn, char* file_path_extn_wo_variant)
             break;
         } else {
             AGM_LOGI("Sound card not found, retry %d", retry++);
-            sleep(1);
+            usleep(RETRY_INTERVAL);
         }
-    } while (!snd_card_found && retry <= MAX_RETRY_CNT);
+    } while (!snd_card_found && retry <= MAX_RETRY_CNT * RETRY_200);
 
     return snd_card_found;
 }

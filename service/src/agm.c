@@ -48,10 +48,10 @@
 #include <log_utils.h>
 #endif
 
-#define RETRY_INTERVAL_US 500 * 1000
+#define RETRY_INTERVAL_US 5 * 1000
 static bool agm_initialized = 0;
 static pthread_t ats_thread;
-static const int MAX_RETRIES = 120;
+static const int MAX_RETRIES = 12000;
 
 static void *ats_init_thread(void *obj __unused)
 {

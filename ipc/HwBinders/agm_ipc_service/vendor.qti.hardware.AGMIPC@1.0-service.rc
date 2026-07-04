@@ -25,7 +25,7 @@
 # OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-service vendor.agm-1-0 /vendor/bin/hw/vendor.qti.hardware.AGMIPC@1.0-service
+service vendor.agm-service /vendor/bin/hw/vendor.qti.hardware.AGMIPC@1.0-service
   class hal
   user system
   interface vendor.qti.hardware.AGMIPC@1.0::IAGM default

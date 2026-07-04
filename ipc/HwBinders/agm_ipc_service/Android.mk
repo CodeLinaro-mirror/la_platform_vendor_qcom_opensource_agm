@@ -39,6 +39,10 @@ LOCAL_VENDOR_MODULE        := true
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_OWNER         := qti
 
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+LOCAL_CFLAGS += -DAR_EARLY_AUDIO
+endif
+
 LOCAL_SRC_FILES            := src/service.cpp
 
 LOCAL_SHARED_LIBRARIES := \
@@ -53,7 +57,9 @@ LOCAL_SHARED_LIBRARIES := \
     vendor.qti.hardware.AGMIPC@1.0-impl \
     libagm
 
-LOCAL_HEADER_LIBRARIES := libagmclient_headers
+LOCAL_HEADER_LIBRARIES := \
+    libagmclient_headers \
+    libarosal_headers
 
 include $(BUILD_EXECUTABLE)
 endif
