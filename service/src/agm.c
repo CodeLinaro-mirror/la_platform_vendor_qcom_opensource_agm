@@ -1026,6 +1026,7 @@ int agm_session_write_with_metadata(uint64_t handle, struct agm_buff *buff,
 int agm_session_read_with_metadata(uint64_t handle, struct agm_buff *buff,
                                     uint32_t *captured_size )
 {
+    int ret = 0;
     if (!handle) {
         AGM_LOGE("%s Invalid handle\n", __func__);
         return -EINVAL;
@@ -1035,8 +1036,17 @@ int agm_session_read_with_metadata(uint64_t handle, struct agm_buff *buff,
         AGM_LOGE("Invalid handle\n");
         return -EINVAL;
     }
-    return session_obj_read_with_metadata((struct session_obj *) handle, buff,
-                                           captured_size);
+#ifdef ENABLE_TIMESTAMP
+    AGM_LOGV("%s agm_buff:%p addr:%p size:%zu\n",
+             __func__, buff, buff->addr, buff->size);
+#endif
+    ret = session_obj_read_with_metadata((struct session_obj *)handle, buff,
+                                         captured_size);
+#ifdef ENABLE_TIMESTAMP
+    if (*captured_size && ret == 0)
+        return *captured_size;
+#endif
+    return ret;
 }
 
 int agm_session_set_non_tunnel_mode_config(uint64_t handle,
