@@ -387,18 +387,32 @@ static int add_to_list(uint32_t module_list_count, module_info_t *info, struct l
     uint32_t count = 0;
     int ret = 0;
     module_info_link_list_t *mod_list = NULL;
+    struct listnode *temp_node = NULL;
+    struct listnode *n = NULL;
 
     for (count = 0; count < module_list_count; count++) {
         mod_list = calloc(1, sizeof(module_info_link_list_t));
         if (!mod_list) {
             AGM_LOGE("Not enough memory for payload\n");
             ret = -ENOMEM;
-            goto done;
+            goto error_cleanup;
         }
         mod_list->data = info + count;
         list_add_tail(node, &mod_list->tagged_list);
     }
-done:
+
+   return 0;
+
+error_cleanup:
+    /*
+     * Free any nodes that were already added to the list before the allocation
+     * failure, to avoid leaking partially constructed entries.
+     */
+    list_for_each_safe(temp_node, n, node) {
+        mod_list = node_to_item(temp_node, module_info_link_list_t, tagged_list);
+        list_remove(&mod_list->tagged_list);
+        free(mod_list);
+    }
     return ret;
 }
 

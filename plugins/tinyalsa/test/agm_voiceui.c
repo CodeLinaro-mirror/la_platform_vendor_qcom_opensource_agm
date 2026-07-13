@@ -258,7 +258,6 @@ static void* merge_payload(int num, int *sum,  ...)
     temp = calloc(num, sizeof(char *));
     if (!temp) {
         printf("failed to allocate memory for temp\n");
-        free(size);
         goto exit;
     }
 
@@ -272,7 +271,7 @@ static void* merge_payload(int num, int *sum,  ...)
 
     payload = calloc(1, total_size);
     if (!payload)
-        return NULL;
+        goto exit;
 
     buf = payload;
     for (i = 0; i < num; i++) {
@@ -281,10 +280,13 @@ static void* merge_payload(int num, int *sum,  ...)
     }
     *sum = total_size;
 	/* TODO : free memory */
-    return payload;
 
 exit:
-    return;
+    if (temp)
+        free(temp);
+    if (size)
+        free(size);
+    return payload;
 }
 
 void voice_ui_test(unsigned int card, unsigned int device, unsigned int audio_intf, unsigned int cap_time, int ec_aif)
