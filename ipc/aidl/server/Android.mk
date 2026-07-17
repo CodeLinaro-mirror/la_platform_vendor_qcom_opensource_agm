@@ -35,4 +35,6 @@ else
 LOCAL_SHARED_LIBRARIES += libar-gsl
 endif
 
+LOCAL_VINTF_FRAGMENTS  := manifest_agm_aidl.xml
+
 include $(BUILD_SHARED_LIBRARY)
