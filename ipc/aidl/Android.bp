@@ -26,5 +26,4 @@ aidl_interface {
         },
     ],
     frozen: true,
-
 }

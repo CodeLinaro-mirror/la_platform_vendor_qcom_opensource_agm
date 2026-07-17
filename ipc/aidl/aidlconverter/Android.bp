@@ -1,0 +1,48 @@
+cc_library_static {
+    name: "libagmaidltypeconverter",
+    vendor: true,
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wextra",
+        "-Wthread-safety",
+    ],
+
+    srcs: [
+        "src/AgmLegacyToAidl.cpp",
+        "src/AgmAidlToLegacy.cpp",
+    ],
+
+    static_libs: [
+        "libaidlcommonsupport",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libbinder_ndk",
+        "libbase",
+        "libcutils",
+        "libutils",
+        "vendor.qti.hardware.agm-V1-ndk",
+        "libar-gsl_fe",
+    ],
+
+    header_libs: [
+        "libagm_headers",
+        "libar-gsl_fe_headers",
+    ],
+
+    include_dirs: ["vendor/qcom/opensource/args/gsl/api"],
+    export_include_dirs: ["inc"],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+}

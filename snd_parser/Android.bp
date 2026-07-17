@@ -1,0 +1,42 @@
+cc_library_shared {
+
+    name: "libsndcardparser",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/snd-card-parser.c"
+        ],
+
+    shared_libs: [
+        "libexpat",
+        "libcutils"
+        ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/snd_parser/inc"
+        ],
+
+    export_include_dirs: [
+        "inc"
+        ],
+
+    cflags: [
+        "-Wno-unused-parameter",
+        "-Wall",
+        "-DCARD_DEF_FILE=\"/vendor/etc/card-defs.xml\""
+        ],
+
+    header_libs: [
+        "libagm_headers"
+        ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}

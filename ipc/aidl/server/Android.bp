@@ -1,0 +1,70 @@
+cc_binary {
+
+    name: "agmipcservice",
+    owner: "qti",
+    vendor: true,
+    relative_install_path: "hw",
+
+    clang: true,
+    tidy: true,
+
+    srcs: [
+        "Service.cpp",
+        "AgmServerWrapper.cpp",
+        ],
+
+    shared_libs: [
+            "liblog",
+            "libbinder_ndk",
+            "libbase",
+            "libcutils",
+            "libutils",
+            "libagm",
+            "vendor.qti.hardware.agm-V1-ndk",
+            "libselinux",
+            "libar-gsl_fe",
+            ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/agm/ipc/aidl/server"
+        ],
+    header_libs: [
+        "libar-gsl_fe_headers",
+    ],
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wthread-safety",
+        "-DENABLE_AGM_SDV"
+        ],
+
+    static_libs: [
+        "libagmaidltypeconverter",
+        "libaidlcommonsupport"
+        ],
+
+    vintf_fragments: ["agmipcservice.xml"],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+prebuilt_etc {
+    name: "init.qti.AGMIPC.sh",
+    src: "init.qti.AGMIPC.sh",
+    vendor: true,
+    relative_install_path: "executables",
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+
+}

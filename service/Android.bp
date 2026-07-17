@@ -1,0 +1,94 @@
+cc_library_headers {
+    name: "libagm_headers",
+    export_include_dirs: ["inc/public"],
+    vendor: true,
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+cc_library_shared {
+
+    name: "libagm",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm.c",
+        "src/graph.c",
+        "src/graph_module.c",
+        "src/metadata.c",
+        "src/session_obj.c",
+        "src/device.c",
+        "src/utils.c",
+        "src/device_hw_ep.c",
+        "src/agm_memlogger.c"
+        ],
+
+    shared_libs: [
+            "liblog",
+            "liblx-osal",
+            "libaudioroute",
+            "libats",
+            "libarmemlog",
+            "libcutils",
+            "libar-gsl_fe",
+            "libqti-tinyalsa",
+            "libaudio_log_utils",
+             "libexpat"
+            ],
+
+    include_dirs: [
+            "vendor/qcom/opensource/agm/service/inc/public",
+            "vendor/qcom/opensource/agm/service/inc/private",
+            ]
+        + select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+            "true": ["external/expat/lib"],
+            default: [],
+        }),
+
+    export_include_dirs: [
+        "inc/public"
+        ],
+
+    cflags: [
+            "-D_ANDROID_",
+            "-DAGM_DEBUG_METADATA",
+            "-DAGM_USE_CUTILS",
+            "-Wno-tautological-compare",
+            "-Wno-macro-redefined",
+            "-Wall",
+            "-D_GNU_SOURCE",
+            "-DACDB_PATH=\"/vendor/etc/acdbdata/\"",
+            "-DACDB_DELTA_FILE_PATH=\"/data/vendor/audio/acdbdata/delta\"",
+            "-DBYPASS_ATS_INIT",
+            "-DBYPASS_ALSA_HW",
+            "-DDYNAMIC_LOG_ENABLED",
+            "-DBYPASS_SND_CARD_CHECK"
+            ],
+
+    header_libs: [
+            "libspf-headers",
+            "libutils_headers",
+            "libacdb_headers",
+            "libarmemlog_headers",
+            "libarosal_headers",
+            "libar-gsl_fe_headers",
+            "libaudiologutils_headers"
+            ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}

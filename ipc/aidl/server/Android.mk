@@ -1,4 +1,4 @@
-
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -38,3 +38,4 @@ endif
 LOCAL_VINTF_FRAGMENTS  := manifest_agm_aidl.xml
 
 include $(BUILD_SHARED_LIBRARY)
+endif

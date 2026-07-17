@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libagmclient
@@ -24,3 +25,4 @@ LOCAL_STATIC_LIBRARIES := libagmaidltypeconverter libaidlcommonsupport
 LOCAL_HEADER_LIBRARIES := libagm_headers
 
 include $(BUILD_SHARED_LIBRARY)
+endif
