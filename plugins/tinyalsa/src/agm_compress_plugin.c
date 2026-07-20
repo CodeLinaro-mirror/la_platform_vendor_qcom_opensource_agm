@@ -300,7 +300,7 @@ err:
     return ret;
 }
 
-int agm_compress_write(void *data, const void *buf, unsigned int size)
+int agm_compress_write(void *data, const void *buf, size_t size)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_avail avail;
@@ -381,7 +381,7 @@ int agm_read(struct agm_compress_priv *priv, void *buff, size_t count)
     return count;
 }
 
-int agm_compress_read(void *data, void *buf, unsigned int size)
+int agm_compress_read(void *data, void *buf, size_t size)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_avail avail;
@@ -456,7 +456,7 @@ int agm_compress_tstamp(void *data,
 }
 
 int agm_compress_get_tstamp(void *data,
-                        unsigned long *samples, unsigned int *sampling_rate)
+                        unsigned int *samples, unsigned int *sampling_rate)
 {
     struct agm_compress_priv *priv = data;
     struct snd_compr_tstamp ktstamp;
