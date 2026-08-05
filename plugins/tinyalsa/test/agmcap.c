@@ -95,7 +95,7 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-    FILE *file;
+    FILE *file = NULL;
     struct wav_header header;
     unsigned int card = 100;
     unsigned int device = 101;
@@ -121,10 +121,12 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    file = fopen(argv[1], "wb");
-    if (!file) {
-        printf("Unable to create file '%s'\n", argv[1]);
-        return 1;
+    if (strcmp(argv[1], "/dev/null") != 0) {
+        file = fopen(argv[1], "wb");
+        if (!file) {
+            printf("Unable to create file '%s'\n", argv[1]);
+            return 1;
+        }
     }
 
     /* parse command line arguments */
@@ -217,7 +219,8 @@ int main(int argc, char **argv)
         break;
     default:
         printf("%u bits is not supported.\n", bits);
-        fclose(file);
+        if (file)
+            fclose(file);
         return 1;
     }
 
@@ -227,7 +230,8 @@ int main(int argc, char **argv)
     ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
     if (ret) {
         printf("Invalid input, entry not found for %s\n", intf_name);
-        fclose(file);
+        if (file)
+            fclose(file);
         return ret;
     }
     if (config.format != PCM_FORMAT_INVALID) {
@@ -241,7 +245,8 @@ int main(int argc, char **argv)
     header.data_id = ID_DATA;
 
     /* leave enough room for header */
-    fseek(file, sizeof(struct wav_header), SEEK_SET);
+    if (file)
+        fseek(file, sizeof(struct wav_header), SEEK_SET);
 
     /* install signal handler and begin capturing */
     signal(SIGINT, sigint_handler);
@@ -256,12 +261,21 @@ int main(int argc, char **argv)
     /* write header now all information is known */
     header.data_sz = frames * header.block_align;
     header.riff_sz = header.data_sz + sizeof(header) - 8;
-    fseek(file, 0, SEEK_SET);
-    fwrite(&header, sizeof(struct wav_header), 1, file);
+    if (file)
+    {
+        fseek(file, 0, SEEK_SET);
+        fwrite(&header, sizeof(struct wav_header), 1, file);
 
-    fclose(file);
-
+        fclose(file);
+    }
     return 0;
+}
+
+void sleep_ms(unsigned int milliseconds) {
+    struct timespec ts;
+    ts.tv_sec = milliseconds / 1000;
+    ts.tv_nsec = (milliseconds % 1000) * 1000000;
+    nanosleep(&ts, NULL);
 }
 
 unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
@@ -372,12 +386,20 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     end.tv_sec = now.tv_sec + cap_time;
     end.tv_nsec = now.tv_nsec;
 
-    while (capturing && !pcm_read(pcm, buffer, size)) {
-        if (fwrite(buffer, 1, size, file) != size) {
-            printf("Error capturing sample\n");
-            break;
+    while (capturing) {
+        if (file) {
+            if (pcm_read(pcm, buffer, size)) {
+                printf("Error capturing sample\n");
+                break;
+            }
+            if (fwrite(buffer, 1, size, file) != size) {
+                printf("Error capturing sample\n");
+                break;
+            }
+            bytes_read += size;
+        } else {
+            sleep_ms(300);
         }
-        bytes_read += size;
         if (cap_time) {
             clock_gettime(CLOCK_MONOTONIC, &now);
             if (now.tv_sec > end.tv_sec ||

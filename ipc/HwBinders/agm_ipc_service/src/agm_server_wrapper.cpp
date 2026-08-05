@@ -178,6 +178,7 @@ void client_death_notifier::serviceDied(uint64_t cookie,
                 pthread_mutex_lock(&session_handle->handle_lock);
                 if (session_handle->handle) {
                     pthread_mutex_unlock(&client_list_lock);
+                    agm_session_stop(session_handle->handle);
                     agm_session_close(session_handle->handle);
                     pthread_mutex_lock(&client_list_lock);
                 }
