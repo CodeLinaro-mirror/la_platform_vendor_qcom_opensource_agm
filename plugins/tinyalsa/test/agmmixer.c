@@ -26,8 +26,8 @@
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -251,10 +251,12 @@ static int get_backend_info(char* filename, char *intf_name, void *config, int t
     }
     if (type == DEVICE) {
         dev_cfg = (struct device_config *)config;
+        memset(dev_cfg, 0, sizeof(*dev_cfg));
         strlcpy(dev_cfg->name, intf_name, sizeof(dev_cfg->name));
         XML_SetElementHandler(parser, start_tag, NULL);
     } else {
         grp_cfg = (struct group_config *)config;
+        memset(grp_cfg, 0, sizeof(*grp_cfg));
         strlcpy(grp_cfg->name, intf_name, sizeof(grp_cfg->name));
         XML_SetElementHandler(parser, start_group_tag, NULL);
     }

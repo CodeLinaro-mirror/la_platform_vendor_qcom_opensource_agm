@@ -12,7 +12,10 @@ AM_CFLAGS += -D__unused=__attribute__\(\(__unused__\)\) -DLINUX_ENABLED
 AM_CFLAGS += @SNDPARSER_CFLAGS@
 AM_CFLAGS += -Wno-unused-parameter
 AM_CFLAGS += -DDYNAMIC_LOG_ENABLED
+endif
 
+if AGM_NO_IPC
+AM_CFLAGS += -DAGM_NO_IPC
 endif
 
 lib_LTLIBRARIES      = libagm_pcm_plugin.la

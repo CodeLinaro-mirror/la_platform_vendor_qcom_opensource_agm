@@ -373,7 +373,7 @@ static int agm_pcm_plugin_update_hw_ptr(struct agm_pcm_priv *priv)
             if (hw_base >= priv->pos_buf->boundary) {
                 priv->pos_buf->crossed_boundary_cnt += hw_base / priv->pos_buf->boundary;
                 hw_base = 0;
-	    }	
+	    }
 	    __builtin_uaddl_overflow(hw_base, pos, &new_hw_ptr);
             __builtin_umull_overflow(priv->pos_buf->boundary,
                                  priv->pos_buf->crossed_boundary_cnt, &boundary);
@@ -882,21 +882,20 @@ static int agm_pcm_munmap(struct pcm_plugin *plugin, void *addr, size_t length)
     return munmap(addr, length);
 }
 
-static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, ...)
+static int agm_pcm_ioctl(struct pcm_plugin *plugin, int cmd, void *args)
 {
+    /*
+    ** args parameter is not used but needed
+    ** to align with tinyalsa ioctl function declaration
+    */
+
     struct agm_pcm_priv *priv = plugin->priv;
     uint64_t handle;
     int ret = 0;
-    va_list ap;
-    void *arg;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
         return ret;
-
-    va_start(ap, cmd);
-    arg = va_arg(ap, void *);
-    va_end(ap);
 
     switch (cmd) {
     case SNDRV_PCM_IOCTL_RESET:
@@ -998,7 +997,7 @@ PCM_PLUGIN_OPEN_FN(agm_pcm_plugin)
     priv->card_node = card_node;
     priv->session_id = session_id;
     priv->mmap_status = false;
-    snd_card_def_get_int(pcm_node, "session_mode", &sess_mode);
+    snd_card_def_get_int(pcm_node, "session_mode", (int *)&sess_mode);
 
     ret = agm_session_open(session_id, sess_mode, &handle);
     if (ret) {

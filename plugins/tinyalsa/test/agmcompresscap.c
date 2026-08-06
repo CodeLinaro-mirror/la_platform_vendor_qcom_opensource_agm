@@ -55,8 +55,8 @@
  * the Free Software Foundation, Inc.,
  * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #include <stdint.h>
@@ -474,7 +474,7 @@ static void sig_handler(int signum __attribute__ ((unused)))
 
 int main(int argc, char **argv)
 {
-    char *file;
+    char *file = NULL;
     unsigned long buffer_size = 0;
     unsigned int card = 0, device = 0, frag = 0, length = 0;
     unsigned int rate = DEFAULT_RATE, channels = DEFAULT_CHANNELS;
@@ -573,7 +573,7 @@ int main(int argc, char **argv)
     ret = get_device_media_config(BACKEND_CONF_FILE, intf_name, &config);
     if (ret) {
         printf("Invalid input, entry not found for %s\n", intf_name);
-        fclose(file);
+        fclose((FILE *)file);
         return ret;
     }
 

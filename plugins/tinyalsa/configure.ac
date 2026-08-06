@@ -53,5 +53,11 @@ AC_ARG_WITH([openwrt],
     [with_openwrt=no])
 AM_CONDITIONAL([BUILDSYSTEM_OPENWRT], [test "x${with_openwrt}" = "xyes"])
 
+AC_ARG_WITH([agm_no_ipc],
+    AS_HELP_STRING([enable ipc communication to AGM (default is no)]),
+    [with_agm_no_ipc=$withval],
+    [with_agm_no_ipc=no])
+AM_CONDITIONAL([AGM_NO_IPC], [test "x${with_agm_no_ipc}" = "xyes"])
+
 AC_CONFIG_FILES([ Makefile agmplugin.pc ])
 AC_OUTPUT
