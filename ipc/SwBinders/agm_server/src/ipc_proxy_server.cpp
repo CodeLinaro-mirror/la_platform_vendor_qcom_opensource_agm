@@ -25,8 +25,6 @@
 ** WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 ** OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 ** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-<<<<<<< HEAD   (8f100f Merge "agm:make agm applications compatiable with HGY")
-=======
  *
  * Changes from Qualcomm Innovation Center are provided under the following license:
  * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -60,7 +58,6 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
->>>>>>> CHANGE (292714 agm: ipc: SWBinders: protect handle by clbk_data_list_lock)
 **/
 
 #define LOG_TAG "ipc_proxy"
@@ -175,14 +172,27 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
 
         ~BpAgmService()
         {
-            android:: Parcel data, reply;
-
-            AGM_LOGV("~BpAgmservice() destructor called\n");
-            data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
-            data.writeStrongBinder(IInterface::asBinder(clt_binder));
-            remote()->transact(UNREG_CLIENT, data, &reply);
-            AGM_LOGD("calling UNREG_CLIENT from BpAgmService\n");
+		//UNREG Binder transaction handled in virtual method ipc_agm_unreg_client()
         }
+
+	virtual int ipc_agm_unreg_client()
+	{
+		android::Parcel data, reply;
+
+		AGM_LOGD("%s: enter\n", __func__);
+		if (clt_binder == nullptr) {
+			AGM_LOGD("%s: clt_binder null, skipping UNREG_CLIENT\n", __func__);
+			return 0;
+		}
+
+		data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+		data.writeStrongBinder(IInterface::asBinder(clt_binder));
+		remote()->transact(UNREG_CLIENT, data, &reply);
+
+		clt_binder = NULL;
+		AGM_LOGD("%s: UNREG_CLIENT sent, clt_binder cleared\n", __func__);
+		return 0;
+	}
 
         virtual int ipc_agm_audio_intf_set_media_config(uint32_t audio_intf,
                                       struct agm_media_config *media_config)
