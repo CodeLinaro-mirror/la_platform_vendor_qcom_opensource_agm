@@ -26,38 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted (subject to the limitations in the
- * disclaimer below) provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *
- *     * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
- * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
- * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 #define LOG_TAG "AGM: API"
 #include <agm/agm_api.h>
@@ -343,18 +314,18 @@ int agm_get_params_from_acdb_tunnel(void *payload, size_t *size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGD("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
-    gkv.kv = payloadACDBTunnelInfo->blob;
+    gkv.kv = (struct agm_key_value *)payloadACDBTunnelInfo->blob;
 
     ret = session_dummy_rw_acdb_tunnel(payload, FALSE);
     if (ret) {
@@ -564,13 +535,13 @@ int agm_set_params_to_acdb_tunnel(void *payload, size_t size)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (k = 0; k < payloadACDBTunnelInfo->blob_size / 4; k++) {
         AGM_LOGV("%d data = 0x%x", k, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     // tag is stored at miid. Convertion happens next.
     AGM_LOGI("tag = 0x%x", *ptr);
 

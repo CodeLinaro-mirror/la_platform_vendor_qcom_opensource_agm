@@ -10,6 +10,10 @@ h_sources = ./inc/agm_api.h \
 AM_CFLAGS = -I ./inc \
             -I $(top_builddir)/src/system/core/include/log/
 
+if ENABLE_CARD_STATE_UNSUPPORTED
+AM_CFLAGS += -DCARD_STATE_UNSUPPORTED
+endif
+
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 

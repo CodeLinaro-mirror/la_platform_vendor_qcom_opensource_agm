@@ -25,38 +25,10 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
-**
-** Redistribution and use in source and binary forms, with or without
-** modification, are permitted (subject to the limitations in the
-** disclaimer below) provided that the following conditions are met:
-**
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**
-**   * Redistributions in binary form must reproduce the above
-**     copyright notice, this list of conditions and the following
-**     disclaimer in the documentation and/or other materials provided
-**     with the distribution.
-**
-**   * Neither the name of Qualcomm Innovation Center, Inc. nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-** NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
-** GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
-** HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
-** WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-** MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-** IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-** ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-** DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-** GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-** IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-** OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-** IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #define LOG_TAG "AGM: graph"
@@ -1228,30 +1200,30 @@ int graph_set_acdb_param(void *payload)
         payloadACDBTunnelInfo->num_kvs,
         payloadACDBTunnelInfo->blob_size);
 
-    ptr = payloadACDBTunnelInfo->blob;
+    ptr = (uint32_t *)payloadACDBTunnelInfo->blob;
     for (i = 0; i < payloadACDBTunnelInfo->blob_size / 4; i++) {
         AGM_LOGV("%d data = 0x%x", i, *ptr++);
     }
 
-    ptr = payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
-            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs);
+    ptr = (uint32_t *)(payloadACDBTunnelInfo->blob + sizeof(struct agm_key_value) *
+            (payloadACDBTunnelInfo->num_gkvs + payloadACDBTunnelInfo->num_kvs));
     header = (struct apm_module_param_data_t *)ptr;
-    ptr_to_param = header;
+    ptr_to_param = (uint8_t *)header;
 
     // tag is stored at miid. Convertion happens next.
     tag = *ptr;
     AGM_LOGD("tag to be translated is 0x%x", tag);
 
     gkv.num_kvs = payloadACDBTunnelInfo->num_gkvs;
-    gkv.kv = payloadACDBTunnelInfo->blob;
+    gkv.kv = (struct agm_key_value *)payloadACDBTunnelInfo->blob;
 
-    ret = gsl_get_tags_with_module_info(&gkv, NULL, &size);
+    ret = gsl_get_tags_with_module_info((const struct gsl_key_vector *)&gkv, NULL, &size);
     if (ret) {
         AGM_LOGE("failed to get tag info size = %d size=0x%x", ret, size);
         return ret;
     }
 
-    ret = gsl_get_tags_with_module_info(&gkv, tag_pool, &size);
+    ret = gsl_get_tags_with_module_info((const struct gsl_key_vector *)&gkv, tag_pool, &size);
     if (ret) {
         AGM_LOGE("failed to get tag pool ret = %d size=0x%x", ret, size);
         return ret;
@@ -1288,8 +1260,8 @@ int graph_set_acdb_param(void *payload)
     header->module_instance_id = miid;
     AGM_LOGI("translated miid is = 0x%x", header->module_instance_id);
     kv.num_kvs = payloadACDBTunnelInfo->num_kvs;
-    kv.kv = payloadACDBTunnelInfo->blob +
-        payloadACDBTunnelInfo->num_gkvs * sizeof(struct agm_key_value);
+    kv.kv = (struct agm_key_value *)(payloadACDBTunnelInfo->blob +
+        payloadACDBTunnelInfo->num_gkvs * sizeof(struct agm_key_value));
 
     AGM_LOGD("blob size = %d", payloadACDBTunnelInfo->blob_size);
     actual_size = payloadACDBTunnelInfo->blob_size -
@@ -1297,7 +1269,7 @@ int graph_set_acdb_param(void *payload)
                 sizeof(struct agm_key_value);
     AGM_LOGD("actual size = 0x%x", actual_size);
     AGM_LOGI("num kvs = %d", kv.num_kvs);
-    ptr = kv.kv;
+    ptr = (uint32_t *)kv.kv;
     for (i = 0; i < kv.num_kvs; i++) {
         AGM_LOGI("kv %d %x", i, *ptr++);
         AGM_LOGI("kv %d %x", i, *ptr++);
@@ -1318,15 +1290,17 @@ int graph_set_acdb_param(void *payload)
             total_parsed_size, header->param_size, offset);
     }
 
-    ptr = ptr_to_param;
+    ptr = (uint32_t *)ptr_to_param;
     for (i = 0; i < actual_size / 4; i++) {
         AGM_LOGV("%d data to acdb = 0x%x", i, *ptr++);
     }
 
     if (payloadACDBTunnelInfo->isTKV)
-        ret = gsl_set_tag_data_to_acdb(&gkv, tag, &kv, ptr_to_param, actual_size);
+        ret = gsl_set_tag_data_to_acdb((const struct gsl_key_vector *)&gkv,
+                    tag, (const struct gsl_key_vector *)&kv, ptr_to_param, actual_size);
     else
-        ret = gsl_set_cal_data_to_acdb(&gkv, &kv, ptr_to_param, actual_size);
+        ret = gsl_set_cal_data_to_acdb((const struct gsl_key_vector *)&gkv,
+                    (const struct gsl_key_vector *)&kv, ptr_to_param, actual_size);
 
     return ar_err_get_lnx_err_code(ret);
 }
@@ -2234,7 +2208,8 @@ static void print_graph_alias(const struct agm_meta_data_gsl *meta_data_kv)
         return;
     }
 
-    ret = gsl_get_graph_alias(&meta_data_kv->gkv, acdb_string, &acdb_string_len);
+    ret = gsl_get_graph_alias((const struct gsl_key_vector *)&meta_data_kv->gkv,
+                             acdb_string, &acdb_string_len);
     if (ret) {
         AGM_LOGD("gsl_get_graph_alias failed: ret = %d\n", ret);
         return;

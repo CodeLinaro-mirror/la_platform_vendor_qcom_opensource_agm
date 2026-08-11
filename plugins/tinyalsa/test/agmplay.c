@@ -26,8 +26,8 @@
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 ** DAMAGE.
 **
-** Changes from Qualcomm Innovation Center are provided under the following license:
-** Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+** Changes from Qualcomm Technologies, Inc. are provided under the following license:
+** Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 ** SPDX-License-Identifier: BSD-3-Clause-Clear
 **/
 
@@ -276,6 +276,7 @@ void play_sample(FILE *file, unsigned int card, unsigned int device, unsigned in
         printf("Failed to allocate memory for dev config");
         return;
     }
+    memset(dev_config, 0, intf_num * sizeof(struct device_config));
 
     memset(&config, 0, sizeof(config));
     config.channels = fmt.num_channels;
