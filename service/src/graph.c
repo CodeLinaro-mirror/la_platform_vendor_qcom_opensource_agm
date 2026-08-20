@@ -416,6 +416,19 @@ error_cleanup:
     return ret;
 }
 
+static void free_module_info_link_list(struct listnode *head)
+{
+    struct listnode *temp_node = NULL;
+    struct listnode *node = NULL;
+    module_info_link_list_t *mod_list = NULL;
+
+    list_for_each_safe(node, temp_node, head) {
+        mod_list = node_to_item(node, module_info_link_list_t, tagged_list);
+        list_remove(node);
+        free(mod_list);
+    }
+}
+
 int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                struct session_obj *sess_obj, struct device_obj *dev_obj,
                struct graph_obj **gph_obj)
@@ -514,6 +527,8 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     /*Remove the module from the node_sess list*/
                     if (node_list != NULL) {
                         list_remove(node_list);
+                        free(mod_list);
+                        mod_list = NULL;
                     }
                     goto tag_list;
                 }
@@ -561,6 +576,8 @@ int graph_open(struct agm_meta_data_gsl *meta_data_kv,
                     /*Remove the module from node_hw list*/
                     if (node_list != NULL) {
                         list_remove(node_list);
+                        free(mod_list);
+                        mod_list = NULL;
                     }
                     goto tag_list;
                 }
@@ -571,6 +588,9 @@ tag_list:
                                (sizeof(struct gsl_module_id_info_entry) *
                                gsl_tag_entry->num_modules));
     }
+
+    free_module_info_link_list(&node_sess);
+    free_module_info_link_list(&node_hw);
     graph_obj->sess_obj = sess_obj;
 
     ret = gsl_open((struct gsl_key_vector *)&meta_data_kv->gkv,
@@ -598,6 +618,8 @@ tag_list:
 close_graph:
     gsl_close(graph_obj->graph_handle);
 free_graph_obj:
+    free_module_info_link_list(&node_sess);
+    free_module_info_link_list(&node_hw);
     /*free the list of modules associated with this graph_object*/
     list_for_each_safe(node, temp_node, &graph_obj->tagged_mod_list) {
         if (node != NULL) {
