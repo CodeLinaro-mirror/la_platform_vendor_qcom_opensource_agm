@@ -22,6 +22,10 @@ if USE_DLT
 AM_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
 endif
 
+if USE_CLOG
+AM_CFLAGS += -DUSE_CLOG @CLOG_CFLAGS@
+endif
+
 lib_LTLIBRARIES      = libagm_pcm_plugin.la
 libagm_pcm_plugin_la_SOURCES   = src/agm_pcm_plugin.c
 libagm_pcm_plugin_la_CFLAGS := $(AM_CFLAGS)
@@ -79,3 +83,11 @@ libagm_mixer_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
 libagm_mixer_passthrough_plugin_la_LDFLAGS += $(DLTLOG_LIBS)
 endif
 
+if USE_CLOG
+libagm_pcm_plugin_la_LDFLAGS += $(CLOG_LIBS)
+libagm_pcm_passthrough_plugin_la_LDFLAGS += $(CLOG_LIBS)
+libagm_compress_plugin_la_LDFLAGS += $(CLOG_LIBS)
+libagm_compress_passthrough_plugin_la_LDFLAGS += $(CLOG_LIBS)
+libagm_mixer_plugin_la_LDFLAGS += $(CLOG_LIBS)
+libagm_mixer_passthrough_plugin_la_LDFLAGS += $(CLOG_LIBS)
+endif

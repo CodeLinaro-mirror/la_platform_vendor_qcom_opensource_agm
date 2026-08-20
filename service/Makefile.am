@@ -58,6 +58,11 @@ libagm_la_LIBADD += $(DLTLOG_LIBS)
 libagm_la_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
 endif
 
+if USE_CLOG
+libagm_la_LIBADD += $(CLOG_LIBS)
+libagm_la_CFLAGS += -DUSE_CLOG @CLOG_CFLAGS@
+endif
+
 if BUILDSYSTEM_OPENWRT
 libagm_la_LIBADD += -lglib-2.0
 endif

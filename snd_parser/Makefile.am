@@ -20,6 +20,9 @@ AM_CFLAGS += -DCARD_DEF_FILE=\"/etc/card-defs.xml\"
 if USE_DLT
 AM_CFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
 endif
+if USE_CLOG
+AM_CFLAGS += -DUSE_CLOG @CLOG_CFLAGS@
+endif
 
 lib_LTLIBRARIES  = libsndcardparser.la
 libsndcardparser_la_SOURCES   = src/snd-card-parser.c
@@ -29,4 +32,7 @@ libsndcardparser_la_CFLAGS += $(GLIB_CFLAGS) -Dstrlcpy=g_strlcpy -Dstrlcat=g_str
 libsndcardparser_la_LDFLAGS   = -avoid-version -shared
 if USE_DLT
 libsndcardparser_la_LIBADD += $(DLTLOG_LIBS)
+endif
+if USE_CLOG
+libsndcardparser_la_LIBADD += $(CLOG_LIBS)
 endif
