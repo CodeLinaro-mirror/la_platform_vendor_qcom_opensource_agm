@@ -73,6 +73,10 @@ else
 LOCAL_SHARED_LIBRARIES += libtinyalsa
 endif
 
+ifeq ($(TARGET_USES_GY),true)
+LOCAL_CFLAGS += -DTARGET_USES_GY
+endif
+
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_DYNAMIC_LOG)), true)
 LOCAL_CFLAGS           += -DDYNAMIC_LOG_ENABLED
