@@ -83,6 +83,8 @@ struct agm_compress_priv {
     bool start_drain;
     bool eos;
     bool early_eos;
+    bool eos_stopped; /* set once stop/close runs, to unblock a racing drain wait */
+    bool early_eos_stopped;
 
     enum agm_gapless_silence_type type;   /* Silence Type (Initial/Trailing) */
     uint32_t silence;  /* Samples to remove */
@@ -583,6 +585,14 @@ static int agm_compress_start(struct compress_plugin *plugin)
         priv->prepared = true;
     }
 
+    /* Re-arm drain/partial_drain for a session restarted after stop() */
+    pthread_mutex_lock(&priv->eos_lock);
+    priv->eos_stopped = false;
+    pthread_mutex_unlock(&priv->eos_lock);
+    pthread_mutex_lock(&priv->early_eos_lock);
+    priv->early_eos_stopped = false;
+    pthread_mutex_unlock(&priv->early_eos_lock);
+
     ret = agm_session_start(handle);
     if (ret)
         errno = ret;
@@ -601,19 +611,17 @@ static int agm_compress_stop(struct compress_plugin *plugin)
 
     /* Unlock drain if its waiting for EOS rendered */
     pthread_mutex_lock(&priv->eos_lock);
-    if (priv->eos) {
-        pthread_cond_signal(&priv->eos_cond);
-        priv->eos = false;
-    }
+    priv->eos_stopped = true;
+    pthread_cond_signal(&priv->eos_cond);
+    priv->eos = false;
 
     pthread_mutex_unlock(&priv->eos_lock);
 
     /* Unblock eos wait if early eos event cb has not been called */
     pthread_mutex_lock(&priv->early_eos_lock);
-    if (priv->early_eos) {
-        pthread_cond_signal(&priv->early_eos_cond);
-        priv->early_eos = false;
-    }
+    priv->early_eos_stopped = true;
+    pthread_cond_signal(&priv->early_eos_cond);
+    priv->early_eos = false;
     pthread_mutex_unlock(&priv->early_eos_lock);
 
     /* Signal Poll */
@@ -665,7 +673,7 @@ static int agm_compress_drain(struct compress_plugin *plugin)
 {
     struct agm_compress_priv *priv = plugin->priv;
     uint64_t handle;
-    int ret;
+    int ret = 0;
 
     ret = agm_get_session_handle(priv, &handle);
     if (ret)
@@ -678,6 +686,11 @@ static int agm_compress_drain(struct compress_plugin *plugin)
      */
     /* TODO: how to handle wake up in SSR scenario */
     pthread_mutex_lock(&priv->eos_lock);
+    if (priv->eos_stopped) {
+        AGM_LOGD("%s: session already stopped, skip eos wait\n", __func__);
+        pthread_mutex_unlock(&priv->eos_lock);
+        return -ECANCELED;
+    }
     ret = agm_session_eos(handle);
     if (ret) {
         AGM_LOGE("%s: EOS fail\n", __func__);
@@ -686,10 +699,15 @@ static int agm_compress_drain(struct compress_plugin *plugin)
         return ret;
     }
     priv->eos = true;
-    pthread_cond_wait(&priv->eos_cond,&priv->eos_lock);
+    while (priv->eos && !priv->eos_stopped)
+        pthread_cond_wait(&priv->eos_cond,&priv->eos_lock);
     AGM_LOGD("%s: out of eos wait\n", __func__);
+    if (priv->eos_stopped)
+        ret = -ECANCELED;
+    else
+        ret = 0;
     pthread_mutex_unlock(&priv->eos_lock);
-    return 0;
+    return ret;
 }
 
 static int agm_compress_partial_drain(struct compress_plugin *plugin)
@@ -704,15 +722,26 @@ static int agm_compress_partial_drain(struct compress_plugin *plugin)
 
     // Send EOS command and wait for EARLY EOS event
     pthread_mutex_lock(&priv->early_eos_lock);
+    if (priv->early_eos_stopped) {
+        AGM_LOGD("%s: session already stopped, skip early eos wait\n", __func__);
+        pthread_mutex_unlock(&priv->early_eos_lock);
+        return -ECANCELED;
+    }
     priv->early_eos = true;
     ret = agm_session_eos(handle);
     if (ret) {
         AGM_LOGE("%s: EOS fail\n", __func__);
+        priv->early_eos = false;
         pthread_mutex_unlock(&priv->early_eos_lock);
         return ret;
     }
-    pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
+    while (priv->early_eos && !priv->early_eos_stopped)
+        pthread_cond_wait(&priv->early_eos_cond, &priv->early_eos_lock);
     AGM_LOGD("%s: out of early eos wait\n", __func__);
+    if (priv->early_eos_stopped)
+        ret = -ECANCELED;
+    else
+        ret = 0;
     pthread_mutex_unlock(&priv->early_eos_lock);
 
     AGM_LOGV("%s: exit\n", __func__);
@@ -813,18 +842,16 @@ void agm_compress_close(struct compress_plugin *plugin)
     snd_card_def_put_card(priv->card_node);
     /* Unblock eos wait if eos-rendered event cb has not been called */
     pthread_mutex_lock(&priv->eos_lock);
-    if (priv->eos) {
-        pthread_cond_signal(&priv->eos_cond);
-        priv->eos = false;
-    }
+    priv->eos_stopped = true;
+    pthread_cond_signal(&priv->eos_cond);
+    priv->eos = false;
     pthread_mutex_unlock(&priv->eos_lock);
 
     /* Unblock eos wait if early eos event cb has not been called */
     pthread_mutex_lock(&priv->early_eos_lock);
-    if (priv->early_eos) {
-        pthread_cond_signal(&priv->early_eos_cond);
-        priv->early_eos = false;
-    }
+    priv->early_eos_stopped = true;
+    pthread_cond_signal(&priv->early_eos_cond);
+    priv->early_eos = false;
     pthread_mutex_unlock(&priv->early_eos_lock);
 
     /* Signal Poll */
