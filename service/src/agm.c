@@ -107,6 +107,11 @@ int agm_init()
 {
     int ret = 0;
 
+#ifdef TARGET_USES_GY
+    AGM_LOGE("agm init call not supported\n");
+    goto exit;
+#endif
+
     if (agm_initialized)
         goto exit;
 
@@ -143,6 +148,11 @@ exit:
 
 int agm_deinit()
 {
+#ifdef TARGET_USES_GY
+    AGM_LOGE("agm deinit call not supported\n");
+    return 0;
+#endif
+
     //close all sessions first
     if (agm_initialized) {
         AGM_LOGD("Deinitializing ATS...");
