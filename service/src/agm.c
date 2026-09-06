@@ -87,7 +87,9 @@ static void *ats_init_thread(void *obj __unused)
 int agm_init()
 {
     int ret = 0;
-
+#ifdef AGM_USE_CUTILS
+    char vendor_sku[PROPERTY_VALUE_MAX] = {'\0'};
+#endif
     if (agm_initialized)
         goto exit;
 
@@ -108,6 +110,28 @@ int agm_init()
     pthread_attr_getschedparam (&tattr, &param);
     param.sched_priority = sched_get_priority_min(SCHED_FIFO);
     pthread_attr_setschedparam (&tattr, &param);
+
+#ifdef AGM_USE_CUTILS
+    if (property_get("ro.boot.product.vendor.sku", vendor_sku, "") <= 0) {
+        AGM_LOGE(LOG_TAG, "Failed to get vendor.sku prop");
+    } else {
+        if (!strcmp(vendor_sku, "ravelin") || !strcmp(vendor_sku, "bourtzi")) {
+            ret = property_set("vendor.audio.feature.dmabuf.cma.memory.enable", "1");
+            if (ret != 0) {
+                AGM_LOGE(LOG_TAG, "Failed to set vendor.audio.feature.dmabuf.cma.memory.enable prop for SKU %s, ret=%d",
+                        vendor_sku, ret);
+            } else {
+                /* Optional: verify the properties after setting */
+                char enabled_val[PROPERTY_VALUE_MAX] = {'\0'};
+                property_get("vendor.audio.feature.dmabuf.cma.memory.enable", enabled_val, "");
+                if (strcmp(enabled_val, "1")) {
+                    AGM_LOGE(LOG_TAG, "Verification failed for dmabuf.cma.memory.enable prop for SKU %s, enabled=%s",
+                        vendor_sku, enabled_val);
+                }
+            }
+        }
+    }
+#endif
 
     ret = session_obj_init();
     if (0 != ret) {
