@@ -1433,9 +1433,13 @@ int graph_read(struct graph_obj *graph_obj, struct agm_buff *buffer, size_t *siz
         AGM_LOGE("size_requested %zu size_read %d error %d\n",
                   *size, size_read, ret);
     }
+
     *size = size_read;
     graph_obj->buf_info.timestamp = gsl_buff.timestamp;
-
+#ifdef ENABLE_TIMESTAMP
+    buffer->timestamp = gsl_buff.timestamp;
+    AGM_LOGE("gsl_buff.timestamp %llu, buffer->timestamp:%llu\n", gsl_buff.timestamp, buffer->timestamp);
+#endif
     return ret;
 }
 

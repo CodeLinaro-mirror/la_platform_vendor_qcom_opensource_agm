@@ -18,6 +18,10 @@ AM_CFLAGS += -I $(srcdir)/inc/public
 AM_CFLAGS += -I $(srcdir)/inc/private
 AM_CFLAGS += @MMHEADERS_CFLAGS@
 AM_CFLAGS += -I $(srcdir)/../snd_parser/inc
+if ENABLE_TIMESTAMP
+AM_CFLAGS += -DENABLE_TIMESTAMP
+endif
+
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/agm
 

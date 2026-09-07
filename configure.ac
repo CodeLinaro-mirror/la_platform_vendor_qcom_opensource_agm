@@ -38,6 +38,20 @@ if (test "x${with_glib}" = "xyes"); then
         AC_SUBST(GLIB_LIBS)
 fi
 
+AC_ARG_WITH([enable-timestamp],
+    AS_HELP_STRING([--with-enable-timestamp=enable],
+                   [Enable timestamp support]),
+    [with_enable_timestamp=$withval],
+    [with_enable_timestamp=no])
+
+if test "x$with_enable_timestamp" = "xenable"; then
+    AC_DEFINE([ENABLE_TIMESTAMP], [1],
+              [Enable timestamp support])
+fi
+
+AM_CONDITIONAL([ENABLE_TIMESTAMP],
+               [test "x$with_enable_timestamp" = "xenable"])
+
 AM_CONDITIONAL(USE_GLIB, test "x${with_glib}" = "xyes")
 
 AC_ARG_WITH([agm_no_ipc],
