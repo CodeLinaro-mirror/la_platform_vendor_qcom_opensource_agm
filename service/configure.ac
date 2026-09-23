@@ -50,9 +50,20 @@ AC_ARG_WITH([dltlogging],
     [with_dltlogging="$withval"],
     [with_dltlogging=no])
 
-AM_CONDITIONAL(USE_DLT, test "x${with_dltlogging}" = "xyes")
+AC_ARG_WITH([clog],
+    AC_HELP_STRING([--with-clog], [Enable Common Logging Framework support]),
+    [with_clog="$withval"],
+    [with_clog=no])
 
-if test "x${with_dltlogging}" = "xyes"; then
+AM_CONDITIONAL(USE_CLOG, test "x${with_clog}" = "xyes")
+AM_CONDITIONAL(USE_DLT, test "x${with_dltlogging}" = "xyes" && test "x${with_clog}" != "xyes")
+
+if test "x${with_clog}" = "xyes"; then
+    PKG_CHECK_MODULES([CLOG], [libclog])
+    AC_SUBST([CLOG_CFLAGS])
+    AC_SUBST([CLOG_LIBS])
+    AC_DEFINE([USE_CLOG], [1], [Define if using Common Logging Framework])
+elif test "x${with_dltlogging}" = "xyes"; then
     PKG_CHECK_MODULES([DLTLOG], [automotive-dlt])
     AC_SUBST([DLTLOG_CFLAGS])
     AC_SUBST([DLTLOG_LIBS])

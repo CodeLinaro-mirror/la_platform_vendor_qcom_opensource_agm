@@ -64,10 +64,56 @@
 **/
 
 #ifndef __UTILS_H__
+#define __UTILS_H__
 #include "ar_osal_error.h"
 #include <log/log.h>
 
-#ifdef USE_DLT
+#ifdef USE_CLOG
+#include <clog.h>
+#include <clog_ids.h>
+
+#define AGM_CLOG_CONTEXT_ID CLOG_LCTX_SERV
+#define AGM_CLOG_APP_NAME "AGM"
+#define AGM_CLOG_CONTEXT_NAME "SERV"
+#define AGM_CLOG_CONTEXT_DESC "AGM Service Core"
+
+static inline clog_context_t agm_get_clog_context(void)
+{
+    static clog_context_t agm_clog_ctx = NULL;
+    static int agm_clog_init_done = 0;
+
+    if (!agm_clog_init_done) {
+        if (CLOG_IS_INITIALIZED() != CLOG_RETURN_TRUE)
+            CLOG_REGISTER_LIBRARY();
+
+        if (CLOG_IS_INITIALIZED() == CLOG_RETURN_TRUE) {
+            agm_clog_ctx = CLOG_REGISTER_CONTEXT(AGM_CLOG_CONTEXT_ID,
+                                                 AGM_CLOG_CONTEXT_NAME,
+                                                 AGM_CLOG_CONTEXT_DESC,
+                                                 CLOG_DIAG_SSID_NOT_AVAILABLE,
+                                                 AGM_CLOG_APP_NAME,
+                                                 AGM_CLOG_APP_NAME);
+        }
+        agm_clog_init_done = 1;
+    }
+
+    return agm_clog_ctx;
+}
+
+#define AGM_CLOG_WRAPPER(clog_fn, alog_fn, arg, ...) do { \
+    clog_context_t _ctx = agm_get_clog_context(); \
+    if (_ctx) \
+        clog_fn(_ctx, "%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); \
+    else \
+        alog_fn("%s: %d " arg, __func__, __LINE__, ##__VA_ARGS__); \
+} while (0)
+
+#define AGM_LOGE(arg,...) AGM_CLOG_WRAPPER(CLOGE, ALOGE, arg, ##__VA_ARGS__)
+#define AGM_LOGD(arg,...) AGM_CLOG_WRAPPER(CLOGD, ALOGD, arg, ##__VA_ARGS__)
+#define AGM_LOGI(arg,...) AGM_CLOG_WRAPPER(CLOGI, ALOGI, arg, ##__VA_ARGS__)
+#define AGM_LOGV(arg,...) AGM_CLOG_WRAPPER(CLOGV, ALOGV, arg, ##__VA_ARGS__)
+
+#elif defined(USE_DLT)
 #include <dlt/dlt.h>
 #include <stdio.h>
 
@@ -86,7 +132,7 @@ extern DLT_DECLARE_CONTEXT(agm_dlt_ctx);
 #define AGM_LOGI(arg,...) AGM_DLT_WRAPPER(DLT_LOG_INFO,  arg, ##__VA_ARGS__)
 #define AGM_LOGV(arg,...) AGM_DLT_WRAPPER(DLT_LOG_VERBOSE, arg, ##__VA_ARGS__)
 
-#else //USE_DLT is NOT defined
+#else
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)

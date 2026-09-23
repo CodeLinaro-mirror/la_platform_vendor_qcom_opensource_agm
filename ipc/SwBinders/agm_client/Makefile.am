@@ -4,6 +4,9 @@ AM_CPPFLAGS += -DDYNAMIC_LOG_ENABLED
 if USE_DLT
 AM_CPPFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
 endif
+if USE_CLOG
+AM_CPPFLAGS += -DUSE_CLOG @CLOG_CFLAGS@
+endif
 lib_LTLIBRARIES      = libagmclientwrapper.la
 libagmclientwrapper_ladir = $(libdir)
 libagmclientwrapper_la_SOURCES   = src/agm_client_wrapper.cpp
@@ -12,4 +15,7 @@ libagmclientwrapper_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-v
 libagmclientwrapper_la_LIBADD     =  -lagmproxy -laudio_log_utils
 if USE_DLT
 libagmclientwrapper_la_LIBADD += $(DLTLOG_LIBS)
+endif
+if USE_CLOG
+libagmclientwrapper_la_LIBADD += $(CLOG_LIBS)
 endif

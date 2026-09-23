@@ -15,6 +15,9 @@ AM_CPPFLAGS += -DDYNAMIC_LOG_ENABLED
 if USE_DLT
 AM_CPPFLAGS += -DUSE_DLT @DLTLOG_CFLAGS@
 endif
+if USE_CLOG
+AM_CPPFLAGS += -DUSE_CLOG @CLOG_CFLAGS@
+endif
 
 library_include_HEADERS = $(h_sources)
 library_includedir = $(includedir)/qti-agm-service/
@@ -29,12 +32,18 @@ libagmserverwrapper_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-v
 if USE_DLT
 libagmserverwrapper_la_LIBADD += $(DLTLOG_LIBS)
 endif
+if USE_CLOG
+libagmserverwrapper_la_LIBADD += $(CLOG_LIBS)
+endif
 
 lib_LTLIBRARIES += libagmproxy.la
 libagmproxy_la_SOURCES   = ${top_srcdir}/src/ipc_proxy_server.cpp
 libagmproxy_la_CPPFLAGS := $(AM_CPPFLAGS)
 libagmproxy_la_LIBADD = libagmserverwrapper.la
 libagmproxy_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils -lpthread
+if USE_CLOG
+libagmproxy_la_LIBADD += $(CLOG_LIBS)
+endif
 
 bin_PROGRAMS := agm_server
 agm_server_SOURCES  := ${top_srcdir}/src/agm_server_daemon.cpp
@@ -42,3 +51,6 @@ agm_server_SOURCES  := ${top_srcdir}/src/agm_server_daemon.cpp
 agm_server_la_CPPFLAGS := $(AM_CPPFLAGS)
 agm_server_LDADD    := libagmproxy.la -laudio_log_utils
 agm_server_la_LDFLAGS   = -lcutils -llog -ldl -lbinder -shared -avoid-version -lutils
+if USE_CLOG
+agm_server_LDADD += $(CLOG_LIBS)
+endif
