@@ -19,6 +19,11 @@ LOCAL_CFLAGS        := -D_ANDROID_ -DAGM_DEBUG_METADATA -DAGM_USE_CUTILS
 LOCAL_CFLAGS        += -Wno-tautological-compare -Wno-macro-redefined -Wall
 LOCAL_CFLAGS        += -D_GNU_SOURCE -DACDB_PATH=\"/vendor/etc/acdbdata/\"
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
+# session_obj.h:112 declares `struct session_pool *sess_pool;` at file scope without
+# extern, so every TU including it emits a tentative definition. clang-r596125 defaults
+# to -fno-common, turning that into "duplicate symbol: sess_pool" at link time.
+# -fcommon restores the pre-clang-15 merging behavior for this module.
+LOCAL_CFLAGS        += -fcommon
 
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
