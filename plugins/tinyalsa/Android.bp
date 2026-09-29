@@ -1,0 +1,134 @@
+cc_library_shared {
+    name: "libagm_pcm_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+      "src/agm_pcm_plugin.c"
+    ],
+
+    shared_libs: [
+      "libsndcardparser",
+      "libagmclient",
+      "libutils",
+      "libcutils",
+      "liblog",
+      "libqti-tinyalsa",
+      "libaudio_log_utils",
+      "libexpat"
+
+    ],
+    include_dirs: [
+        "bionic/libc/kernel/uapi",
+        "external/expat/lib",
+    ],
+
+    cflags: [
+        "-Wall",
+        "-Wno-implicit-function-declaration",
+        "-Dctl_event=snd_ctl_event",
+        "-DDYNAMIC_LOG_ENABLED",
+    ],
+
+    header_libs: [
+      "libagm_headers",
+      "libarosal_headers",
+      "libaudiologutils_headers"
+    ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+cc_library_shared {
+    name: "libagm_mixer_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+      "src/agm_mixer_plugin.c"
+    ],
+    shared_libs: [
+      "libsndcardparser",
+      "libagmclient",
+      "libagm",
+      "libcutils",
+      "libutils",
+      "liblog",
+      "libqti-tinyalsa",
+      "libaudio_log_utils",
+      "libexpat",
+    ],
+    include_dirs: [
+        "bionic/libc/kernel/uapi",
+        "external/expat/lib",
+    ],
+    cflags: [
+        "-Dctl_event=snd_ctl_event",
+        "-DDYNAMIC_LOG_ENABLED",
+    ],
+
+    header_libs: [
+        "libagm_headers",
+        "libarosal_headers",
+        "libaudiologutils_headers"
+    ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+cc_library_shared {
+    name: "libagm_compress_plugin",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/agm_compress_plugin.c"
+    ],
+
+    shared_libs: [
+        "libsndcardparser",
+        "libagmclient",
+        "libutils",
+        "libcutils",
+        "liblog",
+        "libqti-tinyalsa",
+        "libqti-tinycompress",
+        "libaudio_log_utils",
+        "libexpat",
+    ],
+
+    include_dirs: [
+        "bionic/libc/kernel/uapi",
+        "external/tinycompress/include",
+        "external/expat/lib"
+    ],
+
+    header_libs: [
+        "libagm_headers",
+        "libarosal_headers",
+        "libaudiologutils_headers"
+    ],
+
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}

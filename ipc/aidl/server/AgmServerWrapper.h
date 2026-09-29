@@ -98,10 +98,19 @@ class ClientInfo : public ISessionOps {
     static AgmServerWrapper *sAgmServerWrapper;
 
   public:
-    ClientInfo(int pid) : mPid(pid) {
-        mDeathRecipient = ndk::ScopedAIBinder_DeathRecipient(
-                AIBinder_DeathRecipient_new(ClientInfo::onDeath));
-    }
+  #ifdef ENABLE_AGM_SDV
+      ClientInfo(int pid) : mPid(pid) {
+          mDeathRecipient = ndk::ScopedAIBinder_DeathRecipient(
+                  AIBinder_DeathRecipient_new(ClientInfo::onDeath));
+          AIBinder_DeathRecipient_setOnUnlinked(mDeathRecipient.get(), ClientInfo::onUnlink);
+      }
+      static void onUnlink(void * /*cookie*/) {}
+  #else
+      ClientInfo(int pid) : mPid(pid) {
+          mDeathRecipient = ndk::ScopedAIBinder_DeathRecipient(
+                  AIBinder_DeathRecipient_new(ClientInfo::onDeath));
+      }
+  #endif
 
     static void setAgmServerWrapper(AgmServerWrapper *wrapper);
 

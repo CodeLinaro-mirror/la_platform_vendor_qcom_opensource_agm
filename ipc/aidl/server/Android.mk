@@ -1,4 +1,4 @@
-
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -28,6 +28,11 @@ LOCAL_SHARED_LIBRARIES := \
     libagm \
     vendor.qti.hardware.agm-V1-ndk
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
+
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
@@ -38,3 +43,4 @@ endif
 LOCAL_VINTF_FRAGMENTS  := manifest_agm_aidl.xml
 
 include $(BUILD_SHARED_LIBRARY)
+endif

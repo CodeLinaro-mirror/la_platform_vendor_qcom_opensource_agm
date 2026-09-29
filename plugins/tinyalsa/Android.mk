@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 # Build libagm_pcm_plugin
 include $(CLEAR_VARS)
@@ -21,6 +22,12 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     libagm \
     liblog
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
@@ -60,6 +67,12 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libagm \
     liblog
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
@@ -103,6 +116,12 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblog
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
+
 # Use flag based selection to use QTI vs open source tinycompress project
 
 ifeq ($(TARGET_USES_QTI_TINYCOMPRESS),true)
@@ -123,4 +142,4 @@ LOCAL_HEADER_LIBRARIES += libaudiologutils_headers
 endif
 
 include $(BUILD_SHARED_LIBRARY)
-
+endif
