@@ -32,6 +32,8 @@
 **/
 
 #ifndef __UTILS_H__
+#define __UTILS_H__
+
 #include "ar_osal_error.h"
 
 #ifdef FEATURE_IPQ_OPENWRT
@@ -40,19 +42,43 @@
 #include <log/log.h>
 #endif
 
+#ifdef ENABLE_DLOG
+#undef FALLBACK_LOG
+#define FALLBACK_LOG(alog_fn, fmt, ...)                                   \
+    alog_fn("%s: %d: " fmt, __func__, __LINE__, ##__VA_ARGS__)
+
+#include "dlog.h"
+
+#define AGM_LOGE(arg, ...) UPL_LOG(ALOGE, arg, ##__VA_ARGS__)
+#define AGM_LOGI(arg, ...) UPL_LOG(ALOGI, arg, ##__VA_ARGS__)
+#define AGM_LOGD_IMPL(arg, ...) UPL_LOG(ALOGD, arg, ##__VA_ARGS__)
+#define AGM_LOGV_IMPL(arg, ...) UPL_LOG(ALOGV, arg, ##__VA_ARGS__)
+#else
 #define AGM_LOGE(arg,...) ALOGE("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #define AGM_LOGI(arg,...) ALOGI("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#ifdef AGM_LOG_DEBUG_ENABLE
-#define AGM_LOGD(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#define AGM_LOGV(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
-#else
-#define AGM_LOGD(arg,...) do {} while (0)
-#define AGM_LOGV(arg,...) do {} while (0)
+#define AGM_LOGD_IMPL(arg,...) ALOGD("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
+#define AGM_LOGV_IMPL(arg,...) ALOGV("%s: %d "  arg, __func__, __LINE__, ##__VA_ARGS__)
 #endif
+
+#ifdef AGM_LOG_DEBUG_ENABLE
+#define AGM_LOGD AGM_LOGD_IMPL
+#define AGM_LOGV AGM_LOGV_IMPL
+#else
+#define AGM_LOGD(arg, ...) do {} while (0)
+#define AGM_LOGV(arg, ...) do {} while (0)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 /*convert osal error codes to lnx error codes*/
 int ar_err_get_lnx_err_code(uint32_t error);
 /*helper to print errors in string form*/
 char *ar_err_get_err_str(uint32_t error);
 
-#endif /*__UTILS_H*/
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* __UTILS_H__ */

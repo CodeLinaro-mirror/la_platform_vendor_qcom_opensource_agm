@@ -22,6 +22,12 @@ LOCAL_SHARED_LIBRARIES := \
     libagm \
     liblog
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
+
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
 ifneq ($(filter 11 R, $(PLATFORM_VERSION)),)
@@ -60,6 +66,12 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libagm \
     liblog
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 #if android version is R, refer to qtitinyxx otherwise use upstream ones
 #This assumes we would be using AR code only for Android R and subsequent versions.
@@ -102,6 +114,12 @@ LOCAL_SHARED_LIBRARIES := \
     libutils \
     libcutils \
     liblog
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
 
 # Use flag based selection to use QTI vs open source tinycompress project
 
