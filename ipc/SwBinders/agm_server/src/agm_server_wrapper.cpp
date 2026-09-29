@@ -131,6 +131,16 @@ int AgmService::ipc_agm_session_pause(uint64_t handle){
     return agm_session_pause(handle);
 };
 
+int AgmService::ipc_agm_session_flush(uint64_t handle){
+    ALOGV("%s called\n", __func__);
+    return agm_session_flush(handle);
+};
+
+int AgmService::ipc_agm_sessionid_flush(uint32_t session_id){
+    ALOGV("%s called with session id = %u\n", __func__, session_id);
+    return agm_sessionid_flush(session_id);
+};
+
 int AgmService::ipc_agm_session_resume(uint64_t handle){
     ALOGV("%s called\n", __func__);
     return agm_session_resume(handle);

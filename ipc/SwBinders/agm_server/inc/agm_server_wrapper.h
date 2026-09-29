@@ -92,6 +92,8 @@ class AgmService : public BnAgmService
         int ipc_agm_session_start(uint64_t handle);
         int ipc_agm_session_stop(uint64_t handle);
         int ipc_agm_session_pause(uint64_t handle);
+        int ipc_agm_session_flush(uint64_t handle);
+        int ipc_agm_sessionid_flush(uint32_t session_id);
         int ipc_agm_session_resume(uint64_t handle);
         int ipc_agm_session_open(uint32_t session_id,
                                          enum agm_session_mode sess_mode,

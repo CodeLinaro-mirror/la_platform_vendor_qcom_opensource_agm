@@ -93,6 +93,8 @@ class IAgmService: public ::android::IInterface
         virtual int ipc_agm_session_start(uint64_t handle)= 0;
         virtual int ipc_agm_session_stop(uint64_t handle)= 0;
         virtual int ipc_agm_session_pause(uint64_t handle)= 0;
+        virtual int ipc_agm_session_flush(uint64_t handle)= 0;
+        virtual int ipc_agm_sessionid_flush(uint32_t session_id)= 0;
         virtual int ipc_agm_session_resume(uint64_t handle)= 0;
         virtual int ipc_agm_session_read(uint64_t handle,
                                     void *buff, size_t *count)= 0;

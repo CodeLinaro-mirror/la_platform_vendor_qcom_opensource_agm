@@ -251,6 +251,26 @@ int agm_session_pause(uint64_t handle)
     return -EAGAIN;
 }
 
+int agm_session_flush(uint64_t handle)
+{
+    if (!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_session_flush(handle);
+    }
+    AGM_LOGE("%s: agm service is not running\n", __func__);
+    return -EAGAIN;
+}
+
+int agm_sessionid_flush(uint32_t session_id)
+{
+    if (!agm_server_died) {
+        android::sp<IAgmService> agm_client = get_agm_server();
+        return agm_client->ipc_agm_sessionid_flush(session_id);
+    }
+    AGM_LOGE("%s: agm service is not running\n", __func__);
+    return -EAGAIN;
+}
+
 int agm_session_resume(uint64_t handle)
 {
     if (!agm_server_died) {
