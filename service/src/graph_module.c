@@ -1368,6 +1368,27 @@ int  set_compressed_media_format(enum agm_media_format fmt_id,
         }
         break;
     }
+    case AGM_FORMAT_AMR_WB_PLUS:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRWBPLUS;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
+    case AGM_FORMAT_AMR_WB:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRWB_FS;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
+    case AGM_FORMAT_AMR_NB:
+    {
+        media_fmt_hdr->data_format = AGM_DATA_FORMAT_RAW_COMPRESSED;
+        media_fmt_hdr->fmt_id = MEDIA_FMT_ID_AMRNB_FS;
+        media_fmt_hdr->payload_size = 0;
+        break;
+    }
     default:
         return -EINVAL;
     }
