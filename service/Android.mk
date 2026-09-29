@@ -2,9 +2,9 @@ ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 # Build libagm_headers
 include $(CLEAR_VARS)
-LOCAL_MODULE                := libagm_headers
-LOCAL_VENDOR_MODULE         := true
-LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/inc/public
+LOCAL_MODULE                        := libagm_headers
+LOCAL_VENDOR_MODULE                 := true
+LOCAL_EXPORT_C_INCLUDE_DIRS         := $(LOCAL_PATH)/inc/public
 include $(BUILD_HEADER_LIBRARY)
 
 # Build libagm
@@ -19,6 +19,11 @@ LOCAL_CFLAGS        := -D_ANDROID_ -DAGM_DEBUG_METADATA -DAGM_USE_CUTILS
 LOCAL_CFLAGS        += -Wno-tautological-compare -Wno-macro-redefined -Wall
 LOCAL_CFLAGS        += -D_GNU_SOURCE -DACDB_PATH=\"/vendor/etc/acdbdata/\"
 LOCAL_CFLAGS        += -DACDB_DELTA_FILE_PATH="/data/vendor/audio/acdbdata/delta"
+# session_obj.h:112 declares `struct session_pool *sess_pool;` at file scope without
+# extern, so every TU including it emits a tentative definition. clang-r596125 defaults
+# to -fno-common, turning that into "duplicate symbol: sess_pool" at link time.
+# -fcommon restores the pre-clang-15 merging behavior for this module.
+LOCAL_CFLAGS        += -fcommon
 
 LOCAL_C_INCLUDES    := $(LOCAL_PATH)/inc/public
 LOCAL_C_INCLUDES    += $(LOCAL_PATH)/inc/private
@@ -46,7 +51,7 @@ LOCAL_HEADER_LIBRARIES += \
     libspf-headers \
     libutils_headers \
     libacdb_headers \
-    libarmemlog_headers
+    libarmemlog_headers 
 
 LOCAL_SHARED_LIBRARIES := \
     liblog \
@@ -55,6 +60,14 @@ LOCAL_SHARED_LIBRARIES := \
     libats \
     libarmemlog \
     libcutils
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS += -DENABLE_DLOG
+LOCAL_CFLAGS += -DAGM_LOG_DEBUG_ENABLE
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+LOCAL_EXPORT_HEADER_LIBRARY_HEADERS := dlog_headers
+endif
 
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe

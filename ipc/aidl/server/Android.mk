@@ -28,6 +28,11 @@ LOCAL_SHARED_LIBRARIES := \
     libagm \
     vendor.qti.hardware.agm-V1-ndk
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES += dlog_headers
+LOCAL_SHARED_LIBRARIES += libdlog
+endif
+
 ifeq ($(ENABLE_HYP), true)
 LOCAL_SHARED_LIBRARIES += libar-gsl_fe
 LOCAL_HEADER_LIBRARIES += libar-gsl_fe_headers
