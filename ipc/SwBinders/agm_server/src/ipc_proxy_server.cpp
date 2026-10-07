@@ -128,6 +128,8 @@ enum {
     START,
     STOP,
     PAUSE,
+    FLUSH,
+    FLUSH_WITH_SESSION_ID,
     RESUME,
     CONNECT,
     READ,
@@ -386,6 +388,28 @@ class BpAgmService : public ::android::BpInterface<IAgmService>
             data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
             data.writeInt64((long)handle);
             remote()->transact(PAUSE, data, &reply);
+            return reply.readInt32();
+        }
+
+        virtual int ipc_agm_session_flush(uint64_t handle)
+        {
+            android::Parcel data, reply;
+
+            AGM_LOGV("%s:%d\n", __func__, __LINE__);
+            data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+            data.writeInt64((long)handle);
+            remote()->transact(FLUSH, data, &reply);
+            return reply.readInt32();
+        }
+
+        virtual int ipc_agm_sessionid_flush(uint32_t session_id)
+        {
+            android::Parcel data, reply;
+
+            AGM_LOGV("%s:%d\n", __func__, __LINE__);
+            data.writeInterfaceToken(IAgmService::getInterfaceDescriptor());
+            data.writeUint32(session_id);
+            remote()->transact(FLUSH_WITH_SESSION_ID, data, &reply);
             return reply.readInt32();
         }
 
@@ -979,6 +1003,18 @@ android::status_t BnAgmService::onTransact(uint32_t code,
     case PAUSE : {
         uint64_t handle = (uint64_t )data.readInt64();
         rc = ipc_agm_session_pause(handle);
+        reply->writeInt32(rc);
+        break; }
+
+    case FLUSH : {
+        uint64_t handle = (uint64_t )data.readInt64();
+        rc = ipc_agm_session_flush(handle);
+        reply->writeInt32(rc);
+        break; }
+
+    case FLUSH_WITH_SESSION_ID : {
+        uint32_t session_id = data.readUint32();
+        rc = ipc_agm_sessionid_flush(session_id);
         reply->writeInt32(rc);
         break; }
 
