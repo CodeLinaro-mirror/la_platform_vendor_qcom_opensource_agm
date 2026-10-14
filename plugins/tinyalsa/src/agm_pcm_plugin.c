@@ -638,37 +638,44 @@ static int agm_pcm_readi_frames(struct pcm_plugin *plugin, struct snd_xferi *x)
             agm_format_to_bits(priv->media_config->format) / 8);
 
 #ifdef ENABLE_TIMESTAMP
-    palBuffer = (struct pal_buffer *)buff;
-    agm_buffer.addr = (uint8_t *)palBuffer->buffer;
-    if (!agm_buffer.addr) {
-        ALOGE("%s: null buffer pointer", __func__);
-        return -EINVAL;
+    /*
+     * Only callers that opened the pcm with PCM_TIMESTAMP (currently PAL)
+     * pass a struct pal_buffer * here; generic tinyalsa callers (agmcap,
+     * tinycap, ...) pass a plain sample buffer and must not be routed
+     * through the pal_buffer cast below, or we dereference garbage.
+     */
+    if (plugin->mode & PCM_TIMESTAMP) {
+        palBuffer = (struct pal_buffer *)buff;
+        agm_buffer.addr = (uint8_t *)palBuffer->buffer;
+        if (!agm_buffer.addr) {
+            ALOGE("%s: null buffer pointer", __func__);
+            return -EINVAL;
+        }
+
+        captured_size  = (uint32_t)count;
+        agm_buffer.size = count;
+
+        AGM_LOGV("%s: palBuffer:%p addr:%p size:%u\n",
+                 __func__, palBuffer, agm_buffer.addr, agm_buffer.size);
+
+        ret = agm_session_read_with_metadata(handle, &agm_buffer, &captured_size);
+        if (ret > 0 && ret == (int)captured_size)
+            ret = 0;
+        else
+            errno = ret;
+
+        AGM_LOGV("%s: ret:%d timestamp:%llu\n",
+                 __func__, ret, (unsigned long long)agm_buffer.timestamp);
+
+        if (palBuffer->ts)
+            palBuffer->ts->tv_nsec = (long)agm_buffer.timestamp;
+
+        return ret;
     }
-
-    captured_size  = (uint32_t)count;
-    agm_buffer.size = count;
-
-    AGM_LOGV("%s: palBuffer:%p addr:%p size:%zu\n",
-             __func__, palBuffer, agm_buffer.addr, agm_buffer.size);
-
-    ret = agm_session_read_with_metadata(handle, &agm_buffer, &captured_size);
-    if (ret > 0 && ret == (int)captured_size)
-        ret = 0;
-    else
-        errno = ret;
-
-    AGM_LOGV("%s: ret:%d timestamp:%llu\n",
-             __func__, ret, (unsigned long long)agm_buffer.timestamp);
-
-    if (palBuffer->ts)
-        palBuffer->ts->tv_nsec = (long)agm_buffer.timestamp;
-
-    return ret;
-#else
+#endif
     ret = agm_session_read(handle, buff, &count);
     errno = ret;
     return ret;
-#endif
 }
 
 static int agm_pcm_ttstamp(struct pcm_plugin *plugin, int *tstamp __unused)
