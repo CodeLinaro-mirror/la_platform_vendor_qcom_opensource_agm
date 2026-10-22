@@ -73,6 +73,7 @@ cc_library_shared {
             ]
         + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
             "_cdcsdv": [],
+            "_cdcsdv_cev": [],
             default: ["-DBYPASS_SND_CARD_CHECK"],
         }),
 

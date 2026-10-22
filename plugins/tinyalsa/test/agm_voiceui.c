@@ -228,7 +228,7 @@ static void* merge_payload(uint32_t miid, int num, int *sum,  ...)
         return NULL;
     }
 
-    va_start(valist, num);
+    va_start(valist, sum);
     for (i = 0; i < num; i++) {
         temp[i] = va_arg(valist, char *);
         size[i] = get_file_size(temp[i]);
