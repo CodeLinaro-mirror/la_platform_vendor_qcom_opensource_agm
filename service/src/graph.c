@@ -56,7 +56,11 @@
 #define DEVICE_RX 0
 #define DEVICE_TX 1
 #define FILE_PATH_EXTN_MAX_SIZE 80
+#ifdef QTI_OPTIMIZED
+#define ACDB_PATH_MAX_LENGTH 80
+#else
 #define ACDB_PATH_MAX_LENGTH 50
+#endif
 #define ARRAX_FILE_PATH_EXTN "_arrax"
 #define ARRAX_SOC_ID 585
 

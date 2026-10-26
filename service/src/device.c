@@ -1166,6 +1166,9 @@ static void split_snd_card_name(const char * in_snd_card_name, char* file_path_e
         if (strncmp(card_sub_str, "snd", strlen("snd"))) {
             strlcat(file_path_extn, "_", FILE_PATH_EXTN_MAX_SIZE);
             strlcat(file_path_extn, card_sub_str, FILE_PATH_EXTN_MAX_SIZE);
+#ifdef QTI_OPTIMIZED
+            strlcat(file_path_extn, "_qti_optimized", FILE_PATH_EXTN_MAX_SIZE);
+#endif
         }
         else
             break;
